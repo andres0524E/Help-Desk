@@ -3,25 +3,34 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mesa de Servicio — Departamento de Comunicación y Difusión | ITP</title>
+  <title>Mesa de Servicio — Depto. de Comunicación y Difusión | ITP</title>
+  <!-- Favicon personalizado -->
+  <link rel="icon" type="image/png" href="img/help-desk.png">
+  <!-- Fuentes oficiales -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+  <!-- Estilos CSS -->
   <link rel="stylesheet" href="styles.css">
+  <!-- Supabase y Lucide Icons -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
+  <!-- Creado por ajcr -->
 
   <div class="contenedor" id="inicio-pagina">
+    <!-- Cabecera Institucional -->
     <header>
       <div class="marca-institucional">
-        <img src="img/TecPachuca.png" alt="Escudo ITP" class="logo-itp">
+        <img src="img/SEP.png" alt="Logo SEP" class="logo-sep" onerror="this.style.display='none'">
         <div class="separador-logos"></div>
-        <img src="img/TECNM.png" alt="Logo TecNM" class="logo-tecnm">
+        <img src="img/TecPachuca.png" alt="Escudo ITP" class="logo-itp" onerror="this.style.display='none'">
+        <div class="separador-logos"></div>
+        <img src="img/TECNM.png" alt="Logo TecNM" class="logo-tecnm" onerror="this.style.display='none'">
         <div class="textos-marca">
           <span class="titulo-marca">Tecnológico Nacional de México</span>
-          <span class="subtitulo-marca">Instituto Tecnológico de Pachuca · Departamento de Comunicación y Difusión</span>
+          <span class="subtitulo-marca">Instituto Tecnológico de Pachuca · Comunicación y Difusión</span>
         </div>
       </div>
       <div class="acciones-header">
@@ -36,7 +45,7 @@
       </div>
     </header>
 
-    <!-- vista 1: formulario de solicitud y consulta de folio -->
+    <!-- Vista 1: Formulario y Rastreo Público -->
     <main id="vista-formulario">
       <div class="hero">
         <div>
@@ -56,7 +65,7 @@
         </div>
       </div>
 
-      <!-- bloque público de rastreo de folio -->
+      <!-- Rastreo Público de Folio -->
       <section class="panel-rastreo">
         <div class="rastreo-cabecera">
           <div class="rastreo-textos">
@@ -71,6 +80,7 @@
         <div id="resultado-rastreo" class="oculto"></div>
       </section>
 
+      <!-- Formulario de Creación -->
       <form class="panel" id="form-solicitud" onsubmit="guardar_solicitud(event)">
         <div id="seccion-catalogo">
           <span class="seccion-label">01 / Seleccione el servicio requerido</span>
@@ -128,18 +138,18 @@
           <div class="fila-campos">
             <div class="campo">
               <label>Departamento o Área académica del ITP</label>
-              <input type="text" id="solicitante" placeholder="Ej. Depto. de Sistemas y Computación" required>
+              <input type="text" id="solicitante" placeholder="Ej. Dpto. Comunicación y Difusión" required>
             </div>
             <div class="campo">
               <label id="label-especifico">Formato y medidas requeridas</label>
-              <input type="text" id="detalle-especifico" placeholder="Ej. Cartel impreso tabloide y versión digital" required>
+              <input type="text" id="detalle-especifico" placeholder="Ej. Dpto. Comunicación y Difusión" required>
             </div>
           </div>
 
           <div class="fila-campos">
             <div class="campo">
               <label id="label-descripcion">Información detallada que debe contener</label>
-              <input type="text" id="descripcion" placeholder="Ej. Título del evento, fechas, ponentes y logotipos" required>
+              <input type="text" id="descripcion" placeholder="Ej. Dpto. Comunicación y Difusión" required>
             </div>
           </div>
 
@@ -178,7 +188,7 @@
       </form>
     </main>
 
-    <!-- vista 2: panel de control protegido -->
+    <!-- Vista 2: Panel de Control Protegido -->
     <section id="vista-panel" class="oculto">
       <div class="hero">
         <div>
@@ -206,14 +216,19 @@
         <div class="lista-tickets" id="contenedor-tickets"></div>
       </div>
     </section>
+
+    <!-- Firma discreta de autor -->
+    <footer class="firma-sistema">
+      <span>ITP · Comunicación y Difusión &nbsp;·&nbsp; ajcr</span>
+    </footer>
   </div>
 
-  <!-- botón flotante para volver arriba -->
+  <!-- Botón flotante Volver Arriba -->
   <button type="button" class="btn-flotante-arriba" id="btn-subir" onclick="volver_catalogo()" title="Volver arriba">
     <i data-lucide="arrow-up"></i>
   </button>
 
-  <!-- modal de comprobante -->
+  <!-- Modal de Éxito al Enviar -->
   <div class="modal-fondo oculto" id="modal-exito">
     <div class="modal-tarjeta">
       <div class="icono-modal-exito"><i data-lucide="check-circle"></i></div>
@@ -224,7 +239,7 @@
     </div>
   </div>
 
-  <!-- modal de acceso institucional -->
+  <!-- Modal de Acceso por PIN -->
   <div class="modal-fondo oculto" id="modal-pin">
     <div class="modal-tarjeta">
       <h3>Acceso Restringido</h3>

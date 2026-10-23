@@ -1,8 +1,8 @@
-// credenciales de supabase
+// Credenciales de Supabase
 const supabase_url = 'https://ijcytjuvgexjzilrbdeg.supabase.co';
 const supabase_key = 'sb_publishable_iCtqB1w6QHXS-QJ5Ourc8w_CFBv-DPJ';
 
-// pin de acceso institucional
+// PIN de acceso administrativo al panel interno
 const pin_departamento = '2026';
 
 const usar_nube = supabase_url.startsWith('https://') && supabase_key.length > 20;
@@ -17,39 +17,39 @@ let sesion_autorizada = localStorage.getItem('equipo_comunicacion_autorizado') =
 const configuracion_servicios = {
   'Diseño de material gráfico': {
     label_esp: 'Formato y medidas requeridas',
-    placeholder_esp: 'Ej. Cartel impreso tabloide y versión digital para redes',
+    placeholder_esp: 'Ej. Dpto. Comunicación y Difusión',
     label_desc: 'Texto e información clave que debe contener el diseño',
-    placeholder_desc: 'Ej. Título del evento, fecha, hora y logotipos oficiales'
+    placeholder_desc: 'Ej. Dpto. Comunicación y Difusión'
   },
   'Difusión en redes sociales': {
     label_esp: 'Redes sociales destino y fecha de publicación',
-    placeholder_esp: 'Ej. Facebook e Instagram Oficial — Jueves 10:00 hrs',
+    placeholder_esp: 'Ej. Dpto. Comunicación y Difusión',
     label_desc: 'Copy (texto de la publicación) o enlace al material base',
-    placeholder_desc: 'Ej. Invitamos a toda la comunidad tecnológica a...'
+    placeholder_desc: 'Ej. Dpto. Comunicación y Difusión'
   },
   'Cobertura fotográfica/audiovisual': {
     label_esp: 'Tipo de cobertura requerida',
-    placeholder_esp: 'Ej. Fotografía general y entrega de reconocimientos',
+    placeholder_esp: 'Ej. Dpto. Comunicación y Difusión',
     label_desc: 'Momentos clave o autoridades a destacar',
-    placeholder_desc: 'Ej. Presídium, entrega de menciones honoríficas'
+    placeholder_desc: 'Ej. Dpto. Comunicación y Difusión'
   },
   'Producción de videos': {
     label_esp: 'Duración estimada y formato',
-    placeholder_esp: 'Ej. Cápsula de 1 min en formato vertical',
+    placeholder_esp: 'Ej. Dpto. Comunicación y Difusión',
     label_desc: 'Objetivo y guion general o referencias',
-    placeholder_desc: 'Ej. Video institucional de invitación al aniversario'
+    placeholder_desc: 'Ej. Dpto. Comunicación y Difusión'
   },
   'Revisión y visto bueno de materiales': {
     label_esp: 'Tipo de material y medio de difusión',
-    placeholder_esp: 'Ej. Lona impresa para fachada principal',
+    placeholder_esp: 'Ej. Dpto. Comunicación y Difusión',
     label_desc: 'Enlace al archivo (Drive/Canva) para validación',
-    placeholder_desc: 'Ej. https://drive.google.com/... revisar uso del TecNM'
+    placeholder_desc: 'Ej. Dpto. Comunicación y Difusión'
   },
   'Campañas institucionales': {
     label_esp: 'Público objetivo y periodo de difusión',
-    placeholder_esp: 'Ej. Estudiantes de nuevo ingreso — Mes en curso',
+    placeholder_esp: 'Ej. Dpto. Comunicación y Difusión',
     label_desc: 'Mensaje central y objetivos de la campaña',
-    placeholder_desc: 'Ej. Campaña de difusión de convocatorias de becas'
+    placeholder_desc: 'Ej. Dpto. Comunicación y Difusión'
   }
 };
 
@@ -64,18 +64,13 @@ async function inicializar() {
   document.getElementById('fecha-actual').textContent = hoy.toLocaleDateString('es-MX');
   window.addEventListener('scroll', controlar_flecha_flotante);
 
-  document.addEventListener('click', (e) => {
-    if (!e.target.closest('.selector-estado-contenedor')) {
-      document.querySelectorAll('.menu-estado-opciones').forEach(m => m.classList.remove('abierto'));
-    }
-  });
-
   const badge = document.getElementById('estado-conexion');
   if (usar_nube) {
-    badge.textContent = '● Conectado a Supabase';
+    badge.textContent = '● Conectado';
     badge.classList.add('online');
   } else {
-    badge.textContent = 'Modo Local';
+    badge.textContent = 'Desconectado';
+    badge.classList.remove('online');
   }
 
   actualizar_icono_candado();
@@ -142,7 +137,7 @@ async function consultar_folio_publico(e) {
   if (!encontrado) {
     contenedor_res.innerHTML = `
       <div class="tarjeta-rastreo-publico">
-        <p style="color: var(--status-red-text); font-size: 0.88rem; font-weight: 600;">
+        <p style="color: #991b1b; font-size: 0.88rem; font-weight: 600;">
           No se encontró ninguna solicitud con el folio institucional "${codigo_buscado}".
         </p>
       </div>
@@ -150,7 +145,8 @@ async function consultar_folio_publico(e) {
     return;
   }
 
-  const clase_estado = 'estado-' + encontrado.estado.replace(' ', '-');
+  const estado_calculado = calcular_estado_automatico(encontrado);
+  const clase_estado = 'estado-' + estado_calculado.replace(' ', '-');
   const lista_notas = obtener_arreglo_notas(encontrado.observaciones);
   const notas_publicas = lista_notas.length > 0
     ? lista_notas.map(n => `<div class="nota-individual"><span>${n}</span></div>`).join('')
@@ -164,9 +160,9 @@ async function consultar_folio_publico(e) {
           <div class="ticket-servicio">${encontrado.servicio}</div>
           <div class="ticket-detalles"><i data-lucide="user"></i> <strong>Área:</strong> ${encontrado.solicitante}</div>
         </div>
-        <span class="btn-estado-actual ${clase_estado}" style="cursor: default;">
+        <span class="badge-estado-actual ${clase_estado}">
           <span class="punto-estado"></span>
-          <span>${encontrado.estado}</span>
+          <span>${estado_calculado}</span>
         </span>
       </div>
 
@@ -194,6 +190,39 @@ function cerrar_rastreo_publico() {
   document.getElementById('input-rastreo-folio').value = '';
 }
 
+// Lógica para calcular estatus automáticamente
+function calcular_estado_automatico(item) {
+  const ahora = new Date();
+
+  // 1. Si hay fecha de evento y ya pasó la fecha y hora, se marca como Terminado automáticamente
+  if (item.aplica_evento && item.fecha_evento) {
+    const hora_ev = item.hora_evento || '23:59';
+    const fecha_evento_completa = new Date(`${item.fecha_evento}T${hora_ev}:00`);
+    if (ahora >= fecha_evento_completa) {
+      return 'Terminado';
+    }
+  }
+
+  // 2. Si hay fecha límite establecida y ya pasó, se marca como Terminado
+  if (item.fecha_limite) {
+    const fecha_limite_completa = new Date(`${item.fecha_limite}T23:59:00`);
+    if (ahora >= fecha_limite_completa) {
+      return 'Terminado';
+    }
+  }
+
+  // 3. Si se asignó un responsable (que no sea "Sin asignar") o tiene fecha límite, cambia a En proceso
+  const tiene_responsable = item.responsable && item.responsable.trim() !== '' && item.responsable.trim().toLowerCase() !== 'sin asignar';
+  const tiene_limite = item.fecha_limite && item.fecha_limite.trim() !== '';
+
+  if (tiene_responsable || tiene_limite) {
+    return 'En proceso';
+  }
+
+  // 4. Por defecto se queda en Pendiente
+  return 'Pendiente';
+}
+
 async function cargar_solicitudes() {
   if (usar_nube) {
     const { data, error } = await cliente_db
@@ -217,7 +246,6 @@ async function cargar_solicitudes() {
         fecha_evento: '2026-10-28',
         hora_evento: '11:00',
         lugar_evento: 'Auditorio Principal',
-        estado: 'En proceso',
         responsable: 'Equipo Audiovisual ITP',
         fecha_limite: '',
         observaciones: '[22/10/2026] Solicitud recibida y en proceso de asignación.'
@@ -364,7 +392,8 @@ function renderizar_tickets() {
   const texto_busqueda = document.getElementById('buscador-tickets').value.toLowerCase();
   
   const filtrados = solicitudes.filter(item => {
-    const cumple_estado = filtro_activo === 'todos' || item.estado === filtro_activo;
+    const estado_calculado = calcular_estado_automatico(item);
+    const cumple_estado = filtro_activo === 'todos' || estado_calculado === filtro_activo;
     const cumple_busqueda = item.solicitante.toLowerCase().includes(texto_busqueda) || 
                             item.folio.toLowerCase().includes(texto_busqueda) ||
                             item.servicio.toLowerCase().includes(texto_busqueda);
@@ -381,7 +410,10 @@ function renderizar_tickets() {
   contenedor.innerHTML = filtrados.map((item) => {
     const index_real = solicitudes.findIndex(s => s.folio === item.folio);
     const tiene_fecha_limite = Boolean(item.fecha_limite && item.fecha_limite.trim() !== '');
-    const clase_estado = 'estado-' + item.estado.replace(' ', '-');
+    
+    // Estado calculado automáticamente
+    const estado_actual = calcular_estado_automatico(item);
+    const clase_estado = 'estado-' + estado_actual.replace(' ', '-');
     const lista_notas = obtener_arreglo_notas(item.observaciones);
 
     const info_evento = item.aplica_evento
@@ -414,29 +446,17 @@ function renderizar_tickets() {
             ${info_evento}
           </div>
 
+          <!-- Badge de Estado Automático (Sin Menú Desplegable) -->
           <div class="selector-estado-contenedor">
-            <span class="selector-estado-label">Estatus</span>
-            <button type="button" class="btn-estado-actual ${clase_estado}" onclick="toggle_menu_estado(${index_real})">
+            <span class="selector-estado-label">Estatus automático</span>
+            <span class="badge-estado-actual ${clase_estado}">
               <span class="punto-estado"></span>
-              <span>${item.estado}</span>
-              <i data-lucide="chevron-down"></i>
-            </button>
-
-            <div class="menu-estado-opciones" id="menu-estado-${index_real}">
-              <button type="button" class="opcion-estado-item estado-Pendiente" onclick="seleccionar_nuevo_estado(${index_real}, 'Pendiente')">
-                <span class="punto-estado"></span> Pendiente
-              </button>
-              <button type="button" class="opcion-estado-item estado-En-proceso" onclick="seleccionar_nuevo_estado(${index_real}, 'En proceso')">
-                <span class="punto-estado"></span> En proceso
-              </button>
-              <button type="button" class="opcion-estado-item estado-Terminado" onclick="seleccionar_nuevo_estado(${index_real}, 'Terminado')">
-                <span class="punto-estado"></span> Terminado
-              </button>
-            </div>
+              <span>${estado_actual}</span>
+            </span>
           </div>
         </div>
 
-        <!-- panel de gestión interna -->
+        <!-- Panel de Gestión Interna -->
         <div class="panel-gestion-interno">
           <div class="campo-interno">
             <label>Responsable asignado</label>
@@ -458,7 +478,7 @@ function renderizar_tickets() {
           </div>
         </div>
 
-        <!-- bitácora de notas -->
+        <!-- Bitácora de Notas -->
         <div class="caja-notas">
           <div class="encabezado-notas">
             <span class="titulo-notas"><i data-lucide="message-square"></i> Bitácora de seguimiento interno</span>
@@ -479,20 +499,6 @@ function renderizar_tickets() {
   }).join('');
 
   refrescar_iconos();
-}
-
-function toggle_menu_estado(index) {
-  const menu = document.getElementById(`menu-estado-${index}`);
-  const estaba_abierto = menu.classList.contains('abierto');
-  document.querySelectorAll('.menu-estado-opciones').forEach(m => m.classList.remove('abierto'));
-  if (!estaba_abierto) {
-    menu.classList.add('abierto');
-  }
-}
-
-async function seleccionar_nuevo_estado(index, nuevo_estado) {
-  await actualizar_campo(index, 'estado', nuevo_estado);
-  renderizar_tickets();
 }
 
 async function alternar_fecha_limite_manual(index, habilitado) {
@@ -516,6 +522,7 @@ async function actualizar_campo(index, campo, valor) {
   } else {
     localStorage.setItem('tickets_itp_v6', JSON.stringify(solicitudes));
   }
+  renderizar_tickets();
 }
 
 async function agregar_nota(index) {

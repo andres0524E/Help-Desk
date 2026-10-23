@@ -1,5 +1,5 @@
 :root {
-  --itp-blue: #1B396A; /* Pantone 294 C oficial del manual */
+  --itp-blue: #1B396A;
   --itp-blue-hover: #12274b;
   --itp-accent: #0077b6;
   --itp-light: #f4f7fa;
@@ -8,18 +8,6 @@
   --ink-muted: #64748b;
   --border-soft: #e2e8f0;
   --ease-fluid: cubic-bezier(0.16, 1, 0.3, 1);
-
-  --status-red-bg: #fef2f2;
-  --status-red-text: #991b1b;
-  --status-red-dot: #dc2626;
-
-  --status-yellow-bg: #fffbeb;
-  --status-yellow-text: #92400e;
-  --status-yellow-dot: #d97706;
-
-  --status-green-bg: #f0fdf4;
-  --status-green-text: #166534;
-  --status-green-dot: #16a34a;
 }
 
 html {
@@ -70,29 +58,36 @@ header {
   flex-wrap: wrap;
 }
 
+.logo-sep {
+  height: 36px;
+  width: auto;
+  max-width: 140px;
+  object-fit: contain;
+}
+
 .logo-itp {
-  height: 48px;
+  height: 44px;
   width: auto;
   object-fit: contain;
 }
 
 .logo-tecnm {
-  height: 40px;
+  height: 38px;
   width: auto;
   object-fit: contain;
 }
 
 .separador-logos {
   width: 1px;
-  height: 35px;
+  height: 30px;
   background-color: var(--border-soft);
-  margin: 0 0.25rem;
+  margin: 0 0.15rem;
 }
 
 .titulo-marca {
   display: block;
   font-family: 'Space Grotesk', sans-serif;
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--itp-accent);
@@ -101,7 +96,7 @@ header {
 
 .subtitulo-marca {
   display: block;
-  font-size: 0.9rem;
+  font-size: 0.88rem;
   font-weight: 600;
   color: var(--ink-main);
 }
@@ -199,7 +194,7 @@ header {
 
 .btn-bloquear-panel {
   background: #ffffff;
-  color: var(--status-red-text);
+  color: #991b1b;
   border: 1px solid var(--border-soft);
   padding: 0.6rem 1.1rem;
   border-radius: 999px;
@@ -214,7 +209,7 @@ header {
 }
 
 .btn-bloquear-panel:hover {
-  background: var(--status-red-bg);
+  background: #fef2f2;
 }
 
 .meta-automatica {
@@ -241,7 +236,6 @@ header {
   font-weight: 600;
 }
 
-/* panel de rastreo público */
 .panel-rastreo {
   background: var(--itp-card);
   border: 1px solid var(--border-soft);
@@ -616,7 +610,7 @@ header {
   cursor: wait;
 }
 
-/* filtros y búsqueda en bandeja */
+/* Filtros y Bandeja */
 .barra-filtros {
   display: flex;
   justify-content: space-between;
@@ -724,9 +718,8 @@ header {
   flex-shrink: 0;
 }
 
-/* menús de estado estéticos */
+/* Badge de Estado Automático (Sin menú desplegable) */
 .selector-estado-contenedor {
-  position: relative;
   display: flex;
   flex-direction: column;
   align-items: flex-end;
@@ -740,7 +733,7 @@ header {
   font-weight: 700;
 }
 
-.btn-estado-actual {
+.badge-estado-actual {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
@@ -749,14 +742,6 @@ header {
   font-size: 0.82rem;
   font-weight: 600;
   border: 1.5px solid transparent;
-  cursor: pointer;
-  font-family: inherit;
-  transition: all 0.2s var(--ease-fluid);
-}
-
-.btn-estado-actual svg {
-  width: 14px;
-  height: 14px;
 }
 
 .punto-estado {
@@ -767,78 +752,33 @@ header {
 }
 
 .estado-Pendiente {
-  background: var(--status-red-bg);
-  color: var(--status-red-text);
+  background: #fef2f2;
+  color: #991b1b;
   border-color: rgba(220, 38, 38, 0.25);
 }
 .estado-Pendiente .punto-estado {
-  background: var(--status-red-dot);
+  background: #dc2626;
 }
 
 .estado-En-proceso {
-  background: var(--status-yellow-bg);
-  color: var(--status-yellow-text);
+  background: #fffbeb;
+  color: #92400e;
   border-color: rgba(217, 119, 6, 0.25);
 }
 .estado-En-proceso .punto-estado {
-  background: var(--status-yellow-dot);
+  background: #d97706;
 }
 
 .estado-Terminado {
-  background: var(--status-green-bg);
-  color: var(--status-green-text);
+  background: #f0fdf4;
+  color: #166534;
   border-color: rgba(22, 163, 74, 0.25);
 }
 .estado-Terminado .punto-estado {
-  background: var(--status-green-dot);
+  background: #16a34a;
 }
 
-.menu-estado-opciones {
-  position: absolute;
-  top: calc(100% + 6px);
-  right: 0;
-  background: #ffffff;
-  border: 1px solid var(--border-soft);
-  border-radius: 12px;
-  padding: 0.4rem;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-  min-width: 160px;
-  z-index: 30;
-  opacity: 0;
-  pointer-events: none;
-  transform: translateY(-6px);
-  transition: all 0.2s var(--ease-fluid);
-}
-
-.menu-estado-opciones.abierto {
-  opacity: 1;
-  pointer-events: auto;
-  transform: translateY(0);
-}
-
-.opcion-estado-item {
-  display: flex;
-  align-items: center;
-  gap: 0.55rem;
-  padding: 0.45rem 0.75rem;
-  border-radius: 8px;
-  border: none;
-  background: transparent;
-  font-family: inherit;
-  font-size: 0.82rem;
-  font-weight: 600;
-  cursor: pointer;
-  text-align: left;
-}
-
-.opcion-estado-item:hover {
-  filter: brightness(0.96);
-}
-
-/* panel interno y notas */
+/* Panel Interno y Notas */
 .panel-gestion-interno {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -985,8 +925,8 @@ header {
 }
 
 .btn-icono-nota.borrar:hover {
-  background: var(--status-red-dot);
-  border-color: var(--status-red-dot);
+  background: #dc2626;
+  border-color: #dc2626;
   color: #ffffff;
 }
 
@@ -1025,7 +965,18 @@ header {
   height: 14px;
 }
 
-/* botón flotante */
+/* Firma discreta visual con tus iniciales */
+.firma-sistema {
+  margin-top: 3rem;
+  text-align: right;
+  font-size: 0.73rem;
+  color: var(--ink-muted);
+  opacity: 0.65;
+  letter-spacing: 0.05em;
+  font-family: 'Space Grotesk', monospace;
+}
+
+/* Botón flotante */
 .btn-flotante-arriba {
   position: fixed;
   bottom: 1.75rem;
@@ -1090,8 +1041,8 @@ header {
 .icono-modal-exito {
   width: 48px;
   height: 48px;
-  background: var(--status-green-bg);
-  color: var(--status-green-dot);
+  background: #f0fdf4;
+  color: #16a34a;
   border-radius: 50%;
   display: flex;
   align-items: center;
