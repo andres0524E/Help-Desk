@@ -3,83 +3,111 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mesa de Servicio</title>
+  <title>Mesa de Servicio — Departamento de Comunicación y Difusión | ITP</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,400&family=JetBrains+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
 
   <div class="contenedor" id="inicio-pagina">
     <header>
-      <div class="marca">
-        <div class="punto-vivo"></div>
-        <span class="titulo-marca">Help Desk</span>
-        <span class="badge-conexion" id="estado-conexion">Modo Local</span>
+      <div class="marca-institucional">
+        <img src="img/TecPachuca.png" alt="Escudo ITP" class="logo-itp">
+        <div class="separador-logos"></div>
+        <img src="img/TECNM.png" alt="Logo TecNM" class="logo-tecnm">
+        <div class="textos-marca">
+          <span class="titulo-marca">Tecnológico Nacional de México</span>
+          <span class="subtitulo-marca">Instituto Tecnológico de Pachuca · Departamento de Comunicación y Difusión</span>
+        </div>
       </div>
-      <div class="selector-vista">
-        <button class="btn-vista activo" id="btn-nueva" onclick="cambiar_vista('formulario')">Nueva solicitud</button>
-        <button class="btn-vista" id="btn-panel" onclick="cambiar_vista('panel')">Bandeja de solicitudes (<span id="contador-tickets">0</span>)</button>
+      <div class="acciones-header">
+        <span class="badge-conexion" id="estado-conexion">Verificando...</span>
+        <div class="selector-vista">
+          <button class="btn-vista activo" id="btn-nueva" onclick="cambiar_vista('formulario')">Solicitar servicio</button>
+          <button class="btn-vista" id="btn-panel" onclick="intentar_abrir_panel()">
+            <i data-lucide="lock" class="icono-inline" id="icono-candado"></i>
+            <span>Panel Interno (<span id="contador-tickets">0</span>)</span>
+          </button>
+        </div>
       </div>
     </header>
 
-    <!-- vista 1: formulario de solicitud -->
+    <!-- vista 1: formulario de solicitud y consulta de folio -->
     <main id="vista-formulario">
       <div class="hero">
         <div>
-          <h1>Portal de <em>solicitudes</em><br>y servicios creativos</h1>
+          <span class="tag-institucional">Gestión Oficial de Solicitudes</span>
+          <h1>Mesa de Servicio <em>Académica</em></h1>
+          <p class="hero-desc">Sistema centralizado para la planeación, diseño y difusión de actividades institucionales del ITP.</p>
         </div>
         <div class="meta-automatica">
           <div class="meta-item">
-            <span>Folio de servicio</span>
+            <span>Folio asignado</span>
             <strong id="folio-preview">SRV-001</strong>
           </div>
           <div class="meta-item">
-            <span>Fecha de solicitud</span>
+            <span>Fecha de emisión</span>
             <strong id="fecha-actual">--/--/----</strong>
           </div>
         </div>
       </div>
 
+      <!-- bloque público de rastreo de folio -->
+      <section class="panel-rastreo">
+        <div class="rastreo-cabecera">
+          <div class="rastreo-textos">
+            <strong><i data-lucide="search" class="icono-inline"></i> Consulta el estatus de tu solicitud</strong>
+            <span>Ingresa tu número de folio para verificar avances y notas del departamento.</span>
+          </div>
+          <form class="form-rastreo" onsubmit="consultar_folio_publico(event)">
+            <input type="text" id="input-rastreo-folio" placeholder="Ej. SRV-001" required>
+            <button type="submit" class="btn-rastrear">Buscar</button>
+          </form>
+        </div>
+        <div id="resultado-rastreo" class="oculto"></div>
+      </section>
+
       <form class="panel" id="form-solicitud" onsubmit="guardar_solicitud(event)">
         <div id="seccion-catalogo">
-          <span class="seccion-label">01 / Catálogo de servicio (Selecciona una opción)</span>
+          <span class="seccion-label">01 / Seleccione el servicio requerido</span>
           
           <div class="grid-catalogo" id="contenedor-catalogo">
-            <div class="tarjeta-servicio seleccionada" onclick="seleccionar_servicio(this, 'Diseño de material gráfico', false)">
-              <span class="icono">✦</span>
+            <div class="tarjeta-servicio seleccionada" onclick="seleccionar_servicio(this, 'Diseño de material gráfico')">
+              <span class="icono"><i data-lucide="palette"></i></span>
               <span class="nombre">Diseño de material gráfico</span>
               <span class="etiqueta-evento">Carteles, banners, infografías</span>
             </div>
 
-            <div class="tarjeta-servicio" onclick="seleccionar_servicio(this, 'Difusión en redes sociales', false)">
-              <span class="icono">◎</span>
+            <div class="tarjeta-servicio" onclick="seleccionar_servicio(this, 'Difusión en redes sociales')">
+              <span class="icono"><i data-lucide="share-2"></i></span>
               <span class="nombre">Difusión en redes sociales</span>
               <span class="etiqueta-evento">Publicación y programación</span>
             </div>
 
-            <div class="tarjeta-servicio" onclick="seleccionar_servicio(this, 'Cobertura fotográfica/audiovisual', true)">
-              <span class="icono">◉</span>
-              <span class="nombre">Cobertura fotográfica/audiovisual</span>
-              <span class="etiqueta-evento">Requiere datos del evento</span>
+            <div class="tarjeta-servicio" onclick="seleccionar_servicio(this, 'Cobertura fotográfica/audiovisual')">
+              <span class="icono"><i data-lucide="camera"></i></span>
+              <span class="nombre">Cobertura fotográfica / audiovisual</span>
+              <span class="etiqueta-evento">Eventos y ceremonias</span>
             </div>
 
-            <div class="tarjeta-servicio" onclick="seleccionar_servicio(this, 'Producción de videos', false)">
-              <span class="icono">▸</span>
+            <div class="tarjeta-servicio" onclick="seleccionar_servicio(this, 'Producción de videos')">
+              <span class="icono"><i data-lucide="clapperboard"></i></span>
               <span class="nombre">Producción de videos</span>
               <span class="etiqueta-evento">Edición, cápsulas, animación</span>
             </div>
 
-            <div class="tarjeta-servicio" onclick="seleccionar_servicio(this, 'Revisión y visto bueno de materiales', false)">
-              <span class="icono">✓</span>
-              <span class="nombre">Revisión y visto bueno de materiales</span>
+            <div class="tarjeta-servicio" onclick="seleccionar_servicio(this, 'Revisión y visto bueno de materiales')">
+              <span class="icono"><i data-lucide="badge-check"></i></span>
+              <span class="nombre">Revisión y visto bueno</span>
               <span class="etiqueta-evento">Validación institucional</span>
             </div>
 
-            <div class="tarjeta-servicio" onclick="seleccionar_servicio(this, 'Campañas institucionales', true)">
-              <span class="icono">✹</span>
+            <div class="tarjeta-servicio" onclick="seleccionar_servicio(this, 'Campañas institucionales')">
+              <span class="icono"><i data-lucide="megaphone"></i></span>
               <span class="nombre">Campañas institucionales</span>
               <span class="etiqueta-evento">Estrategia integral</span>
             </div>
@@ -88,49 +116,54 @@
 
         <div id="seccion-detalles" class="bloque-destino">
           <div class="encabezado-seccion">
-            <span class="seccion-label sin-margen">02 / Detalles del solicitante</span>
-            <button type="button" class="btn-regresar-catalogo" onclick="volver_catalogo()">
-              ↑ Cambiar servicio seleccionado
-            </button>
+            <span class="seccion-label sin-margen">02 / Datos del área solicitante y requerimientos</span>
           </div>
 
           <div class="resumen-seleccion">
-            <span>Servicio elegido:</span>
+            <i data-lucide="check-circle-2" class="icono-inline"></i>
+            <span>Servicio seleccionado:</span>
             <strong id="texto-servicio-elegido">Diseño de material gráfico</strong>
           </div>
 
           <div class="fila-campos">
             <div class="campo">
-              <label>Nombre o área solicitante</label>
-              <input type="text" id="solicitante" placeholder="Ej. Coordinación Académica" required>
+              <label>Departamento o Área académica del ITP</label>
+              <input type="text" id="solicitante" placeholder="Ej. Depto. de Sistemas y Computación" required>
             </div>
             <div class="campo">
-              <label>Descripción breve del pedido</label>
-              <input type="text" id="descripcion" placeholder="Ej. Cartel para coloquio de otoño" required>
+              <label id="label-especifico">Formato y medidas requeridas</label>
+              <input type="text" id="detalle-especifico" placeholder="Ej. Cartel impreso tabloide y versión digital" required>
             </div>
           </div>
 
-          <span class="seccion-label">03 / Programación de evento</span>
-          <div class="barra-condicional" onclick="alternar_evento()">
-            <span>¿Esta solicitud aplica para un evento presencial o con fecha fija?</span>
-            <div class="switch" id="switch-evento"></div>
+          <div class="fila-campos">
+            <div class="campo">
+              <label id="label-descripcion">Información detallada que debe contener</label>
+              <input type="text" id="descripcion" placeholder="Ej. Título del evento, fechas, ponentes y logotipos" required>
+            </div>
           </div>
 
-          <div class="desplegable-evento" id="bloque-evento">
+          <span class="seccion-label">03 / Programación del evento asociado</span>
+          <div class="barra-condicional" onclick="alternar_evento()">
+            <span>¿Esta solicitud está asociada a un evento con fecha y hora fija?</span>
+            <div class="switch activo" id="switch-evento"></div>
+          </div>
+
+          <div class="desplegable-evento abierto" id="bloque-evento">
             <div class="contenido-evento">
               <div class="caja-evento-interna">
                 <div class="fila-campos" style="margin-bottom: 0;">
                   <div class="campo">
                     <label>Fecha del evento</label>
-                    <input type="date" id="fecha-evento">
+                    <input type="date" id="fecha-evento" required>
                   </div>
                   <div class="campo">
                     <label>Hora del evento</label>
-                    <input type="time" id="hora-evento">
+                    <input type="time" id="hora-evento" required>
                   </div>
                   <div class="campo">
-                    <label>Lugar del evento</label>
-                    <input type="text" id="lugar-evento" placeholder="Ej. Auditorio Principal">
+                    <label>Lugar dentro del instituto</label>
+                    <input type="text" id="lugar-evento" placeholder="Ej. Sala Audiovisual / Auditorio" required>
                   </div>
                 </div>
               </div>
@@ -138,40 +171,75 @@
           </div>
 
           <button type="submit" class="btn-enviar" id="btn-submit-form">
-            <span id="texto-btn-enviar">Registrar solicitud de servicio</span>
-            <span>→</span>
+            <span id="texto-btn-enviar">Enviar solicitud oficial</span>
+            <i data-lucide="send" class="icono-inline"></i>
           </button>
         </div>
       </form>
     </main>
 
-    <!-- vista 2: panel de control / help desk -->
+    <!-- vista 2: panel de control protegido -->
     <section id="vista-panel" class="oculto">
       <div class="hero">
         <div>
-          <h1>Control de <em>folios</em><br>y seguimiento</h1>
+          <span class="tag-institucional">Panel de Administración</span>
+          <h1>Control de solicitudes <em>internas</em></h1>
         </div>
+        <button type="button" class="btn-bloquear-panel" onclick="cerrar_sesion_admin()">
+          <i data-lucide="log-out" class="icono-inline"></i> Cerrar sesión institucional
+        </button>
       </div>
 
       <div class="panel">
-        <span class="seccion-label">Solicitudes registradas (Haz clic en el estado para actualizarlo)</span>
+        <div class="barra-filtros">
+          <div class="grupo-filtros">
+            <button class="btn-filtro activo" onclick="filtrar_estado('todos', this)">Todos</button>
+            <button class="btn-filtro" onclick="filtrar_estado('Pendiente', this)">Pendientes</button>
+            <button class="btn-filtro" onclick="filtrar_estado('En proceso', this)">En proceso</button>
+            <button class="btn-filtro" onclick="filtrar_estado('Terminado', this)">Terminados</button>
+          </div>
+          <div class="campo-busqueda">
+            <input type="text" id="buscador-tickets" placeholder="Buscar por área o folio..." oninput="renderizar_tickets()">
+          </div>
+        </div>
+
         <div class="lista-tickets" id="contenedor-tickets"></div>
       </div>
     </section>
   </div>
 
-  <!-- botón flotante con flecha para regresar arriba -->
-  <button type="button" class="btn-flotante-arriba" id="btn-subir" onclick="volver_catalogo()" title="Regresar a seleccionar servicio">
-    ↑
+  <!-- botón flotante para volver arriba -->
+  <button type="button" class="btn-flotante-arriba" id="btn-subir" onclick="volver_catalogo()" title="Volver arriba">
+    <i data-lucide="arrow-up"></i>
   </button>
 
   <!-- modal de comprobante -->
   <div class="modal-fondo oculto" id="modal-exito">
     <div class="modal-tarjeta">
-      <h3>¡Solicitud registrada!</h3>
-      <p class="texto-modal">Guarda tu número de folio para cualquier seguimiento:</p>
+      <div class="icono-modal-exito"><i data-lucide="check-circle"></i></div>
+      <h3>¡Solicitud registrada con éxito!</h3>
+      <p class="texto-modal">Conserve su número de folio institucional para consultas posteriores:</p>
       <strong class="folio-grande" id="modal-folio-texto">SRV-001</strong>
       <button class="btn-enviar" onclick="cerrar_modal()">Entendido</button>
+    </div>
+  </div>
+
+  <!-- modal de acceso institucional -->
+  <div class="modal-fondo oculto" id="modal-pin">
+    <div class="modal-tarjeta">
+      <h3>Acceso Restringido</h3>
+      <p class="texto-modal">Ingrese el PIN institucional del Departamento de Comunicación y Difusión:</p>
+      <form onsubmit="verificar_pin(event)">
+        <input type="password" id="input-pin" class="input-pin-acceso" placeholder="••••" maxlength="8" required>
+        <label class="recordar-equipo-check">
+          <input type="checkbox" id="check-recordar-pin" checked>
+          <span>Mantener sesión abierta en este equipo</span>
+        </label>
+        <div class="botones-modal-pin">
+          <button type="button" class="btn-cancelar-pin" onclick="cerrar_modal_pin()">Cancelar</button>
+          <button type="submit" class="btn-enviar">Acceder</button>
+        </div>
+      </form>
     </div>
   </div>
 
