@@ -4,24 +4,22 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Mesa de Servicio — Depto. de Comunicación y Difusión | ITP</title>
-  <!-- Favicon personalizado -->
   <link rel="icon" type="image/png" href="img/help-desk.png">
-  <!-- Fuentes oficiales -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
-  <!-- Estilos CSS -->
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://api.fontshare.com/v2/css?f[]=ranade@400,500,700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
-  <!-- Supabase y Lucide Icons -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
-  <!-- Creado por ajcr -->
+  <!-- creado por ajcr -->
 
-  <div class="contenedor" id="inicio-pagina">
-    <!-- Cabecera Institucional -->
-    <header>
+  <div class="fondo-ambiental"></div>
+
+  <header class="site-header">
+    <div class="header-interior">
       <div class="marca-institucional">
         <img src="img/SEP.png" alt="Logo SEP" class="logo-sep" onerror="this.style.display='none'">
         <div class="separador-logos"></div>
@@ -34,7 +32,7 @@
         </div>
       </div>
       <div class="acciones-header">
-        <span class="badge-conexion" id="estado-conexion">Verificando...</span>
+        <a href="https://supabase.com/dashboard/project/ijcytjuvgexjzilrbdeg/editor/17606?schema=public" target="_blank" class="badge-conexion" id="estado-conexion" title="Abrir base de datos en Supabase">Verificando...</a>
         <div class="selector-vista">
           <button class="btn-vista activo" id="btn-nueva" onclick="cambiar_vista('formulario')">Solicitar servicio</button>
           <button class="btn-vista" id="btn-panel" onclick="intentar_abrir_panel()">
@@ -43,13 +41,18 @@
           </button>
         </div>
       </div>
-    </header>
+    </div>
+  </header>
 
-    <!-- Vista 1: Formulario y Rastreo Público -->
-    <main id="vista-formulario">
+  <div class="contenedor" id="inicio-pagina">
+    <!-- vista 1: formulario y rastreo público -->
+    <main id="vista-formulario" class="vista-animada">
       <div class="hero">
-        <div>
-          <span class="tag-institucional">Gestión Oficial de Solicitudes</span>
+        <div class="hero-col-izq">
+          <span class="tag-institucional">
+            <span class="pulso-tag"></span>
+            Gestión Oficial de Solicitudes
+          </span>
           <h1>Mesa de Servicio <em>Académica</em></h1>
           <p class="hero-desc">Sistema centralizado para la planeación, diseño y difusión de actividades institucionales del ITP.</p>
         </div>
@@ -58,6 +61,7 @@
             <span>Folio asignado</span>
             <strong id="folio-preview">SRV-001</strong>
           </div>
+          <div class="separador-meta"></div>
           <div class="meta-item">
             <span>Fecha de emisión</span>
             <strong id="fecha-actual">--/--/----</strong>
@@ -65,7 +69,7 @@
         </div>
       </div>
 
-      <!-- Rastreo Público de Folio -->
+      <!-- rastreo público de folio -->
       <section class="panel-rastreo">
         <div class="rastreo-cabecera">
           <div class="rastreo-textos">
@@ -80,43 +84,49 @@
         <div id="resultado-rastreo" class="oculto"></div>
       </section>
 
-      <!-- Formulario de Creación -->
+      <!-- formulario de creación -->
       <form class="panel" id="form-solicitud" onsubmit="guardar_solicitud(event)">
         <div id="seccion-catalogo">
           <span class="seccion-label">01 / Seleccione el servicio requerido</span>
           
           <div class="grid-catalogo" id="contenedor-catalogo">
-            <div class="tarjeta-servicio seleccionada" onclick="seleccionar_servicio(this, 'Diseño de material gráfico')">
+            <div class="tarjeta-servicio seleccionada" style="--delay: 0.05s" onclick="seleccionar_servicio(this, 'Diseño de material gráfico')">
+              <div class="tarjeta-brillo"></div>
               <span class="icono"><i data-lucide="palette"></i></span>
               <span class="nombre">Diseño de material gráfico</span>
               <span class="etiqueta-evento">Carteles, banners, infografías</span>
             </div>
 
-            <div class="tarjeta-servicio" onclick="seleccionar_servicio(this, 'Difusión en redes sociales')">
+            <div class="tarjeta-servicio" style="--delay: 0.1s" onclick="seleccionar_servicio(this, 'Difusión en redes sociales')">
+              <div class="tarjeta-brillo"></div>
               <span class="icono"><i data-lucide="share-2"></i></span>
               <span class="nombre">Difusión en redes sociales</span>
               <span class="etiqueta-evento">Publicación y programación</span>
             </div>
 
-            <div class="tarjeta-servicio" onclick="seleccionar_servicio(this, 'Cobertura fotográfica/audiovisual')">
+            <div class="tarjeta-servicio" style="--delay: 0.15s" onclick="seleccionar_servicio(this, 'Cobertura fotográfica/audiovisual')">
+              <div class="tarjeta-brillo"></div>
               <span class="icono"><i data-lucide="camera"></i></span>
               <span class="nombre">Cobertura fotográfica / audiovisual</span>
               <span class="etiqueta-evento">Eventos y ceremonias</span>
             </div>
 
-            <div class="tarjeta-servicio" onclick="seleccionar_servicio(this, 'Producción de videos')">
+            <div class="tarjeta-servicio" style="--delay: 0.2s" onclick="seleccionar_servicio(this, 'Producción de videos')">
+              <div class="tarjeta-brillo"></div>
               <span class="icono"><i data-lucide="clapperboard"></i></span>
               <span class="nombre">Producción de videos</span>
               <span class="etiqueta-evento">Edición, cápsulas, animación</span>
             </div>
 
-            <div class="tarjeta-servicio" onclick="seleccionar_servicio(this, 'Revisión y visto bueno de materiales')">
+            <div class="tarjeta-servicio" style="--delay: 0.25s" onclick="seleccionar_servicio(this, 'Revisión y visto bueno de materiales')">
+              <div class="tarjeta-brillo"></div>
               <span class="icono"><i data-lucide="badge-check"></i></span>
               <span class="nombre">Revisión y visto bueno</span>
               <span class="etiqueta-evento">Validación institucional</span>
             </div>
 
-            <div class="tarjeta-servicio" onclick="seleccionar_servicio(this, 'Campañas institucionales')">
+            <div class="tarjeta-servicio" style="--delay: 0.3s" onclick="seleccionar_servicio(this, 'Campañas institucionales')">
+              <div class="tarjeta-brillo"></div>
               <span class="icono"><i data-lucide="megaphone"></i></span>
               <span class="nombre">Campañas institucionales</span>
               <span class="etiqueta-evento">Estrategia integral</span>
@@ -142,14 +152,14 @@
             </div>
             <div class="campo">
               <label id="label-especifico">Formato y medidas requeridas</label>
-              <input type="text" id="detalle-especifico" placeholder="Ej. Dpto. Comunicación y Difusión" required>
+              <input type="text" id="detalle-especifico" placeholder="Ej. Cartel impreso tabloide y versión digital para redes" required>
             </div>
           </div>
 
           <div class="fila-campos">
             <div class="campo">
-              <label id="label-descripcion">Información detallada que debe contener</label>
-              <input type="text" id="descripcion" placeholder="Ej. Dpto. Comunicación y Difusión" required>
+              <label id="label-descripcion">Texto e información clave que debe contener el diseño</label>
+              <input type="text" id="descripcion" placeholder="Ej. Título del evento, fecha, hora y logotipos oficiales" required>
             </div>
           </div>
 
@@ -188,16 +198,54 @@
       </form>
     </main>
 
-    <!-- Vista 2: Panel de Control Protegido -->
-    <section id="vista-panel" class="oculto">
+    <!-- vista 2: panel de control protegido -->
+    <section id="vista-panel" class="oculto vista-animada">
       <div class="hero">
         <div>
-          <span class="tag-institucional">Panel de Administración</span>
+          <span class="tag-institucional">
+            <span class="pulso-tag"></span>
+            Panel de Administración
+          </span>
           <h1>Control de solicitudes <em>internas</em></h1>
         </div>
         <button type="button" class="btn-bloquear-panel" onclick="cerrar_sesion_admin()">
-          <i data-lucide="log-out" class="icono-inline"></i> Cerrar sesión institucional
+          <i data-lucide="log-out" class="icono-inline"></i> Cerrar sesión
         </button>
+      </div>
+
+      <!-- cuadro único de métricas animadas con números centrados -->
+      <div class="panel-metricas-unificado">
+        <div class="item-metrica-unificada">
+          <div class="metrica-top">
+            <span>Total registradas</span>
+            <span class="icono-metrica azul"><i data-lucide="layers"></i></span>
+          </div>
+          <strong class="numero-metrica" id="stat-total">0</strong>
+        </div>
+
+        <div class="item-metrica-unificada">
+          <div class="metrica-top">
+            <span>Pendientes</span>
+            <span class="icono-metrica rojo"><i data-lucide="clock"></i></span>
+          </div>
+          <strong class="numero-metrica" id="stat-pendientes">0</strong>
+        </div>
+
+        <div class="item-metrica-unificada">
+          <div class="metrica-top">
+            <span>En proceso</span>
+            <span class="icono-metrica amarillo"><i data-lucide="loader"></i></span>
+          </div>
+          <strong class="numero-metrica" id="stat-proceso">0</strong>
+        </div>
+
+        <div class="item-metrica-unificada">
+          <div class="metrica-top">
+            <span>Terminadas</span>
+            <span class="icono-metrica verde"><i data-lucide="check-circle-2"></i></span>
+          </div>
+          <strong class="numero-metrica" id="stat-terminados">0</strong>
+        </div>
       </div>
 
       <div class="panel">
@@ -209,6 +257,7 @@
             <button class="btn-filtro" onclick="filtrar_estado('Terminado', this)">Terminados</button>
           </div>
           <div class="campo-busqueda">
+            <i data-lucide="search" class="icono-busqueda"></i>
             <input type="text" id="buscador-tickets" placeholder="Buscar por área o folio..." oninput="renderizar_tickets()">
           </div>
         </div>
@@ -217,18 +266,19 @@
       </div>
     </section>
 
-    <!-- Firma discreta de autor -->
     <footer class="firma-sistema">
       <span>ITP · Comunicación y Difusión &nbsp;·&nbsp; ajcr</span>
     </footer>
   </div>
 
-  <!-- Botón flotante Volver Arriba -->
   <button type="button" class="btn-flotante-arriba" id="btn-subir" onclick="volver_catalogo()" title="Volver arriba">
     <i data-lucide="arrow-up"></i>
   </button>
 
-  <!-- Modal de Éxito al Enviar -->
+  <!-- contenedor de notificaciones toast estilo sonner -->
+  <div id="contenedor-toasts" class="contenedor-toasts"></div>
+
+  <!-- modal de éxito al enviar -->
   <div class="modal-fondo oculto" id="modal-exito">
     <div class="modal-tarjeta">
       <div class="icono-modal-exito"><i data-lucide="check-circle"></i></div>
@@ -239,9 +289,10 @@
     </div>
   </div>
 
-  <!-- Modal de Acceso por PIN -->
+  <!-- modal de acceso por pin -->
   <div class="modal-fondo oculto" id="modal-pin">
-    <div class="modal-tarjeta">
+    <div class="modal-tarjeta" id="tarjeta-pin">
+      <div class="icono-modal-pin"><i data-lucide="shield-lock"></i></div>
       <h3>Acceso Restringido</h3>
       <p class="texto-modal">Ingrese el PIN institucional del Departamento de Comunicación y Difusión:</p>
       <form onsubmit="verificar_pin(event)">

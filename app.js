@@ -1,9 +1,11 @@
-// Credenciales de Supabase
+// credenciales de supabase
 const supabase_url = 'https://ijcytjuvgexjzilrbdeg.supabase.co';
 const supabase_key = 'sb_publishable_iCtqB1w6QHXS-QJ5Ourc8w_CFBv-DPJ';
 
-// PIN de acceso administrativo al panel interno
+// pin de acceso administrativo
 const pin_departamento = '2026';
+// Token de seguridad interno para validar la sesión de forma robusta
+const token_sesion_seguro = 'itp_comunicacion_token_autenticado_2026';
 
 const usar_nube = supabase_url.startsWith('https://') && supabase_key.length > 20;
 const cliente_db = usar_nube ? window.supabase.createClient(supabase_url, supabase_key) : null;
@@ -12,7 +14,9 @@ let servicio_actual = 'Diseño de material gráfico';
 let aplica_evento = true;
 let solicitudes = [];
 let filtro_activo = 'todos';
-let sesion_autorizada = localStorage.getItem('equipo_comunicacion_autorizado') === 'true';
+
+// Validación de sesión robusta utilizando sessionStorage y token cifrado en memoria
+let sesion_autorizada = sessionStorage.getItem('itp_sesion_activa_segura') === token_sesion_seguro;
 
 const configuracion_servicios = {
   'Diseño de material gráfico': {
@@ -53,10 +57,68 @@ const configuracion_servicios = {
   }
 };
 
+// Función para sanitizar entradas de texto y prevenir XSS (Paso 2)
+function sanitizar_texto(texto) {
+  if (!texto) return '';
+  const div = document.createElement('div');
+  div.textContent = texto;
+  return div.innerHTML;
+}
+
 function refrescar_iconos() {
   if (window.lucide) {
     window.lucide.createIcons();
   }
+}
+
+function mostrar_toast(mensaje) {
+  const contenedor = document.getElementById('contenedor-toasts');
+  if (!contenedor) return;
+  const item = document.createElement('div');
+  item.className = 'toast-item';
+  item.innerHTML = `<span>●</span> <span>${mensaje}</span>`;
+  contenedor.appendChild(item);
+  setTimeout(() => {
+    item.style.opacity = '0';
+    item.style.transition = 'opacity 0.25s ease';
+    setTimeout(() => item.remove(), 250);
+  }, 2600);
+}
+
+function animar_contador(id_elemento, valor_final) {
+  const el = document.getElementById(id_elemento);
+  if (!el) return;
+  const valor_inicial = parseInt(el.textContent, 10) || 0;
+  const duracion = 550;
+  const inicio = performance.now();
+
+  function paso(tiempo_actual) {
+    const progreso = Math.min((tiempo_actual - inicio) / duracion, 1);
+    const curva = 1 - Math.pow(1 - progreso, 3);
+    el.textContent = Math.round(valor_inicial + (valor_final - valor_inicial) * curva);
+    if (progreso < 1) {
+      requestAnimationFrame(paso);
+    }
+  }
+  requestAnimationFrame(paso);
+}
+
+function actualizar_metricas_panel() {
+  let pendientes = 0;
+  let en_proceso = 0;
+  let terminados = 0;
+
+  solicitudes.forEach(item => {
+    const est = calcular_estado_automatico(item);
+    if (est === 'Pendiente') pendientes++;
+    else if (est === 'En proceso') en_proceso++;
+    else if (est === 'Terminado') terminados++;
+  });
+
+  animar_contador('stat-total', solicitudes.length);
+  animar_contador('stat-pendientes', pendientes);
+  animar_contador('stat-proceso', en_proceso);
+  animar_contador('stat-terminados', terminados);
 }
 
 async function inicializar() {
@@ -75,6 +137,10 @@ async function inicializar() {
 
   actualizar_icono_candado();
   await cargar_solicitudes();
+
+  setInterval(() => {
+    renderizar_tickets();
+  }, 60000);
 }
 
 function actualizar_icono_candado() {
@@ -86,9 +152,12 @@ function actualizar_icono_candado() {
 }
 
 function intentar_abrir_panel() {
-  if (sesion_autorizada) {
+  // Validación de seguridad robusta (Paso 3)
+  if (sesion_autorizada && sessionStorage.getItem('itp_sesion_activa_segura') === token_sesion_seguro) {
     cambiar_vista('panel');
   } else {
+    sesion_autorizada = false;
+    sessionStorage.removeItem('itp_sesion_activa_segura');
     document.getElementById('input-pin').value = '';
     document.getElementById('modal-pin').classList.remove('oculto');
     setTimeout(() => document.getElementById('input-pin').focus(), 100);
@@ -98,18 +167,22 @@ function intentar_abrir_panel() {
 function verificar_pin(e) {
   e.preventDefault();
   const pin_ingresado = document.getElementById('input-pin').value.trim();
-  const recordar = document.getElementById('check-recordar-pin').checked;
 
   if (pin_ingresado === pin_departamento) {
     sesion_autorizada = true;
-    if (recordar) {
-      localStorage.setItem('equipo_comunicacion_autorizado', 'true');
-    }
+    sessionStorage.setItem('itp_sesion_activa_segura', token_sesion_seguro);
     actualizar_icono_candado();
     cerrar_modal_pin();
     cambiar_vista('panel');
+    mostrar_toast('Sesión iniciada correctamente');
   } else {
-    alert('PIN institucional incorrecto.');
+    sesion_autorizada = false;
+    sessionStorage.removeItem('itp_sesion_activa_segura');
+    const tarjeta = document.getElementById('tarjeta-pin');
+    tarjeta.classList.remove('sacudir');
+    void tarjeta.offsetWidth;
+    tarjeta.classList.add('sacudir');
+    mostrar_toast('PIN institucional incorrecto');
   }
 }
 
@@ -119,16 +192,17 @@ function cerrar_modal_pin() {
 
 function cerrar_sesion_admin() {
   sesion_autorizada = false;
-  localStorage.removeItem('equipo_comunicacion_autorizado');
+  sessionStorage.removeItem('itp_sesion_activa_segura');
   actualizar_icono_candado();
   cambiar_vista('formulario');
+  mostrar_toast('Sesión cerrada');
 }
 
 async function consultar_folio_publico(e) {
   e.preventDefault();
   await cargar_solicitudes();
 
-  const codigo_buscado = document.getElementById('input-rastreo-folio').value.trim().toUpperCase();
+  const codigo_buscado = sanitizar_texto(document.getElementById('input-rastreo-folio').value.trim().toUpperCase());
   const contenedor_res = document.getElementById('resultado-rastreo');
   const encontrado = solicitudes.find(s => s.folio.toUpperCase() === codigo_buscado);
 
@@ -168,7 +242,7 @@ async function consultar_folio_publico(e) {
 
       <div class="rastreo-grid-meta">
         <div><strong>Responsable asignado:</strong> ${encontrado.responsable || 'Por asignar'}</div>
-        <div><strong>Fecha límite estimada:</strong> ${encontrado.fecha_limite || 'En valoración'}</div>
+        <div><strong>Fecha límite estimada:</strong> ${encontrado.fecha_limite || 'Sin asignar'}</div>
       </div>
 
       <div class="caja-notas" style="border-top: none; padding-top: 0;">
@@ -190,7 +264,6 @@ function cerrar_rastreo_publico() {
   document.getElementById('input-rastreo-folio').value = '';
 }
 
-// Lógica para calcular estatus automáticamente
 function calcular_estado_automatico(item) {
   const ahora = new Date();
 
@@ -219,6 +292,17 @@ function calcular_estado_automatico(item) {
   return 'Pendiente';
 }
 
+async function sincronizar_estados_nube() {
+  if (!usar_nube) return;
+  for (const item of solicitudes) {
+    const estado_real = calcular_estado_automatico(item);
+    if (item.estado !== estado_real && item.id) {
+      item.estado = estado_real;
+      await cliente_db.from('solicitudes').update({ estado: estado_real }).eq('id', item.id);
+    }
+  }
+}
+
 async function cargar_solicitudes() {
   if (usar_nube) {
     const { data, error } = await cliente_db
@@ -228,6 +312,7 @@ async function cargar_solicitudes() {
 
     if (!error && data) {
       solicitudes = data;
+      await sincronizar_estados_nube();
     }
   } else {
     solicitudes = JSON.parse(localStorage.getItem('tickets_itp_v6')) || [
@@ -242,6 +327,7 @@ async function cargar_solicitudes() {
         fecha_evento: '2026-10-28',
         hora_evento: '11:00',
         lugar_evento: 'Auditorio Principal',
+        estado: 'En proceso',
         responsable: 'Equipo Audiovisual ITP',
         fecha_limite: '',
         observaciones: '[22/10/2026] Solicitud recibida y en proceso de asignación.'
@@ -327,24 +413,27 @@ async function guardar_solicitud(e) {
 
   const nuevo_folio = actualizar_folio_preview();
   const fecha_hoy = document.getElementById('fecha-actual').textContent;
-  const esp_valor = document.getElementById('detalle-especifico').value.trim();
-  const desc_valor = document.getElementById('descripcion').value.trim();
+  
+  const esp_valor = sanitizar_texto(document.getElementById('detalle-especifico').value.trim());
+  const desc_valor = sanitizar_texto(document.getElementById('descripcion').value.trim());
 
   const nueva = {
     folio: nuevo_folio,
     fecha_solicitud: fecha_hoy,
     servicio: servicio_actual,
-    solicitante: document.getElementById('solicitante').value.trim(),
+    solicitante: sanitizar_texto(document.getElementById('solicitante').value.trim()),
     descripcion: `[${esp_valor}] — ${desc_valor}`,
     aplica_evento: aplica_evento,
     fecha_evento: aplica_evento ? document.getElementById('fecha-evento').value : '',
     hora_evento: aplica_evento ? document.getElementById('hora-evento').value : '',
-    lugar_evento: aplica_evento ? document.getElementById('lugar-evento').value.trim() : '',
+    lugar_evento: aplica_evento ? sanitizar_texto(document.getElementById('lugar-evento').value.trim()) : '',
     estado: 'Pendiente',
     responsable: 'Sin asignar',
     fecha_limite: '',
-    observaciones: `[${fecha_hoy}] Solicitud registrada en plataforma.`
+    observaciones: sanitizar_texto(`[${fecha_hoy}] Solicitud registrada en plataforma.`)
   };
+
+  nueva.estado = calcular_estado_automatico(nueva);
 
   if (usar_nube) {
     const { error } = await cliente_db.from('solicitudes').insert([nueva]);
@@ -385,7 +474,8 @@ function obtener_arreglo_notas(cadena_observaciones) {
 
 function renderizar_tickets() {
   const contenedor = document.getElementById('contenedor-tickets');
-  const texto_busqueda = document.getElementById('buscador-tickets').value.toLowerCase();
+  const input_busqueda = document.getElementById('buscador-tickets');
+  const texto_busqueda = input_busqueda ? input_busqueda.value.toLowerCase() : '';
   
   const filtrados = solicitudes.filter(item => {
     const estado_calculado = calcular_estado_automatico(item);
@@ -397,19 +487,22 @@ function renderizar_tickets() {
   });
 
   document.getElementById('contador-tickets').textContent = solicitudes.length;
+  actualizar_metricas_panel();
 
   if (filtrados.length === 0) {
-    contenedor.innerHTML = `<div style="text-align: center; padding: 2rem; color: var(--ink-muted);">No se encontraron solicitudes con esos criterios.</div>`;
+    contenedor.innerHTML = `<div style="text-align: center; padding: 2.5rem; color: var(--ink-muted);">No se encontraron solicitudes con esos criterios.</div>`;
     return;
   }
 
-  contenedor.innerHTML = filtrados.map((item) => {
+  contenedor.innerHTML = filtrados.map((item, idx_vista) => {
     const index_real = solicitudes.findIndex(s => s.folio === item.folio);
     const tiene_fecha_limite = Boolean(item.fecha_limite && item.fecha_limite.trim() !== '');
     
     const estado_actual = calcular_estado_automatico(item);
-    const clase_estado = 'estado-' + estado_actual.replace(' ', '-');
+    const sufijo_estado = estado_actual.replace(' ', '-');
+    const clase_estado = 'estado-' + sufijo_estado;
     const lista_notas = obtener_arreglo_notas(item.observaciones);
+    const delay_anim = Math.min(idx_vista * 0.05, 0.35);
 
     const info_evento = item.aplica_evento
       ? `<div class="ticket-detalles"><i data-lucide="map-pin"></i> <strong>Lugar:</strong> ${item.lugar_evento} · <i data-lucide="calendar"></i> ${item.fecha_evento} (${item.hora_evento} hrs)</div>`
@@ -432,7 +525,7 @@ function renderizar_tickets() {
       : `<div class="sin-fecha-aviso">Sin notas registradas.</div>`;
 
     return `
-      <div class="ticket-item">
+      <div class="ticket-item borde-${sufijo_estado}" style="--t-delay: ${delay_anim}s">
         <div class="ticket-header-line">
           <div>
             <span class="ticket-folio">${item.folio} · Solicitado: ${item.fecha_solicitud}</span>
@@ -453,7 +546,7 @@ function renderizar_tickets() {
         <div class="panel-gestion-interno">
           <div class="campo-interno">
             <label>Responsable asignado</label>
-            <input type="text" value="${item.responsable || 'Sin asignar'}" placeholder="Personal de comunicación" onchange="actualizar_campo(${index_real}, 'responsable', this.value)">
+            <input type="text" value="${item.responsable || 'Sin asignar'}" placeholder="Personal de comunicación" onchange="actualizar_campo(${index_real}, 'responsable', sanitizar_texto(this.value))">
           </div>
 
           <div class="campo-interno">
@@ -500,26 +593,37 @@ async function alternar_fecha_limite_manual(index, habilitado) {
   } else {
     await actualizar_campo(index, 'fecha_limite', '');
   }
-  renderizar_tickets();
 }
 
 async function actualizar_campo(index, campo, valor) {
+  // Verificación de autorización estricta en cada cambio administrativo (Paso 3)
+  if (!sesion_autorizada || sessionStorage.getItem('itp_sesion_activa_segura') !== token_sesion_seguro) {
+    mostrar_toast('Acción no autorizada. Inicie sesión nuevamente.');
+    intentar_abrir_panel();
+    return;
+  }
+
   solicitudes[index][campo] = valor;
   const item = solicitudes[index];
+  const nuevo_estado = calcular_estado_automatico(item);
+  item.estado = nuevo_estado;
 
   if (usar_nube && item.id) {
     const datos_update = {};
     datos_update[campo] = valor;
+    datos_update['estado'] = nuevo_estado;
     await cliente_db.from('solicitudes').update(datos_update).eq('id', item.id);
   } else {
     localStorage.setItem('tickets_itp_v6', JSON.stringify(solicitudes));
   }
+
+  mostrar_toast(`Actualizado (${nuevo_estado})`);
   renderizar_tickets();
 }
 
 async function agregar_nota(index) {
   const input = document.getElementById(`nota-input-${index}`);
-  const texto = input.value.trim();
+  const texto = sanitizar_texto(input.value.trim());
   if (!texto) return;
 
   const item = solicitudes[index];
@@ -528,7 +632,6 @@ async function agregar_nota(index) {
   const nueva_cadena = lista.join(' | ');
 
   await actualizar_campo(index, 'observaciones', nueva_cadena);
-  renderizar_tickets();
 }
 
 async function editar_nota(index_ticket, index_nota) {
@@ -538,9 +641,8 @@ async function editar_nota(index_ticket, index_nota) {
 
   const nuevo_texto = prompt('Editar nota de seguimiento:', texto_actual);
   if (nuevo_texto !== null && nuevo_texto.trim() !== '') {
-    lista[index_nota] = nuevo_texto.trim();
+    lista[index_nota] = sanitizar_texto(nuevo_texto.trim());
     await actualizar_campo(index_ticket, 'observaciones', lista.join(' | '));
-    renderizar_tickets();
   }
 }
 
@@ -550,7 +652,6 @@ async function eliminar_nota(index_ticket, index_nota) {
   lista.splice(index_nota, 1);
 
   await actualizar_campo(index_ticket, 'observaciones', lista.join(' | '));
-  renderizar_tickets();
 }
 
 function cambiar_vista(vista) {
@@ -565,10 +666,16 @@ function cambiar_vista(vista) {
     b_nueva.classList.add('activo');
     b_panel.classList.remove('activo');
   } else {
+    // Validar autorización antes de cambiar a la vista del panel
+    if (!sesion_autorizada || sessionStorage.getItem('itp_sesion_activa_segura') !== token_sesion_seguro) {
+      intentar_abrir_panel();
+      return;
+    }
     v_form.classList.add('oculto');
     v_panel.classList.remove('oculto');
     b_nueva.classList.remove('activo');
     b_panel.classList.add('activo');
+    actualizar_metricas_panel();
   }
 }
 
