@@ -17,39 +17,39 @@ let sesion_autorizada = localStorage.getItem('equipo_comunicacion_autorizado') =
 const configuracion_servicios = {
   'Diseño de material gráfico': {
     label_esp: 'Formato y medidas requeridas',
-    placeholder_esp: 'Ej. Dpto. Comunicación y Difusión',
+    placeholder_esp: 'Ej. Cartel impreso tabloide y versión digital para redes',
     label_desc: 'Texto e información clave que debe contener el diseño',
-    placeholder_desc: 'Ej. Dpto. Comunicación y Difusión'
+    placeholder_desc: 'Ej. Título del evento, fecha, hora y logotipos oficiales'
   },
   'Difusión en redes sociales': {
     label_esp: 'Redes sociales destino y fecha de publicación',
-    placeholder_esp: 'Ej. Dpto. Comunicación y Difusión',
+    placeholder_esp: 'Ej. Facebook e Instagram Oficial — Jueves 10:00 hrs',
     label_desc: 'Copy (texto de la publicación) o enlace al material base',
-    placeholder_desc: 'Ej. Dpto. Comunicación y Difusión'
+    placeholder_desc: 'Ej. Invitamos a toda la comunidad tecnológica a...'
   },
   'Cobertura fotográfica/audiovisual': {
     label_esp: 'Tipo de cobertura requerida',
-    placeholder_esp: 'Ej. Dpto. Comunicación y Difusión',
+    placeholder_esp: 'Ej. Fotografía general y entrega de reconocimientos',
     label_desc: 'Momentos clave o autoridades a destacar',
-    placeholder_desc: 'Ej. Dpto. Comunicación y Difusión'
+    placeholder_desc: 'Ej. Presídium, entrega de menciones honoríficas'
   },
   'Producción de videos': {
     label_esp: 'Duración estimada y formato',
-    placeholder_esp: 'Ej. Dpto. Comunicación y Difusión',
+    placeholder_esp: 'Ej. Cápsula de 1 min en formato vertical',
     label_desc: 'Objetivo y guion general o referencias',
-    placeholder_desc: 'Ej. Dpto. Comunicación y Difusión'
+    placeholder_desc: 'Ej. Video institucional de invitación al aniversario'
   },
   'Revisión y visto bueno de materiales': {
     label_esp: 'Tipo de material y medio de difusión',
-    placeholder_esp: 'Ej. Dpto. Comunicación y Difusión',
+    placeholder_esp: 'Ej. Lona impresa para fachada principal',
     label_desc: 'Enlace al archivo (Drive/Canva) para validación',
-    placeholder_desc: 'Ej. Dpto. Comunicación y Difusión'
+    placeholder_desc: 'Ej. https://drive.google.com/... revisar uso del TecNM'
   },
   'Campañas institucionales': {
     label_esp: 'Público objetivo y periodo de difusión',
-    placeholder_esp: 'Ej. Dpto. Comunicación y Difusión',
+    placeholder_esp: 'Ej. Estudiantes de nuevo ingreso — Mes en curso',
     label_desc: 'Mensaje central y objetivos de la campaña',
-    placeholder_desc: 'Ej. Dpto. Comunicación y Difusión'
+    placeholder_desc: 'Ej. Campaña de difusión de convocatorias de becas'
   }
 };
 
@@ -194,7 +194,6 @@ function cerrar_rastreo_publico() {
 function calcular_estado_automatico(item) {
   const ahora = new Date();
 
-  // 1. Si hay fecha de evento y ya pasó la fecha y hora, se marca como Terminado automáticamente
   if (item.aplica_evento && item.fecha_evento) {
     const hora_ev = item.hora_evento || '23:59';
     const fecha_evento_completa = new Date(`${item.fecha_evento}T${hora_ev}:00`);
@@ -203,7 +202,6 @@ function calcular_estado_automatico(item) {
     }
   }
 
-  // 2. Si hay fecha límite establecida y ya pasó, se marca como Terminado
   if (item.fecha_limite) {
     const fecha_limite_completa = new Date(`${item.fecha_limite}T23:59:00`);
     if (ahora >= fecha_limite_completa) {
@@ -211,7 +209,6 @@ function calcular_estado_automatico(item) {
     }
   }
 
-  // 3. Si se asignó un responsable (que no sea "Sin asignar") o tiene fecha límite, cambia a En proceso
   const tiene_responsable = item.responsable && item.responsable.trim() !== '' && item.responsable.trim().toLowerCase() !== 'sin asignar';
   const tiene_limite = item.fecha_limite && item.fecha_limite.trim() !== '';
 
@@ -219,7 +216,6 @@ function calcular_estado_automatico(item) {
     return 'En proceso';
   }
 
-  // 4. Por defecto se queda en Pendiente
   return 'Pendiente';
 }
 
@@ -240,7 +236,7 @@ async function cargar_solicitudes() {
         folio: 'SRV-001',
         fecha_solicitud: '22/10/2026',
         servicio: 'Cobertura fotográfica/audiovisual',
-        solicitante: 'Depto. de Sistemas y Computación',
+        solicitante: 'Dpto. Comunicación y Difusión',
         descripcion: '[Fotografía general] — Ceremonia de entrega de títulos',
         aplica_evento: true,
         fecha_evento: '2026-10-28',
@@ -411,7 +407,6 @@ function renderizar_tickets() {
     const index_real = solicitudes.findIndex(s => s.folio === item.folio);
     const tiene_fecha_limite = Boolean(item.fecha_limite && item.fecha_limite.trim() !== '');
     
-    // Estado calculado automáticamente
     const estado_actual = calcular_estado_automatico(item);
     const clase_estado = 'estado-' + estado_actual.replace(' ', '-');
     const lista_notas = obtener_arreglo_notas(item.observaciones);
@@ -446,7 +441,6 @@ function renderizar_tickets() {
             ${info_evento}
           </div>
 
-          <!-- Badge de Estado Automático (Sin Menú Desplegable) -->
           <div class="selector-estado-contenedor">
             <span class="selector-estado-label">Estatus automático</span>
             <span class="badge-estado-actual ${clase_estado}">
@@ -456,7 +450,6 @@ function renderizar_tickets() {
           </div>
         </div>
 
-        <!-- Panel de Gestión Interna -->
         <div class="panel-gestion-interno">
           <div class="campo-interno">
             <label>Responsable asignado</label>
@@ -478,7 +471,6 @@ function renderizar_tickets() {
           </div>
         </div>
 
-        <!-- Bitácora de Notas -->
         <div class="caja-notas">
           <div class="encabezado-notas">
             <span class="titulo-notas"><i data-lucide="message-square"></i> Bitácora de seguimiento interno</span>
