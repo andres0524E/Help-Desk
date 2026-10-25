@@ -1442,7 +1442,7 @@ body {
 .modal-fondo {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.6);
+  background: rgba(15, 23, 42, 0.65);
   backdrop-filter: blur(6px);
   display: flex;
   align-items: center;
@@ -1573,35 +1573,36 @@ body {
   background: #cbd5e1;
 }
 
-/* estilos del modal de reporte mensual ejecutivo */
+/* =========================================================================
+   formato de documento físico oficial (sin apariencia de página web)
+   ========================================================================= */
 .modal-tarjeta-reporte {
-  background: #ffffff;
-  max-width: 960px;
+  background: #334155;
+  max-width: 980px;
   width: 100%;
-  max-height: 90vh;
-  border-radius: 22px;
+  max-height: 92vh;
+  border-radius: 14px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  border: 1px solid var(--border-soft);
-  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5);
 }
 
 .cabecera-modal-reporte {
-  padding: 1.25rem 1.75rem;
+  padding: 0.9rem 1.5rem;
   border-bottom: 1px solid var(--border-soft);
   display: flex;
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
   gap: 1rem;
-  background: #f8fafc;
+  background: #ffffff;
 }
 
 .cabecera-modal-reporte h3 {
   font-family: 'Ranade', sans-serif;
   color: var(--itp-blue);
-  font-size: 1.35rem;
+  font-size: 1.15rem;
 }
 
 .acciones-modal-reporte {
@@ -1613,8 +1614,8 @@ body {
 .btn-cerrar-modal-rep {
   background: #e2e8f0;
   border: none;
-  width: 34px;
-  height: 34px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   font-weight: 700;
   cursor: pointer;
@@ -1622,153 +1623,303 @@ body {
 }
 
 .cuerpo-reporte-ejecutivo {
-  padding: 1.75rem;
+  padding: 2rem 1.5rem;
   overflow-y: auto;
+  background: #475569;
   display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
+  justify-content: center;
 }
 
-.membrete-reporte {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  border-bottom: 2px solid var(--itp-blue);
-  padding-bottom: 1rem;
+/* hoja tamaño carta tradicional en blanco y negro / azul institucional serio */
+.hoja-oficio-itp {
+  background: #ffffff;
+  width: 100%;
+  max-width: 816px;
+  min-height: 1056px;
+  padding: 1.5cm 1.6cm;
+  position: relative;
+  color: #000000;
+  font-family: 'Arial', 'Helvetica', sans-serif;
+  font-size: 9.5pt;
+  line-height: 1.35;
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.45);
 }
 
-.membrete-reporte h4 {
-  font-family: 'Ranade', sans-serif;
-  color: var(--itp-blue);
-  font-size: 1.15rem;
+.marca-agua-oficio {
+  position: absolute;
+  top: 52%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 380px;
+  height: 380px;
+  object-fit: contain;
+  opacity: 0.06;
+  pointer-events: none;
+  z-index: 0;
 }
 
-.membrete-reporte p {
-  font-size: 0.82rem;
-  color: var(--ink-muted);
+.contenido-sobre-marca {
+  position: relative;
+  z-index: 1;
 }
 
-.kpis-reporte-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 0.85rem;
+/* tabla de membrete superior estilo sgc tecnm */
+.tabla-membrete-sgc {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 14px;
+  border: 1.5px solid #000000;
 }
 
-.kpi-caja {
-  background: #f8fafc;
-  border: 1px solid var(--border-soft);
-  border-radius: 12px;
-  padding: 0.9rem 1rem;
+.tabla-membrete-sgc td {
+  border: 1px solid #000000;
+  padding: 6px 8px;
+  vertical-align: middle;
+}
+
+.celda-logos-membrete {
+  width: 26%;
   text-align: center;
 }
 
-.kpi-caja span {
-  display: block;
-  font-size: 0.72rem;
-  text-transform: uppercase;
-  color: var(--ink-muted);
+.contenedor-logos-sgc {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.logo-doc-sep {
+  height: 30px;
+  width: auto;
+  object-fit: contain;
+}
+
+.logo-doc-tecnm {
+  height: 34px;
+  width: auto;
+  object-fit: contain;
+}
+
+.logo-doc-itp {
+  height: 42px;
+  width: auto;
+  object-fit: contain;
+}
+
+.celda-titulo-membrete {
+  width: 48%;
+  text-align: center;
+}
+
+.celda-titulo-membrete .doc-inst {
+  font-size: 8.5pt;
   font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  display: block;
 }
 
-.kpi-caja strong {
-  font-family: 'Ranade', sans-serif;
-  font-size: 1.55rem;
-  color: var(--itp-blue);
+.celda-titulo-membrete .doc-plantel {
+  font-size: 10pt;
+  font-weight: 700;
+  text-transform: uppercase;
+  display: block;
+  margin: 2px 0;
 }
 
-.bloques-estadisticos-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 1.25rem;
+.celda-titulo-membrete .doc-depto {
+  font-size: 8pt;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #1B396A;
+  display: block;
 }
 
-.tarjeta-desglose {
-  background: #ffffff;
-  border: 1px solid var(--border-soft);
-  border-radius: 14px;
-  padding: 1.15rem;
+.celda-control-membrete {
+  width: 26%;
+  font-size: 7.5pt;
+  line-height: 1.45;
 }
 
-.tarjeta-desglose h5 {
-  font-family: 'Ranade', sans-serif;
-  font-size: 0.9rem;
-  color: var(--itp-blue);
-  margin-bottom: 0.85rem;
-  border-bottom: 1px solid var(--border-soft);
-  padding-bottom: 0.45rem;
-}
-
-.fila-barra-stat {
-  margin-bottom: 0.65rem;
-  font-size: 0.82rem;
-}
-
-.fila-barra-top {
+/* bloque de asunto y oficio */
+.bloque-asunto-oficio {
   display: flex;
   justify-content: space-between;
-  font-weight: 600;
-  margin-bottom: 0.2rem;
+  align-items: flex-end;
+  margin: 12px 0 14px;
+  padding-bottom: 6px;
+  border-bottom: 2px solid #1B396A;
+  font-size: 9pt;
 }
 
-.pista-barra {
-  width: 100%;
-  height: 7px;
-  background: #e2e8f0;
-  border-radius: 999px;
-  overflow: hidden;
+.parrafo-introductorio-oficio {
+  text-align: justify;
+  margin-bottom: 14px;
+  font-size: 9pt;
+  color: #111111;
 }
 
-.relleno-barra {
-  height: 100%;
-  background: var(--itp-accent);
-  border-radius: 999px;
+/* títulos de sección numerados tipo informe gubernamental */
+.titulo-seccion-oficio {
+  background: #1B396A;
+  color: #ffffff;
+  font-size: 8.5pt;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 4px 8px;
+  margin: 14px 0 6px;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
 }
 
-.tabla-reporte-contenedor {
-  overflow-x: auto;
-}
-
-.tabla-reporte {
+/* tablas técnicas cuadradas sin bordes redondeados */
+.tabla-oficio-formal {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.8rem;
+  margin-bottom: 10px;
+  font-size: 8.5pt;
 }
 
-.tabla-reporte th,
-.tabla-reporte td {
-  border: 1px solid var(--border-soft);
-  padding: 0.55rem 0.7rem;
+.tabla-oficio-formal th,
+.tabla-oficio-formal td {
+  border: 1px solid #333333;
+  padding: 5px 7px;
   text-align: left;
+  vertical-align: top;
 }
 
-.tabla-reporte th {
-  background: #f1f5f9;
-  font-family: 'Ranade', sans-serif;
-  color: var(--itp-blue);
+.tabla-oficio-formal th {
+  background: #e2e8f0;
+  color: #000000;
   font-weight: 700;
+  font-size: 8pt;
+  text-transform: uppercase;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
 }
 
+.tabla-oficio-formal td.num-centro,
+.tabla-oficio-formal th.num-centro {
+  text-align: center;
+}
+
+/* grilla de dos columnas para desglose estadístico tabular */
+.grid-tablas-estadisticas {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+
+.subtitulo-tabla-interna {
+  font-size: 8pt;
+  font-weight: 700;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+  color: #1B396A;
+}
+
+/* firmas de validación al calce */
+.bloque-firmas-oficio {
+  margin-top: 32px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+  text-align: center;
+  font-size: 8.5pt;
+  page-break-inside: avoid;
+}
+
+.caja-firma-oficio {
+  padding-top: 36px;
+}
+
+.linea-firma-formal {
+  border-top: 1px solid #000000;
+  padding-top: 5px;
+  width: 85%;
+  margin: 0 auto;
+}
+
+.pie-pagina-oficio {
+  margin-top: 22px;
+  padding-top: 6px;
+  border-top: 1px solid #666666;
+  display: flex;
+  justify-content: space-between;
+  font-size: 7pt;
+  color: #444444;
+}
+
+/* =========================================================================
+   configuración de impresión limpia en formato oficio / carta
+   ========================================================================= */
 @media print {
-  body * {
-    visibility: hidden;
+  @page {
+    size: letter portrait;
+    margin: 1cm;
   }
-  #modal-reporte,
-  #modal-reporte * {
-    visibility: visible;
+
+  body {
+    background: #ffffff !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
+
+  .fondo-ambiental,
+  .site-header,
+  #inicio-pagina,
+  .btn-flotante-arriba,
+  .contenedor-toasts,
+  #modal-exito,
+  #modal-pin,
   .no-imprimir {
     display: none !important;
   }
+
   #modal-reporte {
-    position: absolute;
-    inset: 0;
-    background: #ffffff;
-    padding: 0;
+    position: static !important;
+    display: block !important;
+    background: #ffffff !important;
+    padding: 0 !important;
+    backdrop-filter: none !important;
   }
+
   .modal-tarjeta-reporte {
-    box-shadow: none;
-    border: none;
-    max-width: 100%;
-    max-height: none;
+    background: #ffffff !important;
+    max-width: 100% !important;
+    max-height: none !important;
+    box-shadow: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+    overflow: visible !important;
+  }
+
+  .cuerpo-reporte-ejecutivo {
+    background: #ffffff !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    display: block !important;
+  }
+
+  .hoja-oficio-itp {
+    max-width: 100% !important;
+    min-height: auto !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+  }
+
+  .marca-agua-oficio {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 400px;
+    height: 400px;
+    opacity: 0.06 !important;
   }
 }

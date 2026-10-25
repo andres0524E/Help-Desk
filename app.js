@@ -636,7 +636,7 @@ function renderizar_tickets() {
   refrescar_iconos();
 }
 
-// funciones de generación del reporte ejecutivo mensual
+// funciones para generar documento formal tabular estilo oficio tecnm
 function contar_frecuencias(lista, propiedad) {
   const mapa = {};
   lista.forEach(item => {
@@ -646,22 +646,18 @@ function contar_frecuencias(lista, propiedad) {
   return Object.entries(mapa).sort((a, b) => b[1] - a[1]);
 }
 
-function generar_barras_html(arreglo_frecuencias, total) {
-  if (arreglo_frecuencias.length === 0) {
-    return `<div class="sin-fecha-aviso">Sin datos registrados en este periodo.</div>`;
+function generar_filas_frecuencia(arreglo, total) {
+  if (arreglo.length === 0) {
+    return `<tr><td colspan="3" class="num-centro">Sin registros en este periodo</td></tr>`;
   }
-  return arreglo_frecuencias.map(([nombre, cantidad]) => {
-    const porcentaje = total > 0 ? Math.round((cantidad / total) * 100) : 0;
+  return arreglo.map(([concepto, cant]) => {
+    const porc = total > 0 ? ((cant / total) * 100).toFixed(1) : '0.0';
     return `
-      <div class="fila-barra-stat">
-        <div class="fila-barra-top">
-          <span>${nombre}</span>
-          <span>${cantidad} (${porcentaje}%)</span>
-        </div>
-        <div class="pista-barra">
-          <div class="relleno-barra" style="width: ${porcentaje}%"></div>
-        </div>
-      </div>
+      <tr>
+        <td>${concepto}</td>
+        <td class="num-centro"><strong>${cant}</strong></td>
+        <td class="num-centro">${porc}%</td>
+      </tr>
     `;
   }).join('');
 }
@@ -687,108 +683,198 @@ function abrir_modal_reporte() {
     if (item.aplica_evento) con_evento++;
   });
 
-  const tasa_cumplimiento = total > 0 ? Math.round((terminados / total) * 100) : 0;
+  const tasa_cumplimiento = total > 0 ? ((terminados / total) * 100).toFixed(1) : '0.0';
   const por_servicio = contar_frecuencias(lista_mes, 'servicio');
-  const por_departamento = contar_frecuencias(lista_mes, 'solicitante').slice(0, 6);
+  const por_departamento = contar_frecuencias(lista_mes, 'solicitante');
   const por_responsable = contar_frecuencias(lista_mes, 'responsable');
 
   const nombre_periodo = nombres_meses[mes_filtro_activo];
-  document.getElementById('titulo-mes-reporte').textContent = `Reporte: ${nombre_periodo}`;
+  const fecha_emision = new Date().toLocaleDateString('es-MX');
+  document.getElementById('titulo-mes-reporte').textContent = `Documento Oficial — ${nombre_periodo}`;
 
-  const filas_tabla = lista_mes.length > 0
-    ? lista_mes.map(item => {
+  const filas_padron = lista_mes.length > 0
+    ? lista_mes.map((item, idx) => {
         const est = calcular_estado_automatico(item);
-        const ev_texto = item.aplica_evento ? `${item.fecha_evento} (${item.lugar_evento})` : 'No aplica';
+        const ev_texto = item.aplica_evento
+          ? `${item.fecha_evento} (${item.hora_evento} hrs) — ${item.lugar_evento}`
+          : 'No aplica';
+        const acuerdos = obtener_arreglo_notas(item.observaciones).join('; ');
         return `
           <tr>
-            <td><strong>${item.folio}</strong></td>
-            <td>${item.fecha_solicitud}</td>
+            <td class="num-centro">${idx + 1}</td>
+            <td class="num-centro"><strong>${item.folio}</strong></td>
+            <td class="num-centro">${item.fecha_solicitud}</td>
             <td>${item.solicitante}</td>
-            <td>${item.servicio}</td>
+            <td><strong>${item.servicio}</strong><br><span style="font-size: 7.5pt; color: #333;">${item.descripcion}</span></td>
             <td>${ev_texto}</td>
             <td>${item.responsable || 'Sin asignar'}</td>
-            <td><strong>${est}</strong></td>
+            <td class="num-centro"><strong>${est.toUpperCase()}</strong></td>
+            <td style="font-size: 7.5pt;">${acuerdos || 'Sin observaciones'}</td>
           </tr>
         `;
       }).join('')
-    : `<tr><td colspan="7" style="text-align: center;">No hay solicitudes registradas en este mes.</td></tr>`;
+    : `<tr><td colspan="9" class="num-centro">No existen solicitudes registradas durante el periodo seleccionado.</td></tr>`;
 
   const contenedor_rep = document.getElementById('contenido-imprimible-reporte');
   contenedor_rep.innerHTML = `
-    <div class="membrete-reporte">
-      <div>
-        <h4>Instituto Tecnológico de Pachuca · Departamento de Comunicación y Difusión</h4>
-        <p>Informe Ejecutivo de Solicitudes de Servicio y Productividad Operativa</p>
-      </div>
-      <div style="text-align: right;">
-        <strong>Periodo: ${nombre_periodo}</strong>
-        <p>Emitido el: ${new Date().toLocaleDateString('es-MX')}</p>
-      </div>
-    </div>
+    <div class="hoja-oficio-itp">
+      <img src="img/TecPachuca.png" alt="Marca de agua ITP" class="marca-agua-oficio" onerror="this.style.display='none'">
 
-    <div class="kpis-reporte-grid">
-      <div class="kpi-caja">
-        <span>Total Solicitudes</span>
-        <strong>${total}</strong>
-      </div>
-      <div class="kpi-caja">
-        <span>Terminadas</span>
-        <strong style="color: #16a34a;">${terminados}</strong>
-      </div>
-      <div class="kpi-caja">
-        <span>En Proceso</span>
-        <strong style="color: #d97706;">${en_proceso}</strong>
-      </div>
-      <div class="kpi-caja">
-        <span>Pendientes</span>
-        <strong style="color: #dc2626;">${pendientes}</strong>
-      </div>
-      <div class="kpi-caja">
-        <span>Tasa de Atención</span>
-        <strong>${tasa_cumplimiento}%</strong>
-      </div>
-      <div class="kpi-caja">
-        <span>Eventos Cubiertos</span>
-        <strong>${con_evento}</strong>
-      </div>
-    </div>
+      <div class="contenido-sobre-marca">
+        <!-- cuadro de membrete formal estilo sistema de gestión de calidad -->
+        <table class="tabla-membrete-sgc">
+          <tr>
+            <td class="celda-logos-membrete">
+              <div class="contenedor-logos-sgc">
+                <img src="img/SEP.png" alt="SEP" class="logo-doc-sep" onerror="this.style.display='none'">
+                <img src="img/TECNM.png" alt="TecNM" class="logo-doc-tecnm" onerror="this.style.display='none'">
+                <img src="img/TecPachuca.png" alt="ITP" class="logo-doc-itp" onerror="this.style.display='none'">
+              </div>
+            </td>
+            <td class="celda-titulo-membrete">
+              <span class="doc-inst">Tecnológico Nacional de México</span>
+              <span class="doc-plantel">Instituto Tecnológico de Pachuca</span>
+              <span class="doc-depto">Departamento de Comunicación y Difusión</span>
+            </td>
+            <td class="celda-control-membrete">
+              <div><strong>Código:</strong> ITP-CYD-REP-2026</div>
+              <div><strong>Revisión:</strong> 01</div>
+              <div><strong>Emisión:</strong> ${fecha_emision}</div>
+              <div><strong>Periodo:</strong> ${nombre_periodo}</div>
+            </td>
+          </tr>
+        </table>
 
-    <div class="bloques-estadisticos-grid">
-      <div class="tarjeta-desglose">
-        <h5>Demanda por Tipo de Servicio</h5>
-        ${generar_barras_html(por_servicio, total)}
-      </div>
+        <!-- cintillo de oficio -->
+        <div class="bloque-asunto-oficio">
+          <div>
+            <strong>DOCUMENTO:</strong> INFORME EJECUTIVO MENSUAL DE SOLICITUDES DE SERVICIO Y PRODUCTIVIDAD
+          </div>
+          <div>
+            <strong>LUGAR:</strong> Pachuca de Soto, Hgo.
+          </div>
+        </div>
 
-      <div class="tarjeta-desglose">
-        <h5>Departamentos con Mayor Solicitud (Top 6)</h5>
-        ${generar_barras_html(por_departamento, total)}
-      </div>
+        <p class="parrafo-introductorio-oficio">
+          Por medio del presente documento se hace constar el concentrado estadístico y padrón operativo de las solicitudes de diseño gráfico, difusión institucional, cobertura audiovisual y validación de materiales recibidas y gestionadas por el <strong>Departamento de Comunicación y Difusión</strong> del Instituto Tecnológico de Pachuca correspondiente al periodo <strong>${nombre_periodo}</strong>.
+        </p>
 
-      <div class="tarjeta-desglose">
-        <h5>Carga Operativa por Responsable</h5>
-        ${generar_barras_html(por_responsable, total)}
-      </div>
-    </div>
-
-    <div class="tarjeta-desglose">
-      <h5>Padrón Detallado de Solicitudes del Periodo</h5>
-      <div class="tabla-reporte-contenedor">
-        <table class="tabla-reporte">
+        <!-- sección 1: resumen ejecutivo en tabla -->
+        <div class="titulo-seccion-oficio">I. Resumen Ejecutivo de Indicadores Operativos</div>
+        <table class="tabla-oficio-formal">
           <thead>
             <tr>
-              <th>Folio</th>
-              <th>Fecha Emisión</th>
-              <th>Departamento Solicitante</th>
-              <th>Servicio Requerido</th>
-              <th>Fecha / Lugar de Evento</th>
-              <th>Responsable</th>
-              <th>Estatus</th>
+              <th class="num-centro">Total de Solicitudes Recibidas</th>
+              <th class="num-centro">Solicitudes Concluidas (Terminadas)</th>
+              <th class="num-centro">Solicitudes en Proceso</th>
+              <th class="num-centro">Solicitudes Pendientes</th>
+              <th class="num-centro">Eventos Institucionales Cubiertos</th>
+              <th class="num-centro">Índice de Eficiencia Operativa</th>
             </tr>
           </thead>
           <tbody>
-            ${filas_tabla}
+            <tr>
+              <td class="num-centro" style="font-size: 11pt;"><strong>${total}</strong></td>
+              <td class="num-centro" style="font-size: 11pt;"><strong>${terminados}</strong></td>
+              <td class="num-centro" style="font-size: 11pt;"><strong>${en_proceso}</strong></td>
+              <td class="num-centro" style="font-size: 11pt;"><strong>${pendientes}</strong></td>
+              <td class="num-centro" style="font-size: 11pt;"><strong>${con_evento}</strong></td>
+              <td class="num-centro" style="font-size: 11pt;"><strong>${tasa_cumplimiento}%</strong></td>
+            </tr>
           </tbody>
         </table>
+
+        <!-- sección 2: desglose estadístico tabular -->
+        <div class="titulo-seccion-oficio">II. Desglose Estadístico por Rubro y Asignación</div>
+        <div class="grid-tablas-estadisticas">
+          <div>
+            <div class="subtitulo-tabla-interna">A) Demanda por Tipo de Servicio</div>
+            <table class="tabla-oficio-formal">
+              <thead>
+                <tr>
+                  <th>Catálogo de Servicio</th>
+                  <th class="num-centro" style="width: 65px;">Cant.</th>
+                  <th class="num-centro" style="width: 65px;">%</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${generar_filas_frecuencia(por_servicio, total)}
+              </tbody>
+            </table>
+          </div>
+
+          <div>
+            <div class="subtitulo-tabla-interna">B) Departamentos o Áreas Solicitantes</div>
+            <table class="tabla-oficio-formal">
+              <thead>
+                <tr>
+                  <th>Departamento / Área Académica</th>
+                  <th class="num-centro" style="width: 65px;">Cant.</th>
+                  <th class="num-centro" style="width: 65px;">%</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${generar_filas_frecuencia(por_departamento, total)}
+              </tbody>
+            </table>
+
+            <div class="subtitulo-tabla-interna" style="margin-top: 8px;">C) Carga Operativa por Personal Asignado</div>
+            <table class="tabla-oficio-formal">
+              <thead>
+                <tr>
+                  <th>Responsable en Comunicación</th>
+                  <th class="num-centro" style="width: 65px;">Cant.</th>
+                  <th class="num-centro" style="width: 65px;">%</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${generar_filas_frecuencia(por_responsable, total)}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- sección 3: bitácora detallada -->
+        <div class="titulo-seccion-oficio">III. Padrón Detallado y Bitácora de Solicitudes del Periodo</div>
+        <table class="tabla-oficio-formal">
+          <thead>
+            <tr>
+              <th class="num-centro" style="width: 28px;">No.</th>
+              <th class="num-centro" style="width: 62px;">Folio</th>
+              <th class="num-centro" style="width: 68px;">Fecha</th>
+              <th style="width: 120px;">Área Solicitante</th>
+              <th>Servicio y Especificación Técnica</th>
+              <th style="width: 115px;">Datos del Evento</th>
+              <th style="width: 85px;">Responsable</th>
+              <th class="num-centro" style="width: 72px;">Estatus</th>
+              <th style="width: 130px;">Acuerdos / Bitácora</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${filas_padron}
+          </tbody>
+        </table>
+
+        <!-- firmas oficiales -->
+        <div class="bloque-firmas-oficio">
+          <div class="caja-firma-oficio">
+            <div class="linea-firma-formal">
+              <strong>ELABORÓ Y REVISÓ</strong><br>
+              <span>Coordinación Operativa de Mesa de Servicio<br>Departamento de Comunicación y Difusión</span>
+            </div>
+          </div>
+          <div class="caja-firma-oficio">
+            <div class="linea-firma-formal">
+              <strong>AUTORIZÓ Y SELLO DE CONFORMIDAD</strong><br>
+              <span>Jefatura del Departamento de Comunicación y Difusión<br>Instituto Tecnológico de Pachuca</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="pie-pagina-oficio">
+          <span>Carretera México - Pachuca Km. 87.5, Col. Venta Prieta, C.P. 42080, Pachuca de Soto, Hidalgo.</span>
+          <span>Documento generado por Sistema Oficial ITP · ajcr</span>
+        </div>
       </div>
     </div>
   `;
@@ -856,7 +942,6 @@ function exportar_csv_mensual() {
     ].join(',');
   });
 
-  // bom utf-8 para que excel reconozca acentos y eñes correctamente
   const contenido_csv = '\uFEFF' + [encabezados.join(','), ...filas].join('\n');
   const blob = new Blob([contenido_csv], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
