@@ -4,7 +4,7 @@ const supabase_key = 'sb_publishable_iCtqB1w6QHXS-QJ5Ourc8w_CFBv-DPJ';
 
 // pin de acceso administrativo
 const pin_departamento = '2026';
-// Token de seguridad interno para validar la sesión de forma robusta
+// token de seguridad interno para validar la sesión de forma robusta
 const token_sesion_seguro = 'itp_comunicacion_token_autenticado_2026';
 
 const usar_nube = supabase_url.startsWith('https://') && supabase_key.length > 20;
@@ -14,9 +14,26 @@ let servicio_actual = 'Diseño de material gráfico';
 let aplica_evento = true;
 let solicitudes = [];
 let filtro_activo = 'todos';
+let mes_filtro_activo = 'todos';
 
-// Validación de sesión robusta utilizando sessionStorage y token cifrado en memoria
+// validación de sesión robusta utilizando sessionstorage y token en memoria
 let sesion_autorizada = sessionStorage.getItem('itp_sesion_activa_segura') === token_sesion_seguro;
+
+const nombres_meses = {
+  'todos': 'Todos los meses (Histórico general)',
+  '01': 'Enero',
+  '02': 'Febrero',
+  '03': 'Marzo',
+  '04': 'Abril',
+  '05': 'Mayo',
+  '06': 'Junio',
+  '07': 'Julio',
+  '08': 'Agosto',
+  '09': 'Septiembre',
+  '10': 'Octubre',
+  '11': 'Noviembre',
+  '12': 'Diciembre'
+};
 
 const configuracion_servicios = {
   'Diseño de material gráfico': {
@@ -57,7 +74,7 @@ const configuracion_servicios = {
   }
 };
 
-// Función para sanitizar entradas de texto y prevenir XSS (Paso 2)
+// función para sanitizar entradas de texto y prevenir xss
 function sanitizar_texto(texto) {
   if (!texto) return '';
   const div = document.createElement('div');
@@ -85,6 +102,37 @@ function mostrar_toast(mensaje) {
   }, 2600);
 }
 
+// extrae el mes (01 al 12) desde fecha_solicitud (dd/mm/yyyy) o fecha_evento (yyyy-mm-dd)
+function extraer_mes_solicitud(item) {
+  if (item.fecha_solicitud && item.fecha_solicitud.includes('/')) {
+    const partes = item.fecha_solicitud.split('/');
+    if (partes.length >= 2) {
+      return partes[1].padStart(2, '0');
+    }
+  }
+  if (item.fecha_evento && item.fecha_evento.includes('-')) {
+    const partes_ev = item.fecha_evento.split('-');
+    if (partes_ev.length >= 2) {
+      return partes_ev[1].padStart(2, '0');
+    }
+  }
+  return '';
+}
+
+function obtener_solicitudes_por_mes() {
+  if (mes_filtro_activo === 'todos') {
+    return solicitudes;
+  }
+  return solicitudes.filter(item => extraer_mes_solicitud(item) === mes_filtro_activo);
+}
+
+function cambiar_mes_filtro() {
+  const select = document.getElementById('selector-mes-reporte');
+  mes_filtro_activo = select ? select.value : 'todos';
+  renderizar_tickets();
+  mostrar_toast(`Filtro aplicado: ${nombres_meses[mes_filtro_activo]}`);
+}
+
 function animar_contador(id_elemento, valor_final) {
   const el = document.getElementById(id_elemento);
   if (!el) return;
@@ -104,18 +152,19 @@ function animar_contador(id_elemento, valor_final) {
 }
 
 function actualizar_metricas_panel() {
+  const lista_base = obtener_solicitudes_por_mes();
   let pendientes = 0;
   let en_proceso = 0;
   let terminados = 0;
 
-  solicitudes.forEach(item => {
+  lista_base.forEach(item => {
     const est = calcular_estado_automatico(item);
     if (est === 'Pendiente') pendientes++;
     else if (est === 'En proceso') en_proceso++;
     else if (est === 'Terminado') terminados++;
   });
 
-  animar_contador('stat-total', solicitudes.length);
+  animar_contador('stat-total', lista_base.length);
   animar_contador('stat-pendientes', pendientes);
   animar_contador('stat-proceso', en_proceso);
   animar_contador('stat-terminados', terminados);
@@ -152,7 +201,6 @@ function actualizar_icono_candado() {
 }
 
 function intentar_abrir_panel() {
-  // Validación de seguridad robusta (Paso 3)
   if (sesion_autorizada && sessionStorage.getItem('itp_sesion_activa_segura') === token_sesion_seguro) {
     cambiar_vista('panel');
   } else {
@@ -477,7 +525,9 @@ function renderizar_tickets() {
   const input_busqueda = document.getElementById('buscador-tickets');
   const texto_busqueda = input_busqueda ? input_busqueda.value.toLowerCase() : '';
   
-  const filtrados = solicitudes.filter(item => {
+  const lista_mes = obtener_solicitudes_por_mes();
+
+  const filtrados = lista_mes.filter(item => {
     const estado_calculado = calcular_estado_automatico(item);
     const cumple_estado = filtro_activo === 'todos' || estado_calculado === filtro_activo;
     const cumple_busqueda = item.solicitante.toLowerCase().includes(texto_busqueda) || 
@@ -490,7 +540,7 @@ function renderizar_tickets() {
   actualizar_metricas_panel();
 
   if (filtrados.length === 0) {
-    contenedor.innerHTML = `<div style="text-align: center; padding: 2.5rem; color: var(--ink-muted);">No se encontraron solicitudes con esos criterios.</div>`;
+    contenedor.innerHTML = `<div style="text-align: center; padding: 2.5rem; color: var(--ink-muted);">No se encontraron solicitudes en este periodo o criterio.</div>`;
     return;
   }
 
@@ -586,6 +636,242 @@ function renderizar_tickets() {
   refrescar_iconos();
 }
 
+// funciones de generación del reporte ejecutivo mensual
+function contar_frecuencias(lista, propiedad) {
+  const mapa = {};
+  lista.forEach(item => {
+    const clave = (item[propiedad] || 'Sin especificar').trim();
+    mapa[clave] = (mapa[clave] || 0) + 1;
+  });
+  return Object.entries(mapa).sort((a, b) => b[1] - a[1]);
+}
+
+function generar_barras_html(arreglo_frecuencias, total) {
+  if (arreglo_frecuencias.length === 0) {
+    return `<div class="sin-fecha-aviso">Sin datos registrados en este periodo.</div>`;
+  }
+  return arreglo_frecuencias.map(([nombre, cantidad]) => {
+    const porcentaje = total > 0 ? Math.round((cantidad / total) * 100) : 0;
+    return `
+      <div class="fila-barra-stat">
+        <div class="fila-barra-top">
+          <span>${nombre}</span>
+          <span>${cantidad} (${porcentaje}%)</span>
+        </div>
+        <div class="pista-barra">
+          <div class="relleno-barra" style="width: ${porcentaje}%"></div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function abrir_modal_reporte() {
+  if (!sesion_autorizada || sessionStorage.getItem('itp_sesion_activa_segura') !== token_sesion_seguro) {
+    mostrar_toast('Inicie sesión para generar reportes');
+    return;
+  }
+
+  const lista_mes = obtener_solicitudes_por_mes();
+  const total = lista_mes.length;
+  let pendientes = 0;
+  let en_proceso = 0;
+  let terminados = 0;
+  let con_evento = 0;
+
+  lista_mes.forEach(item => {
+    const est = calcular_estado_automatico(item);
+    if (est === 'Pendiente') pendientes++;
+    else if (est === 'En proceso') en_proceso++;
+    else if (est === 'Terminado') terminados++;
+    if (item.aplica_evento) con_evento++;
+  });
+
+  const tasa_cumplimiento = total > 0 ? Math.round((terminados / total) * 100) : 0;
+  const por_servicio = contar_frecuencias(lista_mes, 'servicio');
+  const por_departamento = contar_frecuencias(lista_mes, 'solicitante').slice(0, 6);
+  const por_responsable = contar_frecuencias(lista_mes, 'responsable');
+
+  const nombre_periodo = nombres_meses[mes_filtro_activo];
+  document.getElementById('titulo-mes-reporte').textContent = `Reporte: ${nombre_periodo}`;
+
+  const filas_tabla = lista_mes.length > 0
+    ? lista_mes.map(item => {
+        const est = calcular_estado_automatico(item);
+        const ev_texto = item.aplica_evento ? `${item.fecha_evento} (${item.lugar_evento})` : 'No aplica';
+        return `
+          <tr>
+            <td><strong>${item.folio}</strong></td>
+            <td>${item.fecha_solicitud}</td>
+            <td>${item.solicitante}</td>
+            <td>${item.servicio}</td>
+            <td>${ev_texto}</td>
+            <td>${item.responsable || 'Sin asignar'}</td>
+            <td><strong>${est}</strong></td>
+          </tr>
+        `;
+      }).join('')
+    : `<tr><td colspan="7" style="text-align: center;">No hay solicitudes registradas en este mes.</td></tr>`;
+
+  const contenedor_rep = document.getElementById('contenido-imprimible-reporte');
+  contenedor_rep.innerHTML = `
+    <div class="membrete-reporte">
+      <div>
+        <h4>Instituto Tecnológico de Pachuca · Departamento de Comunicación y Difusión</h4>
+        <p>Informe Ejecutivo de Solicitudes de Servicio y Productividad Operativa</p>
+      </div>
+      <div style="text-align: right;">
+        <strong>Periodo: ${nombre_periodo}</strong>
+        <p>Emitido el: ${new Date().toLocaleDateString('es-MX')}</p>
+      </div>
+    </div>
+
+    <div class="kpis-reporte-grid">
+      <div class="kpi-caja">
+        <span>Total Solicitudes</span>
+        <strong>${total}</strong>
+      </div>
+      <div class="kpi-caja">
+        <span>Terminadas</span>
+        <strong style="color: #16a34a;">${terminados}</strong>
+      </div>
+      <div class="kpi-caja">
+        <span>En Proceso</span>
+        <strong style="color: #d97706;">${en_proceso}</strong>
+      </div>
+      <div class="kpi-caja">
+        <span>Pendientes</span>
+        <strong style="color: #dc2626;">${pendientes}</strong>
+      </div>
+      <div class="kpi-caja">
+        <span>Tasa de Atención</span>
+        <strong>${tasa_cumplimiento}%</strong>
+      </div>
+      <div class="kpi-caja">
+        <span>Eventos Cubiertos</span>
+        <strong>${con_evento}</strong>
+      </div>
+    </div>
+
+    <div class="bloques-estadisticos-grid">
+      <div class="tarjeta-desglose">
+        <h5>Demanda por Tipo de Servicio</h5>
+        ${generar_barras_html(por_servicio, total)}
+      </div>
+
+      <div class="tarjeta-desglose">
+        <h5>Departamentos con Mayor Solicitud (Top 6)</h5>
+        ${generar_barras_html(por_departamento, total)}
+      </div>
+
+      <div class="tarjeta-desglose">
+        <h5>Carga Operativa por Responsable</h5>
+        ${generar_barras_html(por_responsable, total)}
+      </div>
+    </div>
+
+    <div class="tarjeta-desglose">
+      <h5>Padrón Detallado de Solicitudes del Periodo</h5>
+      <div class="tabla-reporte-contenedor">
+        <table class="tabla-reporte">
+          <thead>
+            <tr>
+              <th>Folio</th>
+              <th>Fecha Emisión</th>
+              <th>Departamento Solicitante</th>
+              <th>Servicio Requerido</th>
+              <th>Fecha / Lugar de Evento</th>
+              <th>Responsable</th>
+              <th>Estatus</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${filas_tabla}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('modal-reporte').classList.remove('oculto');
+}
+
+function cerrar_modal_reporte() {
+  document.getElementById('modal-reporte').classList.add('oculto');
+}
+
+function imprimir_reporte_pdf() {
+  window.print();
+}
+
+function exportar_csv_mensual() {
+  if (!sesion_autorizada || sessionStorage.getItem('itp_sesion_activa_segura') !== token_sesion_seguro) {
+    mostrar_toast('Inicie sesión para exportar datos');
+    return;
+  }
+
+  const lista_mes = obtener_solicitudes_por_mes();
+  if (lista_mes.length === 0) {
+    mostrar_toast('No hay solicitudes en este periodo para exportar');
+    return;
+  }
+
+  const encabezados = [
+    'Folio',
+    'Fecha de Solicitud',
+    'Departamento Solicitante',
+    'Servicio Requerido',
+    'Especificaciones y Descripcion',
+    'Aplica Evento',
+    'Fecha del Evento',
+    'Hora del Evento',
+    'Lugar del Evento',
+    'Responsable Asignado',
+    'Fecha Limite',
+    'Estatus Actual',
+    'Bitacora de Seguimiento'
+  ];
+
+  const escapar_csv = (valor) => {
+    const limpio = String(valor ?? '').replace(/"/g, '""');
+    return `"${limpio}"`;
+  };
+
+  const filas = lista_mes.map(item => {
+    const est = calcular_estado_automatico(item);
+    return [
+      escapar_csv(item.folio),
+      escapar_csv(item.fecha_solicitud),
+      escapar_csv(item.solicitante),
+      escapar_csv(item.servicio),
+      escapar_csv(item.descripcion),
+      escapar_csv(item.aplica_evento ? 'Sí' : 'No'),
+      escapar_csv(item.fecha_evento || 'N/A'),
+      escapar_csv(item.hora_evento || 'N/A'),
+      escapar_csv(item.lugar_evento || 'N/A'),
+      escapar_csv(item.responsable || 'Sin asignar'),
+      escapar_csv(item.fecha_limite || 'Sin asignar'),
+      escapar_csv(est),
+      escapar_csv(item.observaciones || '')
+    ].join(',');
+  });
+
+  // bom utf-8 para que excel reconozca acentos y eñes correctamente
+  const contenido_csv = '\uFEFF' + [encabezados.join(','), ...filas].join('\n');
+  const blob = new Blob([contenido_csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+
+  const enlace = document.createElement('a');
+  enlace.href = url;
+  enlace.download = `Reporte_Comunicacion_ITP_${mes_filtro_activo}.csv`;
+  document.body.appendChild(enlace);
+  enlace.click();
+  document.body.removeChild(enlace);
+  URL.revokeObjectURL(url);
+
+  mostrar_toast('Archivo Excel (CSV) descargado');
+}
+
 async function alternar_fecha_limite_manual(index, habilitado) {
   if (habilitado) {
     const hoy_iso = new Date().toISOString().split('T')[0];
@@ -596,7 +882,6 @@ async function alternar_fecha_limite_manual(index, habilitado) {
 }
 
 async function actualizar_campo(index, campo, valor) {
-  // Verificación de autorización estricta en cada cambio administrativo (Paso 3)
   if (!sesion_autorizada || sessionStorage.getItem('itp_sesion_activa_segura') !== token_sesion_seguro) {
     mostrar_toast('Acción no autorizada. Inicie sesión nuevamente.');
     intentar_abrir_panel();
@@ -666,7 +951,6 @@ function cambiar_vista(vista) {
     b_nueva.classList.add('activo');
     b_panel.classList.remove('activo');
   } else {
-    // Validar autorización antes de cambiar a la vista del panel
     if (!sesion_autorizada || sessionStorage.getItem('itp_sesion_activa_segura') !== token_sesion_seguro) {
       intentar_abrir_panel();
       return;
