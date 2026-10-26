@@ -82,6 +82,17 @@ function sanitizar_texto(texto) {
   return div.innerHTML;
 }
 
+// da formato con etiquetas de color institucional a la descripción "[especificación] — detalle"
+function formatear_descripcion_color(texto_desc) {
+  if (!texto_desc) return '';
+  const regex = /^\[(.*?)\]\s*—\s*(.*)$/;
+  const coincidencia = texto_desc.match(regex);
+  if (coincidencia) {
+    return `<span class="tag-especificacion-color">[${coincidencia[1]}]</span> <span class="texto-descripcion-color">— ${coincidencia[2]}</span>`;
+  }
+  return `<span class="texto-descripcion-color">${texto_desc}</span>`;
+}
+
 function refrescar_iconos() {
   if (window.lucide) {
     window.lucide.createIcons();
@@ -274,13 +285,25 @@ async function consultar_folio_publico(e) {
     ? lista_notas.map(n => `<div class="nota-individual"><span>${n}</span></div>`).join('')
     : `<div class="sin-fecha-aviso">Sin notas registradas por el departamento.</div>`;
 
+  const info_evento_publico = encontrado.aplica_evento
+    ? `<div class="ticket-detalles">
+        <span class="badge-lugar-evento"><i data-lucide="map-pin"></i> Lugar: ${encontrado.lugar_evento}</span>
+        <span class="badge-fecha-evento"><i data-lucide="calendar"></i> ${encontrado.fecha_evento} <em>(${encontrado.hora_evento} hrs)</em></span>
+      </div>`
+    : `<div class="ticket-detalles"><span class="badge-sin-evento"><i data-lucide="info"></i> Sin evento presencial asociado</span></div>`;
+
   contenedor_res.innerHTML = `
     <div class="tarjeta-rastreo-publico">
       <div class="ticket-header-line">
         <div>
           <span class="ticket-folio">${encontrado.folio} · Solicitado el ${encontrado.fecha_solicitud}</span>
           <div class="ticket-servicio">${encontrado.servicio}</div>
-          <div class="ticket-detalles"><i data-lucide="user"></i> <strong>Área:</strong> ${encontrado.solicitante}</div>
+          <div class="ticket-detalles">
+            <i data-lucide="user"></i>
+            <span class="tag-solicitante-color">${encontrado.solicitante}:</span>
+            ${formatear_descripcion_color(encontrado.descripcion)}
+          </div>
+          ${info_evento_publico}
         </div>
         <span class="badge-estado-actual ${clase_estado}">
           <span class="punto-estado"></span>
@@ -555,8 +578,11 @@ function renderizar_tickets() {
     const delay_anim = Math.min(idx_vista * 0.05, 0.35);
 
     const info_evento = item.aplica_evento
-      ? `<div class="ticket-detalles"><i data-lucide="map-pin"></i> <strong>Lugar:</strong> ${item.lugar_evento} · <i data-lucide="calendar"></i> ${item.fecha_evento} (${item.hora_evento} hrs)</div>`
-      : `<div class="ticket-detalles"><i data-lucide="info"></i> Sin evento presencial asociado</div>`;
+      ? `<div class="ticket-detalles">
+          <span class="badge-lugar-evento"><i data-lucide="map-pin"></i> Lugar: ${item.lugar_evento}</span>
+          <span class="badge-fecha-evento"><i data-lucide="calendar"></i> ${item.fecha_evento} <em>(${item.hora_evento} hrs)</em></span>
+        </div>`
+      : `<div class="ticket-detalles"><span class="badge-sin-evento"><i data-lucide="info"></i> Sin evento presencial asociado</span></div>`;
 
     const html_notas = lista_notas.length > 0
       ? lista_notas.map((nota_texto, idx_nota) => `
@@ -580,7 +606,11 @@ function renderizar_tickets() {
           <div>
             <span class="ticket-folio">${item.folio} · Solicitado: ${item.fecha_solicitud}</span>
             <div class="ticket-servicio">${item.servicio}</div>
-            <div class="ticket-detalles"><i data-lucide="user"></i> <strong>${item.solicitante}:</strong> ${item.descripcion}</div>
+            <div class="ticket-detalles">
+              <i data-lucide="user"></i>
+              <span class="tag-solicitante-color">${item.solicitante}:</span>
+              ${formatear_descripcion_color(item.descripcion)}
+            </div>
             ${info_evento}
           </div>
 
@@ -690,7 +720,7 @@ function abrir_modal_reporte() {
 
   const nombre_periodo = nombres_meses[mes_filtro_activo];
   const fecha_emision = new Date().toLocaleDateString('es-MX');
-  document.getElementById('titulo-mes-reporte').textContent = `Documento Oficial — ${nombre_periodo}`;
+  document.getElementById('titulo-mes-reporte').textContent = `Reporte Mensual — ${nombre_periodo}`;
 
   const filas_padron = lista_mes.length > 0
     ? lista_mes.map((item, idx) => {
@@ -748,7 +778,7 @@ function abrir_modal_reporte() {
         <!-- cintillo de oficio -->
         <div class="bloque-asunto-oficio">
           <div>
-            <strong>DOCUMENTO:</strong> INFORME EJECUTIVO MENSUAL DE SOLICITUDES DE SERVICIO Y PRODUCTIVIDAD
+            <strong>DOCUMENTO:</strong> REPORTE MENSUAL DE SOLICITUDES DE SERVICIO Y PRODUCTIVIDAD
           </div>
           <div>
             <strong>LUGAR:</strong> Pachuca de Soto, Hgo.
@@ -888,73 +918,6 @@ function cerrar_modal_reporte() {
 
 function imprimir_reporte_pdf() {
   window.print();
-}
-
-function exportar_csv_mensual() {
-  if (!sesion_autorizada || sessionStorage.getItem('itp_sesion_activa_segura') !== token_sesion_seguro) {
-    mostrar_toast('Inicie sesión para exportar datos');
-    return;
-  }
-
-  const lista_mes = obtener_solicitudes_por_mes();
-  if (lista_mes.length === 0) {
-    mostrar_toast('No hay solicitudes en este periodo para exportar');
-    return;
-  }
-
-  const encabezados = [
-    'Folio',
-    'Fecha de Solicitud',
-    'Departamento Solicitante',
-    'Servicio Requerido',
-    'Especificaciones y Descripcion',
-    'Aplica Evento',
-    'Fecha del Evento',
-    'Hora del Evento',
-    'Lugar del Evento',
-    'Responsable Asignado',
-    'Fecha Limite',
-    'Estatus Actual',
-    'Bitacora de Seguimiento'
-  ];
-
-  const escapar_csv = (valor) => {
-    const limpio = String(valor ?? '').replace(/"/g, '""');
-    return `"${limpio}"`;
-  };
-
-  const filas = lista_mes.map(item => {
-    const est = calcular_estado_automatico(item);
-    return [
-      escapar_csv(item.folio),
-      escapar_csv(item.fecha_solicitud),
-      escapar_csv(item.solicitante),
-      escapar_csv(item.servicio),
-      escapar_csv(item.descripcion),
-      escapar_csv(item.aplica_evento ? 'Sí' : 'No'),
-      escapar_csv(item.fecha_evento || 'N/A'),
-      escapar_csv(item.hora_evento || 'N/A'),
-      escapar_csv(item.lugar_evento || 'N/A'),
-      escapar_csv(item.responsable || 'Sin asignar'),
-      escapar_csv(item.fecha_limite || 'Sin asignar'),
-      escapar_csv(est),
-      escapar_csv(item.observaciones || '')
-    ].join(',');
-  });
-
-  const contenido_csv = '\uFEFF' + [encabezados.join(','), ...filas].join('\n');
-  const blob = new Blob([contenido_csv], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-
-  const enlace = document.createElement('a');
-  enlace.href = url;
-  enlace.download = `Reporte_Comunicacion_ITP_${mes_filtro_activo}.csv`;
-  document.body.appendChild(enlace);
-  enlace.click();
-  document.body.removeChild(enlace);
-  URL.revokeObjectURL(url);
-
-  mostrar_toast('Archivo Excel (CSV) descargado');
 }
 
 async function alternar_fecha_limite_manual(index, habilitado) {

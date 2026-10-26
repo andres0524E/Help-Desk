@@ -248,11 +248,11 @@
         </div>
       </div>
 
-      <!-- barra de generación de reportes mensuales -->
+      <!-- barra de generación de reporte mensual (solo pdf) -->
       <div class="barra-reportes-mensuales">
         <div class="reporte-info">
-          <strong><i data-lucide="bar-chart-3" class="icono-inline"></i> Reporte Mensual y Estadísticas del Departamento</strong>
-          <span>Filtra por mes para analizar productividad, áreas solicitantes, servicios demandados y exportar resultados.</span>
+          <strong><i data-lucide="file-text" class="icono-inline"></i> Reporte Mensual</strong>
+          <span>Filtra por mes para consultar y descargar el documento oficial en PDF.</span>
         </div>
         <div class="controles-reporte">
           <select id="selector-mes-reporte" onchange="cambiar_mes_filtro()">
@@ -271,10 +271,7 @@
             <option value="12">Diciembre</option>
           </select>
           <button type="button" class="btn-accion-reporte Primario" onclick="abrir_modal_reporte()">
-            <i data-lucide="file-text" class="icono-inline"></i> Ver Documento Oficial
-          </button>
-          <button type="button" class="btn-accion-reporte Secundario" onclick="exportar_csv_mensual()">
-            <i data-lucide="download" class="icono-inline"></i> Exportar Excel (CSV)
+            <i data-lucide="printer" class="icono-inline"></i> Generar Reporte PDF
           </button>
         </div>
       </div>
@@ -340,20 +337,17 @@
     </div>
   </div>
 
-  <!-- modal de reporte mensual estilo documento físico -->
+  <!-- modal de reporte mensual estilo documento físico (solo pdf) -->
   <div class="modal-fondo oculto" id="modal-reporte">
     <div class="modal-tarjeta-reporte">
       <div class="cabecera-modal-reporte no-imprimir">
         <div>
           <span class="tag-institucional" style="margin-bottom: 0.2rem;">Formato Oficial para Impresión / PDF</span>
-          <h3 id="titulo-mes-reporte">Reporte Mensual de Solicitudes</h3>
+          <h3 id="titulo-mes-reporte">Reporte Mensual</h3>
         </div>
         <div class="acciones-modal-reporte">
           <button type="button" class="btn-accion-reporte Primario" onclick="imprimir_reporte_pdf()">
             <i data-lucide="printer" class="icono-inline"></i> Imprimir / Guardar PDF
-          </button>
-          <button type="button" class="btn-accion-reporte Secundario" onclick="exportar_csv_mensual()">
-            <i data-lucide="download" class="icono-inline"></i> Descargar CSV
           </button>
           <button type="button" class="btn-cerrar-modal-rep" onclick="cerrar_modal_reporte()">✕</button>
         </div>
