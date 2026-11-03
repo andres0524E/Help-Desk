@@ -2,16 +2,941 @@
 <html lang="es">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mesa de Servicio — Depto. de Comunicación y Difusión | ITP</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#1B396A">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Mesa ITP">
+  <title>Mesa de Comunicación y Difusión | ITP</title>
   <link rel="icon" type="image/png" href="img/help-desk.png">
+  <link rel="apple-touch-icon" href="img/help-desk.png">
+  <link rel="manifest" href="manifest.json">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link href="https://api.fontshare.com/v2/css?f[]=ranade@400,500,700&display=swap" rel="stylesheet">
+  
+  <!-- cdns de librerías -->
+  <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
+
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+
   <link rel="stylesheet" href="styles.css">
+  <script>
+    (function() {
+      try {
+        var tema_guardado = localStorage.getItem('itp_tema_preferido');
+        if (tema_guardado === 'oscuro') {
+          document.documentElement.setAttribute('data-tema', 'oscuro');
+        }
+      } catch (e) {}
+    })();
+  </script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- estilos personalizados para tom select, calendario, reloj, selectores de responsable y modales -->
+  <style>
+    .ts-wrapper.single .ts-control {
+      background: #ffffff !important;
+      border: 1.5px solid var(--border-soft, #e2e8f0) !important;
+      border-radius: 12px !important;
+      padding: 0.62rem 2.3rem 0.62rem 1rem !important;
+      font-family: inherit !important;
+      font-size: 0.88rem !important;
+      font-weight: 700 !important;
+      color: var(--itp-blue, #1B396A) !important;
+      box-shadow: 0 2px 6px rgba(15, 23, 42, 0.03) !important;
+      position: relative;
+      cursor: pointer !important;
+      min-width: 215px;
+      user-select: none;
+    }
+    .ts-wrapper.single .ts-control::after {
+      content: "▼";
+      font-size: 0.68rem;
+      color: var(--itp-blue, #1B396A);
+      position: absolute;
+      right: 0.95rem;
+      top: 50%;
+      transform: translateY(-50%);
+      pointer-events: none;
+      opacity: 0.8;
+    }
+    .ts-wrapper.focus .ts-control {
+      border-color: var(--itp-blue, #1B396A) !important;
+      box-shadow: 0 0 0 4px rgba(27, 57, 106, 0.1) !important;
+    }
+    .ts-dropdown {
+      border-radius: 12px !important;
+      border: 1.5px solid var(--border-soft, #e2e8f0) !important;
+      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.14) !important;
+      overflow: hidden;
+      font-family: inherit !important;
+      margin-top: 4px;
+      z-index: 45 !important;
+    }
+    .ts-dropdown .optgroup-header {
+      font-size: 0.73rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--ink-muted, #64748b);
+      background: #f8fafc;
+      padding: 6px 10px;
+    }
+    .ts-dropdown .active,
+    .ts-dropdown .option:hover {
+      background-color: var(--itp-blue, #1B396A) !important;
+      color: #ffffff !important;
+    }
+
+    /* ajuste compacto para el menú desplegable de responsable dentro de las tarjetas */
+    .fila-responsable-acciones {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      width: 100%;
+    }
+    .fila-responsable-acciones .ts-wrapper {
+      flex: 1;
+      min-width: 0 !important;
+    }
+    .fila-responsable-acciones .ts-wrapper.single .ts-control {
+      min-width: 0 !important;
+      width: 100% !important;
+      padding: 0.56rem 2.1rem 0.56rem 0.85rem !important;
+      font-size: 0.85rem !important;
+      border-radius: 10px !important;
+    }
+
+    /* bloque manual cuando se elige chico(a) de servicio */
+    .caja-servicio-social-manual {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      margin-top: 0.5rem;
+      animation: entrada_suave 0.22s ease;
+    }
+    .caja-servicio-social-manual input {
+      flex: 1;
+      background: #ffffff !important;
+      border: 1.5px solid var(--border-soft, #e2e8f0) !important;
+      border-radius: 9px !important;
+      padding: 0.48rem 0.75rem !important;
+      font-size: 0.83rem !important;
+      font-weight: 600;
+      color: var(--ink-main, #0f172a);
+    }
+    .caja-servicio-social-manual input:focus {
+      border-color: var(--itp-blue, #1B396A) !important;
+      box-shadow: 0 0 0 3px rgba(27, 57, 106, 0.1) !important;
+    }
+    .btn-confirmar-ss {
+      background: var(--itp-blue, #1B396A);
+      color: #ffffff;
+      border: none;
+      border-radius: 9px;
+      padding: 0.5rem 0.85rem;
+      font-family: inherit;
+      font-size: 0.78rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+    }
+    .btn-confirmar-ss:hover {
+      background: var(--itp-blue-hover, #12274b);
+      transform: translateY(-1px);
+    }
+    .btn-confirmar-ss svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    /* botón rápido para reenviar aviso por whatsapp al responsable */
+    .btn-notificar-wa {
+      background: #ecfdf5;
+      color: #15803d;
+      border: 1.5px solid #bbf7d0;
+      height: 38px;
+      padding: 0 0.75rem;
+      border-radius: 10px;
+      font-family: inherit;
+      font-size: 0.78rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.35rem;
+      flex-shrink: 0;
+      transition: all 0.2s ease;
+    }
+    .btn-notificar-wa:hover {
+      background: #16a34a;
+      color: #ffffff;
+      border-color: #16a34a;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(22, 163, 74, 0.22);
+    }
+    .btn-notificar-wa svg {
+      width: 15px;
+      height: 15px;
+    }
+
+    /* contenedor del input de fecha y hora con icono fijo */
+    .contenedor-input-calendario {
+      position: relative;
+      display: flex;
+      align-items: center;
+      width: 100%;
+    }
+    .contenedor-input-calendario input.input-fecha-con-icono,
+    .contenedor-input-calendario input.form-control {
+      width: 100% !important;
+      background: #f8fafc !important;
+      border: 1.5px solid var(--border-soft, #e2e8f0) !important;
+      border-radius: 11px !important;
+      padding: 0.82rem 2.6rem 0.82rem 1rem !important;
+      font-family: inherit !important;
+      font-size: 0.92rem !important;
+      color: var(--ink-main, #0f172a) !important;
+      cursor: pointer !important;
+      outline: none !important;
+      transition: all 0.2s var(--ease-fluid);
+    }
+    .contenedor-input-calendario input.input-fecha-con-icono::placeholder,
+    .contenedor-input-calendario input.form-control::placeholder {
+      color: var(--ink-main, #0f172a) !important;
+      opacity: 0.85;
+    }
+    .contenedor-input-calendario input.input-fecha-con-icono:focus,
+    .contenedor-input-calendario input.form-control:focus {
+      background: #ffffff !important;
+      border-color: var(--itp-accent, #0077b6) !important;
+      box-shadow: 0 0 0 4px rgba(0, 119, 182, 0.12) !important;
+    }
+    .icono-calendario-fijo {
+      position: absolute;
+      right: 0.95rem;
+      width: 18px;
+      height: 18px;
+      color: var(--ink-main, #0f172a);
+      pointer-events: none;
+      opacity: 0.85;
+    }
+
+    /* =====================================================================
+       rediseño uniforme, centrado y tamaño mediano del calendario flatpickr
+       ===================================================================== */
+    .flatpickr-calendar {
+      width: 284px !important;
+      background: #ffffff !important;
+      border-radius: 16px !important;
+      box-shadow: 0 14px 34px rgba(15, 23, 42, 0.16) !important;
+      border: 1px solid var(--border-soft, #e2e8f0) !important;
+      font-family: 'Nunito', sans-serif !important;
+      padding: 10px !important;
+      box-sizing: border-box !important;
+    }
+    .flatpickr-calendar::before,
+    .flatpickr-calendar::after {
+      display: none !important;
+    }
+
+    .flatpickr-months {
+      background: var(--itp-blue, #1B396A) !important;
+      border-radius: 11px !important;
+      height: 42px !important;
+      padding: 0 6px !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: space-between !important;
+      position: relative !important;
+      margin-bottom: 8px !important;
+    }
+
+    .flatpickr-months .flatpickr-prev-month,
+    .flatpickr-months .flatpickr-next-month {
+      position: static !important;
+      height: 30px !important;
+      width: 30px !important;
+      padding: 0 !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      border-radius: 8px !important;
+      color: #ffffff !important;
+      fill: #ffffff !important;
+      transition: background 0.2s ease !important;
+      flex-shrink: 0 !important;
+    }
+    .flatpickr-months .flatpickr-prev-month:hover,
+    .flatpickr-months .flatpickr-next-month:hover {
+      background: rgba(255, 255, 255, 0.16) !important;
+    }
+    .flatpickr-months .flatpickr-prev-month svg,
+    .flatpickr-months .flatpickr-next-month svg {
+      width: 13px !important;
+      height: 13px !important;
+      fill: #ffffff !important;
+    }
+
+    .flatpickr-months .flatpickr-month {
+      background: transparent !important;
+      color: #ffffff !important;
+      flex: 1 !important;
+      height: 100% !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      overflow: visible !important;
+    }
+    .flatpickr-current-month {
+      position: static !important;
+      width: auto !important;
+      height: auto !important;
+      padding: 0 !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      gap: 6px !important;
+      font-size: 0.92rem !important;
+      color: #ffffff !important;
+    }
+
+    .flatpickr-current-month .flatpickr-monthDropdown-months {
+      background-color: rgba(255, 255, 255, 0.14) !important;
+      color: #ffffff !important;
+      font-family: 'Nunito', sans-serif !important;
+      font-size: 0.88rem !important;
+      font-weight: 700 !important;
+      border-radius: 7px !important;
+      padding: 3px 8px !important;
+      margin: 0 !important;
+      border: 1px solid rgba(255, 255, 255, 0.25) !important;
+      outline: none !important;
+      cursor: pointer !important;
+      height: 28px !important;
+      line-height: 1.2 !important;
+    }
+    .flatpickr-current-month .flatpickr-monthDropdown-months:hover {
+      background-color: rgba(255, 255, 255, 0.22) !important;
+    }
+    .flatpickr-current-month .flatpickr-monthDropdown-months option {
+      background-color: var(--itp-blue, #1B396A) !important;
+      color: #ffffff !important;
+      font-weight: 600 !important;
+    }
+
+    .flatpickr-current-month .numInputWrapper {
+      width: 54px !important;
+      height: 28px !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      border-radius: 7px !important;
+      background: rgba(255, 255, 255, 0.14) !important;
+      border: 1px solid rgba(255, 255, 255, 0.25) !important;
+      padding: 0 4px !important;
+    }
+    .flatpickr-current-month input.cur-year {
+      color: #ffffff !important;
+      font-family: 'Nunito', sans-serif !important;
+      font-size: 0.88rem !important;
+      font-weight: 700 !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      height: 100% !important;
+      text-align: center !important;
+    }
+    .flatpickr-current-month .numInputWrapper span.arrowUp:after {
+      border-bottom-color: #ffffff !important;
+    }
+    .flatpickr-current-month .numInputWrapper span.arrowDown:after {
+      border-top-color: #ffffff !important;
+    }
+
+    .flatpickr-innerContainer,
+    .flatpickr-rContainer {
+      width: 100% !important;
+      display: block !important;
+    }
+    .flatpickr-weekdays {
+      width: 100% !important;
+      height: 26px !important;
+      display: flex !important;
+      align-items: center !important;
+      margin-bottom: 4px !important;
+    }
+    .flatpickr-weekdaycontainer {
+      width: 100% !important;
+      display: grid !important;
+      grid-template-columns: repeat(7, 1fr) !important;
+      text-align: center !important;
+    }
+    span.flatpickr-weekday {
+      color: var(--itp-blue, #1B396A) !important;
+      font-weight: 700 !important;
+      font-size: 0.74rem !important;
+      text-transform: capitalize !important;
+    }
+
+    .flatpickr-days {
+      width: 100% !important;
+      border: none !important;
+    }
+    .dayContainer {
+      width: 100% !important;
+      min-width: 100% !important;
+      max-width: 100% !important;
+      display: grid !important;
+      grid-template-columns: repeat(7, 1fr) !important;
+      gap: 2px !important;
+      padding: 0 !important;
+    }
+    .flatpickr-day {
+      width: 100% !important;
+      max-width: none !important;
+      height: 33px !important;
+      line-height: 33px !important;
+      margin: 0 !important;
+      font-size: 0.82rem !important;
+      font-weight: 600 !important;
+      color: var(--ink-main, #0f172a) !important;
+      border-radius: 8px !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+    }
+    .flatpickr-day.prevMonthDay,
+    .flatpickr-day.nextMonthDay {
+      color: #cbd5e1 !important;
+      font-weight: 500 !important;
+    }
+    .flatpickr-day:hover {
+      background: #eef2f6 !important;
+      border-color: transparent !important;
+    }
+    .flatpickr-day.today {
+      border: 1.5px solid var(--itp-accent, #0077b6) !important;
+      color: var(--itp-accent, #0077b6) !important;
+      font-weight: 700 !important;
+    }
+    .flatpickr-day.selected, 
+    .flatpickr-day.startRange, 
+    .flatpickr-day.endRange {
+      background: var(--itp-blue, #1B396A) !important;
+      border-color: var(--itp-blue, #1B396A) !important;
+      color: #ffffff !important;
+      font-weight: 700 !important;
+      box-shadow: 0 3px 8px rgba(27, 57, 106, 0.25) !important;
+    }
+
+    /* =====================================================================
+       selector de hora circular interactivo
+       ===================================================================== */
+    .tarjeta-reloj-material {
+      background: #ffffff;
+      width: 315px;
+      border-radius: 20px;
+      padding: 1.4rem 1.5rem 1.25rem;
+      box-shadow: 0 24px 55px rgba(15, 23, 42, 0.28);
+      border: 1px solid var(--border-soft, #e2e8f0);
+      user-select: none;
+      animation: entrada_suave 0.22s ease;
+    }
+    .reloj-titulo-sup {
+      display: block;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #64748b;
+      margin-bottom: 1rem;
+      text-align: left;
+    }
+    .reloj-cabecera-digital {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      margin-bottom: 1.45rem;
+    }
+    .reloj-caja-digito {
+      width: 86px;
+      height: 74px;
+      background: #e9ecf2;
+      color: #1e293b;
+      border: none;
+      border-radius: 11px;
+      font-family: 'Nunito', sans-serif;
+      font-size: 2.65rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .reloj-caja-digito.activo {
+      background: var(--itp-blue, #1B396A);
+      color: #ffffff;
+      box-shadow: 0 6px 16px rgba(27, 57, 106, 0.25);
+    }
+    .reloj-dos-puntos {
+      font-size: 2.3rem;
+      font-weight: 700;
+      color: #1e293b;
+      line-height: 1;
+      padding: 0 0.05rem;
+    }
+    .reloj-selector-ampm {
+      display: flex;
+      flex-direction: column;
+      height: 74px;
+      width: 52px;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 10px;
+      overflow: hidden;
+      margin-left: 0.35rem;
+    }
+    .btn-ampm {
+      flex: 1;
+      border: none;
+      background: #ffffff;
+      color: #64748b;
+      font-family: 'Nunito', sans-serif;
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.18s ease;
+    }
+    .btn-ampm:first-child {
+      border-bottom: 1px solid #cbd5e1;
+    }
+    .btn-ampm.activo {
+      background: var(--itp-blue, #1B396A);
+      color: #ffffff;
+    }
+    .reloj-esfera-contenedor {
+      width: 236px;
+      height: 236px;
+      background: #e9ecf2;
+      border-radius: 50%;
+      margin: 0 auto 1.35rem;
+      position: relative;
+      cursor: pointer;
+      touch-action: none;
+    }
+    .reloj-centro-punto {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 8px;
+      height: 8px;
+      background: var(--itp-blue, #1B396A);
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 3;
+    }
+    .reloj-manecilla {
+      position: absolute;
+      bottom: 50%;
+      left: calc(50% - 1px);
+      width: 2px;
+      height: 86px;
+      background: var(--itp-blue, #1B396A);
+      transform-origin: bottom center;
+      z-index: 2;
+      pointer-events: none;
+      transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .reloj-numeros-capa {
+      position: absolute;
+      inset: 0;
+      z-index: 4;
+      pointer-events: none;
+    }
+    .reloj-num-item {
+      position: absolute;
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.98rem;
+      font-weight: 600;
+      color: #0f172a;
+      transform: translate(-50%, -50%);
+      transition: background 0.18s ease, color 0.18s ease;
+    }
+    .reloj-num-item.seleccionado {
+      background: var(--itp-blue, #1B396A);
+      color: #ffffff;
+      box-shadow: 0 3px 10px rgba(27, 57, 106, 0.3);
+    }
+    .reloj-acciones-pie {
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      padding-top: 0.2rem;
+    }
+    .btn-reloj-accion {
+      background: transparent;
+      border: none;
+      color: var(--itp-blue, #1B396A);
+      font-family: 'Nunito', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 700;
+      padding: 0.45rem 0.9rem;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+    .btn-reloj-accion:hover {
+      background: rgba(27, 57, 106, 0.08);
+    }
+
+    /* =====================================================================
+       diseño unificado de advertencias sweetalert2 (acorde al calendario y reloj)
+       ===================================================================== */
+    .swal2-popup {
+      border-radius: 22px !important;
+      padding: 1.85rem 1.75rem 1.65rem !important;
+      font-family: 'Nunito', sans-serif !important;
+      border: 1px solid var(--border-soft, #e2e8f0) !important;
+      box-shadow: 0 24px 55px rgba(15, 23, 42, 0.26) !important;
+      max-width: 440px !important;
+    }
+    .swal2-title {
+      font-family: 'Ranade', sans-serif !important;
+      color: var(--itp-blue, #1B396A) !important;
+      font-size: 1.35rem !important;
+      font-weight: 700 !important;
+      padding: 0 !important;
+      margin-bottom: 0.5rem !important;
+    }
+    .swal2-html-container {
+      margin: 0 !important;
+      padding: 0 !important;
+      color: var(--ink-main, #0f172a) !important;
+      font-size: 0.94rem !important;
+      line-height: 1.55 !important;
+    }
+
+    .alerta-icono-minimal {
+      width: 68px;
+      height: 68px;
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 1.15rem;
+    }
+    .alerta-icono-minimal.ambar {
+      background: #fff8eb;
+      color: #d97706;
+      border: 2px solid #fde68a;
+      box-shadow: 0 8px 20px rgba(217, 119, 6, 0.12);
+    }
+    .alerta-icono-minimal.rojo {
+      background: #fef2f2;
+      color: #dc2626;
+      border: 2px solid #fecaca;
+      box-shadow: 0 8px 20px rgba(220, 38, 38, 0.12);
+    }
+    .alerta-icono-minimal.verde {
+      background: #f0fdf4;
+      color: #16a34a;
+      border: 2px solid #bbf7d0;
+      box-shadow: 0 8px 20px rgba(22, 163, 74, 0.12);
+    }
+    .alerta-icono-minimal svg {
+      width: 36px;
+      height: 36px;
+    }
+
+    .alerta-tag-sup {
+      display: inline-block;
+      font-family: 'Ranade', sans-serif;
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: 0.25rem 0.75rem;
+      border-radius: 999px;
+      background: #f1f5f9;
+      color: var(--itp-blue, #1B396A);
+      margin-bottom: 0.55rem;
+    }
+    .alerta-titulo-custom {
+      font-family: 'Ranade', sans-serif;
+      font-size: 1.38rem;
+      font-weight: 700;
+      color: var(--itp-blue, #1B396A);
+      margin-bottom: 0.75rem;
+      line-height: 1.2;
+    }
+    .alerta-cuerpo-custom {
+      font-size: 0.94rem;
+      color: #475569;
+      line-height: 1.6;
+      margin-bottom: 0.25rem;
+    }
+    .alerta-pregunta-resaltada {
+      display: block;
+      margin-top: 0.55rem;
+      color: var(--itp-blue, #1B396A);
+      font-weight: 700;
+      font-size: 0.96rem;
+    }
+
+    .swal2-input {
+      height: 44px !important;
+      border-radius: 11px !important;
+      border: 1.5px solid var(--border-soft, #e2e8f0) !important;
+      background: #f8fafc !important;
+      font-family: 'Ranade', sans-serif !important;
+      font-size: 0.95rem !important;
+      font-weight: 700 !important;
+      text-align: center !important;
+      letter-spacing: 0.06em !important;
+      color: var(--ink-main, #0f172a) !important;
+      margin: 1rem auto 0.25rem !important;
+      width: 100% !important;
+      box-shadow: none !important;
+    }
+    .swal2-input:focus {
+      background: #ffffff !important;
+      border-color: var(--itp-blue, #1B396A) !important;
+      box-shadow: 0 0 0 4px rgba(27, 57, 106, 0.1) !important;
+    }
+
+    .swal2-actions {
+      margin-top: 1.35rem !important;
+      gap: 0.65rem !important;
+      width: 100% !important;
+    }
+    .swal2-styled.swal2-confirm,
+    .swal2-styled.swal2-cancel {
+      border-radius: 11px !important;
+      font-family: 'Nunito', sans-serif !important;
+      font-size: 0.88rem !important;
+      font-weight: 700 !important;
+      padding: 0.72rem 1.25rem !important;
+      margin: 0 !important;
+      box-shadow: none !important;
+      transition: transform 0.18s ease, filter 0.18s ease !important;
+    }
+    .swal2-styled.swal2-confirm:hover,
+    .swal2-styled.swal2-cancel:hover {
+      transform: translateY(-1px);
+      filter: brightness(1.05);
+    }
+
+    /* =====================================================================
+       centro de notificaciones estilo ios (glassmorphism + spring)
+       ===================================================================== */
+    .contenedor-notificaciones-ios {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+    }
+    .btn-campana-ios {
+      position: relative;
+      width: 40px;
+      height: 40px;
+      border-radius: 999px;
+      border: 1px solid var(--border-soft, #e2e8f0);
+      background: #eef2f6;
+      color: var(--itp-blue, #1B396A);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .btn-campana-ios:hover {
+      background: #ffffff;
+      border-color: var(--itp-blue, #1B396A);
+      transform: scale(1.06);
+      box-shadow: 0 4px 12px rgba(27, 57, 106, 0.12);
+    }
+    .btn-campana-ios svg {
+      width: 18px;
+      height: 18px;
+    }
+    .badge-notificaciones-ios {
+      position: absolute;
+      top: -4px;
+      right: -4px;
+      min-width: 19px;
+      height: 19px;
+      padding: 0 5px;
+      background: #ff3b30;
+      color: #ffffff;
+      font-size: 0.68rem;
+      font-weight: 800;
+      border-radius: 999px;
+      border: 2px solid #ffffff;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 6px rgba(255, 59, 48, 0.45);
+      animation: pulso_badge_ios 2s infinite ease-in-out;
+    }
+    @keyframes pulso_badge_ios {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+    }
+    .popover-notificaciones-ios {
+      position: absolute;
+      top: calc(100% + 12px);
+      right: 0;
+      width: 350px;
+      max-width: 92vw;
+      background: rgba(255, 255, 255, 0.88);
+      backdrop-filter: blur(25px) saturate(190%);
+      -webkit-backdrop-filter: blur(25px) saturate(190%);
+      border: 1px solid rgba(255, 255, 255, 0.75);
+      border-radius: 24px;
+      box-shadow: 0 22px 48px rgba(15, 23, 42, 0.2), 0 0 0 1px rgba(15, 23, 42, 0.05);
+      z-index: 95;
+      overflow: hidden;
+      transform-origin: top right;
+      animation: abrir_popover_ios 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    @keyframes abrir_popover_ios {
+      from {
+        opacity: 0;
+        transform: scale(0.9) translateY(-8px);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+      }
+    }
+    .cabecera-popover-ios {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.95rem 1.15rem;
+      border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+      background: rgba(248, 250, 252, 0.65);
+    }
+    .titulo-popover-ios {
+      font-family: 'Ranade', sans-serif;
+      font-size: 0.92rem;
+      font-weight: 700;
+      color: var(--ink-main, #0f172a);
+      display: block;
+    }
+    .subtitulo-popover-ios {
+      font-size: 0.73rem;
+      color: var(--ink-muted, #64748b);
+      display: block;
+    }
+    .pildora-conteo-ios {
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: var(--itp-blue, #1B396A);
+      background: rgba(27, 57, 106, 0.1);
+      padding: 0.22rem 0.65rem;
+      border-radius: 999px;
+    }
+    .lista-notificaciones-ios {
+      max-height: 360px;
+      overflow-y: auto;
+      padding: 0.65rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.55rem;
+    }
+    .tarjeta-notif-ios {
+      background: rgba(255, 255, 255, 0.92);
+      border: 1px solid rgba(226, 232, 240, 0.9);
+      border-radius: 16px;
+      padding: 0.75rem 0.9rem;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03);
+    }
+    .tarjeta-notif-ios:hover {
+      background: #ffffff;
+      transform: translateY(-2px) scale(1.01);
+      border-color: rgba(0, 119, 182, 0.35);
+      box-shadow: 0 8px 18px rgba(27, 57, 106, 0.09);
+    }
+    .notif-ios-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.25rem;
+    }
+    .notif-ios-folio {
+      font-family: 'Ranade', monospace;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: #ffffff;
+      background: var(--itp-blue, #1B396A);
+      padding: 0.12rem 0.5rem;
+      border-radius: 6px;
+    }
+    .notif-ios-fecha {
+      font-size: 0.7rem;
+      color: var(--ink-muted, #64748b);
+      font-weight: 600;
+    }
+    .notif-ios-servicio {
+      font-family: 'Ranade', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--itp-blue, #1B396A);
+      line-height: 1.25;
+      margin-bottom: 0.15rem;
+    }
+    .notif-ios-depto {
+      font-size: 0.78rem;
+      color: var(--ink-main, #0f172a);
+      font-weight: 600;
+      margin-bottom: 0.35rem;
+    }
+    .notif-ios-accion {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--itp-accent, #0077b6);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+    .notif-ios-vacio {
+      text-align: center;
+      padding: 1.8rem 1rem;
+      color: var(--ink-muted, #64748b);
+      font-size: 0.83rem;
+    }
+    .notif-ios-vacio svg {
+      width: 28px;
+      height: 28px;
+      color: #16a34a;
+      margin-bottom: 0.35rem;
+    }
+    @keyframes resaltar_ticket_ios {
+      0%, 100% { box-shadow: 0 4px 15px rgba(15, 23, 42, 0.025); }
+      40% { box-shadow: 0 0 0 4px rgba(0, 119, 182, 0.35), 0 12px 28px rgba(27, 57, 106, 0.15); }
+    }
+    .ticket-resaltado-notif {
+      animation: resaltar_ticket_ios 1.8s ease;
+    }
+  </style>
 </head>
 <body>
   <!-- creado por ajcr -->
@@ -40,6 +965,30 @@
             <span>Panel Interno (<span id="contador-tickets">0</span>)</span>
           </button>
         </div>
+
+        <!-- botón de modo oscuro / claro estilo ios liquid glass y centro de notificaciones -->
+        <button type="button" class="btn-tema-ios" id="btn-tema-ios" onclick="alternar_modo_oscuro()" title="Cambiar modo oscuro / claro">
+          <i data-lucide="moon" id="icono-tema-ios"></i>
+        </button>
+
+        <!-- centro de notificaciones estilo ios -->
+        <div class="contenedor-notificaciones-ios" id="contenedor-notificaciones-ios">
+          <button type="button" class="btn-campana-ios" id="btn-campana-ios" onclick="alternar_notificaciones_ios(event)" title="Solicitudes nuevas sin asignar">
+            <i data-lucide="bell"></i>
+            <span class="badge-notificaciones-ios oculto" id="badge-notificaciones-ios">0</span>
+          </button>
+
+          <div class="popover-notificaciones-ios oculto" id="popover-notificaciones-ios">
+            <div class="cabecera-popover-ios">
+              <div>
+                <span class="titulo-popover-ios">Notificaciones</span>
+                <span class="subtitulo-popover-ios">Solicitudes nuevas sin responsable</span>
+              </div>
+              <span class="pildora-conteo-ios" id="pildora-conteo-ios">0 nuevas</span>
+            </div>
+            <div class="lista-notificaciones-ios" id="lista-notificaciones-ios"></div>
+          </div>
+        </div>
       </div>
     </div>
   </header>
@@ -53,7 +1002,7 @@
             <span class="pulso-tag"></span>
             Gestión Oficial de Solicitudes
           </span>
-          <h1>Mesa de Servicio <em>Académica</em></h1>
+          <h1>Mesa de <em>Comunicación y Difusión</em></h1>
           <p class="hero-desc">Sistema centralizado para la planeación, diseño y difusión de actividades institucionales del ITP.</p>
         </div>
         <div class="meta-automatica">
@@ -90,10 +1039,10 @@
           <span class="seccion-label">01 / Seleccione el servicio requerido</span>
           
           <div class="grid-catalogo" id="contenedor-catalogo">
-            <div class="tarjeta-servicio seleccionada" style="--delay: 0.05s" onclick="seleccionar_servicio(this, 'Diseño de material gráfico')">
+            <div class="tarjeta-servicio seleccionada" style="--delay: 0.05s" onclick="seleccionar_servicio(this, 'Diseño e impresión de material gráfico')">
               <div class="tarjeta-brillo"></div>
               <span class="icono"><i data-lucide="palette"></i></span>
-              <span class="nombre">Diseño de material gráfico</span>
+              <span class="nombre">Diseño e impresión de material gráfico</span>
               <span class="etiqueta-evento">Carteles, banners, infografías</span>
             </div>
 
@@ -131,6 +1080,13 @@
               <span class="nombre">Campañas institucionales</span>
               <span class="etiqueta-evento">Estrategia integral</span>
             </div>
+
+            <div class="tarjeta-servicio" style="--delay: 0.35s" onclick="seleccionar_servicio(this, 'Otro servicio')">
+              <div class="tarjeta-brillo"></div>
+              <span class="icono"><i data-lucide="plus-circle"></i></span>
+              <span class="nombre">Otro servicio</span>
+              <span class="etiqueta-evento">Solicitudes especiales o adicionales</span>
+            </div>
           </div>
         </div>
 
@@ -142,13 +1098,15 @@
           <div class="resumen-seleccion">
             <i data-lucide="check-circle-2" class="icono-inline"></i>
             <span>Servicio seleccionado:</span>
-            <strong id="texto-servicio-elegido">Diseño de material gráfico</strong>
+            <strong id="texto-servicio-elegido">Diseño e impresión de material gráfico</strong>
           </div>
 
           <div class="fila-campos">
             <div class="campo">
               <label>Departamento o Área académica del ITP</label>
-              <input type="text" id="solicitante" placeholder="Ej. Dpto. Comunicación y Difusión" required>
+              <select id="solicitante" required>
+                <option value="Comunicación y Difusión" selected>Comunicación y Difusión</option>
+              </select>
             </div>
             <div class="campo">
               <label id="label-especifico">Formato y medidas requeridas</label>
@@ -175,15 +1133,23 @@
                 <div class="fila-campos" style="margin-bottom: 0;">
                   <div class="campo">
                     <label>Fecha del evento</label>
-                    <input type="date" id="fecha-evento" required>
+                    <div class="contenedor-input-calendario">
+                      <input type="text" id="fecha-evento" class="input-fecha-con-icono" placeholder="dd/mm/aaaa">
+                      <i data-lucide="calendar" class="icono-calendario-fijo"></i>
+                    </div>
                   </div>
                   <div class="campo">
                     <label>Hora del evento</label>
-                    <input type="time" id="hora-evento" required>
+                    <div class="contenedor-input-calendario" onclick="abrir_reloj_circular('hora-evento')">
+                      <input type="text" id="hora-evento" class="input-fecha-con-icono input-reloj-personalizado" placeholder="--:--" readonly>
+                      <i data-lucide="clock" class="icono-calendario-fijo"></i>
+                    </div>
                   </div>
                   <div class="campo">
-                    <label>Lugar dentro del instituto</label>
-                    <input type="text" id="lugar-evento" placeholder="Ej. Sala Audiovisual / Auditorio" required>
+                    <label>Sitio a designar</label>
+                    <select id="lugar-evento">
+                      <option value="Gimnasio Olímpico" selected>Gimnasio Olímpico</option>
+                    </select>
                   </div>
                 </div>
               </div>
@@ -248,27 +1214,33 @@
         </div>
       </div>
 
-      <!-- barra de generación de reporte mensual (solo pdf) -->
+      <!-- barra de generación de reporte mensual y semestral -->
       <div class="barra-reportes-mensuales">
         <div class="reporte-info">
           <strong><i data-lucide="file-text" class="icono-inline"></i> Reporte Mensual</strong>
-          <span>Filtra por mes para consultar y descargar el documento oficial en PDF.</span>
+          <span>Filtra por periodo para consultar y descargar el documento oficial en PDF.</span>
         </div>
         <div class="controles-reporte">
           <select id="selector-mes-reporte" onchange="cambiar_mes_filtro()">
-            <option value="todos">Todos los meses (Histórico)</option>
-            <option value="01">Enero</option>
-            <option value="02">Febrero</option>
-            <option value="03">Marzo</option>
-            <option value="04">Abril</option>
-            <option value="05">Mayo</option>
-            <option value="06">Junio</option>
-            <option value="07">Julio</option>
-            <option value="08">Agosto</option>
-            <option value="09">Septiembre</option>
-            <option value="10">Octubre</option>
-            <option value="11">Noviembre</option>
-            <option value="12">Diciembre</option>
+            <option value="todos">Todo el Histórico</option>
+            <optgroup label="Reportes Semestrales">
+              <option value="sem-1">Semestre Ene – Jun</option>
+              <option value="sem-2">Semestre Jul – Dic</option>
+            </optgroup>
+            <optgroup label="Reportes Mensuales">
+              <option value="01">Enero</option>
+              <option value="02">Febrero</option>
+              <option value="03">Marzo</option>
+              <option value="04">Abril</option>
+              <option value="05">Mayo</option>
+              <option value="06">Junio</option>
+              <option value="07">Julio</option>
+              <option value="08">Agosto</option>
+              <option value="09">Septiembre</option>
+              <option value="10">Octubre</option>
+              <option value="11">Noviembre</option>
+              <option value="12">Diciembre</option>
+            </optgroup>
           </select>
           <button type="button" class="btn-accion-reporte Primario" onclick="abrir_modal_reporte()">
             <i data-lucide="printer" class="icono-inline"></i> Generar Reporte PDF
@@ -303,8 +1275,34 @@
     <i data-lucide="arrow-up"></i>
   </button>
 
-  <!-- contenedor de notificaciones toast estilo sonner -->
-  <div id="contenedor-toasts" class="contenedor-toasts"></div>
+  <div id="contenedor-toasts" class="oculto"></div>
+
+  <!-- modal del selector de hora circular interactivo -->
+  <div class="modal-fondo oculto" id="modal-reloj-circular" onclick="if(event.target === this) cerrar_reloj_circular()">
+    <div class="tarjeta-reloj-material">
+      <span class="reloj-titulo-sup">Seleccione la hora</span>
+      <div class="reloj-cabecera-digital">
+        <button type="button" class="reloj-caja-digito activo" id="reloj-btn-hora" onclick="cambiar_modo_reloj('horas')">12</button>
+        <span class="reloj-dos-puntos">:</span>
+        <button type="button" class="reloj-caja-digito" id="reloj-btn-minuto" onclick="cambiar_modo_reloj('minutos')">00</button>
+        <div class="reloj-selector-ampm">
+          <button type="button" class="btn-ampm" id="reloj-btn-am" onclick="seleccionar_ampm_reloj('AM')">A.M.</button>
+          <button type="button" class="btn-ampm activo" id="reloj-btn-pm" onclick="seleccionar_ampm_reloj('PM')">P.M.</button>
+        </div>
+      </div>
+
+      <div class="reloj-esfera-contenedor" id="reloj-esfera-interactiva">
+        <div class="reloj-centro-punto"></div>
+        <div class="reloj-manecilla" id="reloj-aguja-linea"></div>
+        <div class="reloj-numeros-capa" id="reloj-capa-numeros"></div>
+      </div>
+
+      <div class="reloj-acciones-pie">
+        <button type="button" class="btn-reloj-accion" onclick="cerrar_reloj_circular()">Cancelar</button>
+        <button type="button" class="btn-reloj-accion" onclick="confirmar_reloj_circular()">DE ACUERDO</button>
+      </div>
+    </div>
+  </div>
 
   <!-- modal de éxito al enviar -->
   <div class="modal-fondo oculto" id="modal-exito">
@@ -337,13 +1335,13 @@
     </div>
   </div>
 
-  <!-- modal de reporte mensual estilo documento físico (solo pdf) -->
+  <!-- modal de reporte oficial (solo pdf) -->
   <div class="modal-fondo oculto" id="modal-reporte">
     <div class="modal-tarjeta-reporte">
       <div class="cabecera-modal-reporte no-imprimir">
         <div>
           <span class="tag-institucional" style="margin-bottom: 0.2rem;">Formato Oficial para Impresión / PDF</span>
-          <h3 id="titulo-mes-reporte">Reporte Mensual</h3>
+          <h3 id="titulo-mes-reporte">Reporte Oficial</h3>
         </div>
         <div class="acciones-modal-reporte">
           <button type="button" class="btn-accion-reporte Primario" onclick="imprimir_reporte_pdf()">
@@ -356,6 +1354,17 @@
       <div id="contenido-imprimible-reporte" class="cuerpo-reporte-ejecutivo"></div>
     </div>
   </div>
+
+  <!-- filtro svg oculto para efectos liquid morph (ios liquid glass) -->
+  <svg width="0" height="0" style="position: absolute; width: 0; height: 0; pointer-events: none; overflow: hidden;" aria-hidden="true">
+    <defs>
+      <filter id="liquid-morph-filter" color-interpolation-filters="sRGB">
+        <feGaussianBlur in="SourceGraphic" stdDeviation="8" result="blur" />
+        <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 20 -9" result="liquid" />
+        <feComposite in="SourceGraphic" in2="liquid" operator="atop" />
+      </filter>
+    </defs>
+  </svg>
 
   <script src="app.js"></script>
 </body>

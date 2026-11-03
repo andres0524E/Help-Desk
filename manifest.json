@@ -1,0 +1,15 @@
+{
+  "name": "Mesa de Comunicación y Difusión ITP",
+  "short_name": "Mesa ITP",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#f4f7fb",
+  "theme_color": "#1B396A",
+  "icons": [
+    {
+      "src": "img/help-desk.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ]
+}

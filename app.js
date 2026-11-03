@@ -7,20 +7,82 @@ const pin_departamento = '2026';
 // token de seguridad interno para validar la sesión de forma robusta
 const token_sesion_seguro = 'itp_comunicacion_token_autenticado_2026';
 
+// configuración de correos y números de prueba para notificaciones
+const correo_notificaciones_prueba = 'andres.0524e@gmail.com';
+// pega aquí la url de implementación web de google apps script (Avisos.MesaCD@gmail.com)
+const google_script_deployment_id = 'AKfycby2SE_6wEIYEspg1GO1MOhQFivz9oVjeuFWERLDFcLafzFk00JnTPkX4vNc6AsQNiQliw';
+const endpoint_google_script = 'https://script.google.com/macros/s/AKfycby2SE_6wEIYEspg1GO1MOhQFivz9oVjeuFWERLDFcLafzFk00JnTPkX4vNc6AsQNiQliw/exec';
+const telefono_prueba_general = '5217713908178';
+const telefono_prueba_yessica = '5217711622228';
+
+// directorio de responsables del departamento de comunicación y difusión
+const catalogo_responsables = {
+  'Sin asignar': {
+    correo: '',
+    telefono: ''
+  },
+  'Karla': {
+    correo: correo_notificaciones_prueba,
+    telefono: telefono_prueba_general
+  },
+  'Juan': {
+    correo: correo_notificaciones_prueba,
+    telefono: telefono_prueba_general
+  },
+  'Lina': {
+    correo: correo_notificaciones_prueba,
+    telefono: telefono_prueba_general
+  },
+  'Yessica': {
+    correo: correo_notificaciones_prueba,
+    telefono: telefono_prueba_yessica
+  },
+  'Chico(a) de servicio': {
+    correo: correo_notificaciones_prueba,
+    telefono: telefono_prueba_general
+  }
+};
+
+// credenciales integradas de emailjs
+const emailjs_public_key = 'ziihGrLOHnbPKFenK';
+const emailjs_service_id = 'service_6yoeb1m';
+const emailjs_template_id = 'template_geruv36';
+
 const usar_nube = supabase_url.startsWith('https://') && supabase_key.length > 20;
 const cliente_db = usar_nube ? window.supabase.createClient(supabase_url, supabase_key) : null;
 
-let servicio_actual = 'Diseño de material gráfico';
+let servicio_actual = 'Diseño e impresión de material gráfico';
 let aplica_evento = true;
 let solicitudes = [];
 let filtro_activo = 'todos';
-let mes_filtro_activo = 'todos';
+
+// detecta automáticamente el mes actual (01 al 12) para seleccionarlo por defecto
+const mes_actual_sistema = String(new Date().getMonth() + 1).padStart(2, '0');
+let mes_filtro_activo = mes_actual_sistema;
+
+let selector_mes_instancia = null;
+let selector_solicitante_instancia = null;
+let selector_lugar_instancia = null;
+const catalogo_departamentos_itp = ['Comunicación y Difusión'];
+const catalogo_sitios_itp = ['Gimnasio Olímpico'];
+let calendario_evento_instancia = null;
+let selectores_responsable_instancias = [];
+
+// estado del reloj circular interactivo
+let reloj_input_destino_id = 'hora-evento';
+let reloj_modo_actual = 'horas';
+let reloj_hora_sel = 12;
+let reloj_minuto_sel = 0;
+let reloj_ampm_sel = 'PM';
+let arrastrando_reloj = false;
 
 // validación de sesión robusta utilizando sessionstorage y token en memoria
 let sesion_autorizada = sessionStorage.getItem('itp_sesion_activa_segura') === token_sesion_seguro;
 
 const nombres_meses = {
-  'todos': 'Todos los meses (Histórico general)',
+  'todos': 'Histórico General Acumulado',
+  'sem-1': 'Semestre Enero – Junio',
+  'sem-2': 'Semestre Julio – Diciembre',
   '01': 'Enero',
   '02': 'Febrero',
   '03': 'Marzo',
@@ -36,7 +98,7 @@ const nombres_meses = {
 };
 
 const configuracion_servicios = {
-  'Diseño de material gráfico': {
+  'Diseño e impresión de material gráfico': {
     label_esp: 'Formato y medidas requeridas',
     placeholder_esp: 'Ej. Cartel impreso tabloide y versión digital para redes',
     label_desc: 'Texto e información clave que debe contener el diseño',
@@ -71,10 +133,54 @@ const configuracion_servicios = {
     placeholder_esp: 'Ej. Estudiantes de nuevo ingreso — Mes en curso',
     label_desc: 'Mensaje central y objetivos de la campaña',
     placeholder_desc: 'Ej. Campaña de difusión de convocatorias de becas'
+  },
+  'Otro servicio': {
+    label_esp: 'Tipo de apoyo o servicio solicitado',
+    placeholder_esp: 'Ej. Maestro de ceremonias, préstamo de equipo, protocolo, etc.',
+    label_desc: 'Descripción detallada de los requerimientos',
+    placeholder_desc: 'Ej. Especifica en qué consiste el apoyo y las necesidades especiales'
   }
 };
 
-// función para sanitizar entradas de texto y prevenir xss
+// puente api global para integración futura con app móvil (ios / android)
+window.itp_api_movil = {
+  obtener_estado_conexion: () => usar_nube ? 'nube_supabase' : 'local_storage',
+  obtener_todas_solicitudes: () => solicitudes,
+  obtener_solicitudes_periodo_actual: () => obtener_solicitudes_por_periodo(),
+  consultar_por_folio: (folio) => solicitudes.find(s => s.folio.toUpperCase() === String(folio).toUpperCase()),
+  crear_solicitud_externa: async (datos_solicitud) => {
+    const folio_nuevo = actualizar_folio_preview();
+    const fecha_emision = new Date().toLocaleDateString('es-MX');
+    const registro = {
+      folio: folio_nuevo,
+      fecha_solicitud: fecha_emision,
+      servicio: sanitizar_texto(datos_solicitud.servicio || 'Diseño e impresión de material gráfico'),
+      solicitante: sanitizar_texto(datos_solicitud.solicitante || ''),
+      descripcion: sanitizar_texto(datos_solicitud.descripcion || ''),
+      aplica_evento: Boolean(datos_solicitud.aplica_evento),
+      fecha_evento: datos_solicitud.fecha_evento || '',
+      hora_evento: datos_solicitud.hora_evento || '',
+      lugar_evento: sanitizar_texto(datos_solicitud.lugar_evento || ''),
+      estado: 'Pendiente',
+      responsable: 'Sin asignar',
+      fecha_limite: '',
+      observaciones: `[${fecha_emision}] Solicitud registrada desde App Móvil.`
+    };
+    if (usar_nube) {
+      await cliente_db.from('solicitudes').insert([registro]);
+      await cargar_solicitudes();
+    } else {
+      solicitudes.unshift(registro);
+      localStorage.setItem('tickets_itp_v6', JSON.stringify(solicitudes));
+      renderizar_tickets();
+      actualizar_notificaciones_ios();
+    }
+    await notificar_nueva_solicitud_correo(registro);
+    return registro;
+  },
+  sincronizar_remoto: async () => { await cargar_solicitudes(); return solicitudes; }
+};
+
 function sanitizar_texto(texto) {
   if (!texto) return '';
   const div = document.createElement('div');
@@ -82,15 +188,20 @@ function sanitizar_texto(texto) {
   return div.innerHTML;
 }
 
-// da formato con etiquetas de color institucional a la descripción "[especificación] — detalle"
+function capitalizar_inicial(texto) {
+  if (!texto) return '';
+  const limpio = String(texto).trim();
+  return limpio.charAt(0).toUpperCase() + limpio.slice(1);
+}
+
 function formatear_descripcion_color(texto_desc) {
   if (!texto_desc) return '';
   const regex = /^\[(.*?)\]\s*—\s*(.*)$/;
   const coincidencia = texto_desc.match(regex);
   if (coincidencia) {
-    return `<span class="tag-especificacion-color">[${coincidencia[1]}]</span> <span class="texto-descripcion-color">— ${coincidencia[2]}</span>`;
+    return `<span class="tag-especificacion-color">[${capitalizar_inicial(coincidencia[1])}]</span> <span class="texto-descripcion-color">— ${capitalizar_inicial(coincidencia[2])}</span>`;
   }
-  return `<span class="texto-descripcion-color">${texto_desc}</span>`;
+  return `<span class="texto-descripcion-color">${capitalizar_inicial(texto_desc)}</span>`;
 }
 
 function refrescar_iconos() {
@@ -99,21 +210,701 @@ function refrescar_iconos() {
   }
 }
 
-function mostrar_toast(mensaje) {
-  const contenedor = document.getElementById('contenedor-toasts');
-  if (!contenedor) return;
-  const item = document.createElement('div');
-  item.className = 'toast-item';
-  item.innerHTML = `<span>●</span> <span>${mensaje}</span>`;
-  contenedor.appendChild(item);
-  setTimeout(() => {
-    item.style.opacity = '0';
-    item.style.transition = 'opacity 0.25s ease';
-    setTimeout(() => item.remove(), 250);
-  }, 2600);
+function mostrar_toast() {
+  return;
 }
 
-// extrae el mes (01 al 12) desde fecha_solicitud (dd/mm/yyyy) o fecha_evento (yyyy-mm-dd)
+// =========================================================================
+// centro de notificaciones estilo ios (solicitudes sin responsable asignado)
+// =========================================================================
+function obtener_solicitudes_sin_responsable() {
+  return solicitudes.filter(item => {
+    const resp = (item.responsable || '').trim().toLowerCase();
+    return resp === '' || resp === 'sin asignar';
+  });
+}
+
+function actualizar_notificaciones_ios() {
+  const badge = document.getElementById('badge-notificaciones-ios');
+  const pildora = document.getElementById('pildora-conteo-ios');
+  const lista = document.getElementById('lista-notificaciones-ios');
+  if (!badge || !lista) return;
+
+  const pendientes_asignar = obtener_solicitudes_sin_responsable();
+  const total = pendientes_asignar.length;
+
+  if (total > 0) {
+    badge.textContent = total;
+    badge.classList.remove('oculto');
+    if (pildora) pildora.textContent = total === 1 ? '1 nueva' : `${total} nuevas`;
+  } else {
+    badge.textContent = '0';
+    badge.classList.add('oculto');
+    if (pildora) pildora.textContent = '0 nuevas';
+  }
+
+  if (total === 0) {
+    lista.innerHTML = `
+      <div class="notif-ios-vacio">
+        <i data-lucide="check-circle-2"></i>
+        <div>Todo al día. No hay solicitudes pendientes por asignar responsable.</div>
+      </div>
+    `;
+    refrescar_iconos();
+    return;
+  }
+
+  lista.innerHTML = pendientes_asignar.map(item => {
+    const folio_sup = String(item.folio || '').toUpperCase();
+    const servicio_cap = capitalizar_inicial(item.servicio);
+    return `
+      <div class="tarjeta-notif-ios" onclick="ir_a_solicitud_notificacion('${item.folio}')">
+        <div class="notif-ios-top">
+          <span class="notif-ios-folio">${folio_sup}</span>
+          <span class="notif-ios-fecha">${item.fecha_solicitud}</span>
+        </div>
+        <div class="notif-ios-servicio">${servicio_cap}</div>
+        <div class="notif-ios-depto">Solicita: ${item.solicitante}</div>
+        <span class="notif-ios-accion">
+          Asignar responsable <i data-lucide="chevron-right" style="width: 14px; height: 14px;"></i>
+        </span>
+      </div>
+    `;
+  }).join('');
+
+  refrescar_iconos();
+}
+
+function alternar_notificaciones_ios(e) {
+  if (e) e.stopPropagation();
+  const popover = document.getElementById('popover-notificaciones-ios');
+  if (!popover) return;
+  popover.classList.toggle('oculto');
+  if (!popover.classList.contains('oculto')) {
+    actualizar_notificaciones_ios();
+  }
+}
+
+function ir_a_solicitud_notificacion(folio_destino) {
+  const popover = document.getElementById('popover-notificaciones-ios');
+  if (popover) popover.classList.add('oculto');
+
+  if (!sesion_autorizada || sessionStorage.getItem('itp_sesion_activa_segura') !== token_sesion_seguro) {
+    intentar_abrir_panel();
+    return;
+  }
+
+  cambiar_vista('panel');
+
+  filtro_activo = 'todos';
+  document.querySelectorAll('.btn-filtro').forEach(b => b.classList.remove('activo'));
+  const primer_filtro = document.querySelector('.btn-filtro');
+  if (primer_filtro) primer_filtro.classList.add('activo');
+
+  const lista_periodo = obtener_solicitudes_por_periodo();
+  const existe_en_periodo = lista_periodo.some(s => String(s.folio).toUpperCase() === String(folio_destino).toUpperCase());
+  if (!existe_en_periodo) {
+    mes_filtro_activo = 'todos';
+    if (selector_mes_instancia) {
+      selector_mes_instancia.setValue('todos', true);
+    }
+  }
+
+  const input_busqueda = document.getElementById('buscador-tickets');
+  if (input_busqueda) input_busqueda.value = '';
+
+  renderizar_tickets();
+
+  setTimeout(() => {
+    const id_limpio = 'ticket-' + String(folio_destino).toUpperCase();
+    const tarjeta = document.getElementById(id_limpio);
+    if (tarjeta) {
+      tarjeta.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      tarjeta.classList.remove('ticket-resaltado-notif');
+      void tarjeta.offsetWidth;
+      tarjeta.classList.add('ticket-resaltado-notif');
+    }
+  }, 120);
+}
+
+document.addEventListener('click', (e) => {
+  const contenedor = document.getElementById('contenedor-notificaciones-ios');
+  const popover = document.getElementById('popover-notificaciones-ios');
+  if (contenedor && popover && !contenedor.contains(e.target)) {
+    popover.classList.add('oculto');
+  }
+});
+
+// =========================================================================
+// sistema de notificación por correo mediante emailjs con limpieza de diagonal
+// =========================================================================
+function obtener_contacto_responsable(nombre_responsable) {
+  if (!nombre_responsable || nombre_responsable.toLowerCase() === 'sin asignar') {
+    return { correo: correo_notificaciones_prueba, telefono: telefono_prueba_general };
+  }
+  if (nombre_responsable.toLowerCase().startsWith('chico(a) de servicio')) {
+    return catalogo_responsables['Chico(a) de servicio'];
+  }
+  const clave_exacta = Object.keys(catalogo_responsables).find(
+    k => k.toLowerCase() === nombre_responsable.toLowerCase()
+  );
+  return catalogo_responsables[clave_exacta] || {
+    correo: correo_notificaciones_prueba,
+    telefono: telefono_prueba_general
+  };
+}
+
+async function notificar_nueva_solicitud_correo(solicitud) {
+  const info_evento_texto = solicitud.aplica_evento
+    ? `${solicitud.fecha_evento} a las ${solicitud.hora_evento} hrs en ${solicitud.lugar_evento}`
+    : 'Sin evento presencial asociado';
+
+  const servicio_limpio = String(solicitud.servicio || '')
+    .replace(/&#x2F;/gi, '/')
+    .replace(/\//g, '/');
+
+  const parametros_correo = {
+    email: correo_notificaciones_prueba,
+    folio: String(solicitud.folio || '').toUpperCase(),
+    servicio: capitalizar_inicial(servicio_limpio),
+    solicitante: solicitud.solicitante,
+    descripcion: solicitud.descripcion,
+    evento_info: info_evento_texto
+  };
+
+  parametros_correo.solicitante = String(parametros_correo.solicitante || '').replace(/&#x2F;/gi, '/');
+  parametros_correo.descripcion = String(parametros_correo.descripcion || '').replace(/&#x2F;/gi, '/');
+  parametros_correo.evento_info = String(parametros_correo.evento_info || '').replace(/&#x2F;/gi, '/');
+
+  // 1. envío primario mediante google apps script (Avisos.MesaCD@gmail.com - hasta 3,000 correos/mes)
+  if (endpoint_google_script && endpoint_google_script.trim().startsWith('https://script.google.com/')) {
+    try {
+      await fetch(endpoint_google_script.trim(), {
+        method: 'post',
+        mode: 'no-cors',
+        headers: {
+          'content-type': 'text/plain;charset=utf-8'
+        },
+        body: JSON.stringify(parametros_correo)
+      });
+      return;
+    } catch (err_gs) {
+      console.warn('Respaldo activado tras fallo en Google Apps Script:', err_gs);
+    }
+  }
+
+  // 2. respaldo automático (fallback) mediante emailjs si la url no está configurada o falla la petición
+  if (window.emailjs && emailjs_public_key && emailjs_service_id && emailjs_template_id) {
+    try {
+      await window.emailjs.send(
+        emailjs_service_id,
+        emailjs_template_id,
+        parametros_correo,
+        { publicKey: emailjs_public_key }
+      );
+    } catch (err) {
+      try {
+        await window.emailjs.send(
+          emailjs_service_id,
+          emailjs_template_id,
+          parametros_correo,
+          emailjs_public_key
+        );
+      } catch (err2) {
+        console.warn('Error al enviar correo con EmailJS:', err2);
+      }
+    }
+  }
+}
+
+function construir_url_whatsapp_asignacion(solicitud) {
+  const contacto = obtener_contacto_responsable(solicitud.responsable);
+  const numero_wa = contacto.telefono || telefono_prueba_general;
+
+  const mensaje =
+    `Hola *${solicitud.responsable}*, te ha asignado el seguimiento de una solicitud:\n\n` +
+    `*Folio:* ${String(solicitud.folio || '').toUpperCase()}\n` +
+    `*Servicio:* ${capitalizar_inicial(solicitud.servicio)}\n` +
+    `*Departamento solicitante:* ${solicitud.solicitante}\n` +
+    `*Fecha del evento:* ${solicitud.aplica_evento ? solicitud.fecha_evento : 'N/A'}\n` +
+    `- *Hora:* ${solicitud.aplica_evento ? solicitud.hora_evento + ' hrs' : 'N/A'}\n` +
+    `*Sitio:* ${solicitud.aplica_evento ? solicitud.lugar_evento : 'N/A'}\n` +
+    `*Información clave :* ${solicitud.descripcion}\n\n` +
+    `Por favor verifica los detalles o dudas en la *Mesa de Comunicación y Difusión.* Gracias.`;
+
+  return `https://wa.me/${numero_wa}?text=${encodeURIComponent(mensaje)}`;
+}
+
+function enviar_whatsapp_responsable(index_real) {
+  const item = solicitudes[index_real];
+  if (!item || !item.responsable || item.responsable.toLowerCase() === 'sin asignar') return;
+  const url = construir_url_whatsapp_asignacion(item);
+  window.open(url, '_blank');
+}
+
+async function notificar_asignacion_responsable(index_real) {
+  const item = solicitudes[index_real];
+  if (!item || !item.responsable || item.responsable.toLowerCase() === 'sin asignar') return;
+
+  const icono_notificacion = `
+    <div class="alerta-icono-minimal verde">
+      <svg viewBox="0 0 24 24" fill="currentColor" style="width: 38px; height: 38px; color: #16a34a;">
+        <path d="M12.031 2c-5.506 0-9.989 4.478-9.99 9.984a9.964 9.964 0 0 0 1.333 4.993L2 22l5.233-1.237a9.994 9.994 0 0 0 4.779 1.217h.004c5.505 0 9.988-4.478 9.989-9.984 0-2.669-1.037-5.176-2.922-7.062A9.935 9.935 0 0 0 12.031 2zm5.829 14.144c-.245.693-1.43 1.326-1.981 1.408-.507.075-1.148.107-1.855-.117-.428-.135-.978-.316-1.682-.62-2.961-1.278-4.896-4.261-5.044-4.459-.148-.197-1.204-1.601-1.204-3.054 0-1.453.763-2.167 1.034-2.463.271-.296.591-.37.788-.37.197 0 .394.002.566.01.182.009.426-.069.666.508.246.591.838 2.045.912 2.193.074.148.123.32.025.517-.098.197-.148.32-.296.493-.148.172-.311.385-.444.517-.148.148-.302.308-.13.604.172.296.766 1.264 1.645 2.047 1.13 1.007 2.083 1.319 2.379 1.467.296.148.468.123.641-.074.172-.197.739-.862.936-1.158.197-.296.394-.246.665-.148.271.098 1.725.813 2.02.961.296.148.493.222.567.345.074.123.074.714-.171 1.407z"></path>
+      </svg>
+    </div>
+  `;
+
+  const respuesta = await Swal.fire({
+    html: `
+      ${icono_notificacion}
+      <span class="alerta-tag-sup" style="color: #15803d; background: #ecfdf5;">Responsable Asignado</span>
+      <h3 class="alerta-titulo-custom">Notificar a ${item.responsable}</h3>
+      <p class="alerta-cuerpo-custom">
+        Has asignado esta solicitud a <strong>${item.responsable}</strong>.
+        <span class="alerta-pregunta-resaltada">¿Deseas abrir WhatsApp para enviarle el recordatorio con los datos del servicio?</span>
+      </p>
+    `,
+    showCancelButton: true,
+    confirmButtonColor: '#16a34a',
+    cancelButtonColor: '#64748b',
+    confirmButtonText: 'Abrir WhatsApp',
+    cancelButtonText: 'Cancelar',
+    showCloseButton: true,
+    allowOutsideClick: true,
+    allowEscapeKey: true,
+    hideClass: {
+      popup: ''
+    }
+  });
+
+  if (respuesta.isConfirmed) {
+    enviar_whatsapp_responsable(index_real);
+  }
+}
+
+// =========================================================================
+// manejo del selector desplegable de responsable y campo manual de servicio social
+// =========================================================================
+async function cambiar_responsable_select(index_real, opcion_seleccionada) {
+  const bloque_ss = document.getElementById(`bloque-ss-${index_real}`);
+  const input_ss = document.getElementById(`input-ss-${index_real}`);
+
+  if (opcion_seleccionada === 'Chico(a) de servicio') {
+    if (bloque_ss) {
+      bloque_ss.classList.remove('oculto');
+    }
+    if (input_ss) {
+      input_ss.focus();
+    }
+    return;
+  }
+
+  if (bloque_ss) {
+    bloque_ss.classList.add('oculto');
+  }
+
+  await actualizar_campo(index_real, 'responsable', sanitizar_texto(opcion_seleccionada));
+  if (opcion_seleccionada !== 'Sin asignar') {
+    await notificar_asignacion_responsable(index_real);
+  }
+}
+
+async function guardar_nombre_servicio_social(index_real) {
+  const input_ss = document.getElementById(`input-ss-${index_real}`);
+  const nombre_manual = input_ss ? sanitizar_texto(input_ss.value.trim()) : '';
+
+  if (!nombre_manual) {
+    Swal.fire({
+      icon: 'warning',
+      title: 'Nombre requerido',
+      text: 'Escribe el nombre del chico(a) de servicio social para asignarlo.',
+      confirmButtonColor: '#1B396A'
+    });
+    return;
+  }
+
+  const etiqueta_final = `Chico(a) de servicio: ${nombre_manual}`;
+  await actualizar_campo(index_real, 'responsable', etiqueta_final);
+  await notificar_asignacion_responsable(index_real);
+}
+
+function inicializar_selectores_responsable_tarjetas() {
+  if (!window.TomSelect) return;
+
+  selectores_responsable_instancias.forEach(inst => {
+    try { inst.destroy(); } catch (e) {}
+  });
+  selectores_responsable_instancias = [];
+
+  document.querySelectorAll('.select-responsable-tom').forEach(el => {
+    const idx = parseInt(el.getAttribute('data-index'), 10);
+    const inst = new TomSelect(el, {
+      create: false,
+      allowEmptyOption: false,
+      controlInput: null,
+      onDelete: () => false,
+      onChange: (valor) => {
+        if (!isNaN(idx) && valor) {
+          cambiar_responsable_select(idx, valor);
+        }
+      }
+    });
+    selectores_responsable_instancias.push(inst);
+  });
+}
+
+// =========================================================================
+// funciones del selector de hora circular interactivo
+// =========================================================================
+function inicializar_eventos_reloj_circular() {
+  const esfera = document.getElementById('reloj-esfera-interactiva');
+  if (!esfera) return;
+
+  const procesar_interaccion = (e, finalizar) => {
+    const rect = esfera.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const client_x = e.touches ? e.touches[0].clientX : e.clientX;
+    const client_y = e.touches ? e.touches[0].clientY : e.clientY;
+
+    let grados = Math.atan2(client_y - cy, client_x - cx) * (180 / Math.PI) + 90;
+    if (grados < 0) grados += 360;
+
+    if (reloj_modo_actual === 'horas') {
+      let h = Math.round(grados / 30);
+      if (h === 0) h = 12;
+      reloj_hora_sel = h;
+      renderizar_cara_reloj();
+      if (finalizar) {
+        setTimeout(() => cambiar_modo_reloj('minutos'), 220);
+      }
+    } else {
+      let m = Math.round(grados / 6) % 60;
+      m = Math.round(m / 5) * 5;
+      if (m === 60) m = 0;
+      reloj_minuto_sel = m;
+      renderizar_cara_reloj();
+    }
+  };
+
+  esfera.addEventListener('mousedown', (e) => {
+    arrastrando_reloj = true;
+    procesar_interaccion(e, false);
+  });
+  window.addEventListener('mousemove', (e) => {
+    if (arrastrando_reloj) procesar_interaccion(e, false);
+  });
+  window.addEventListener('mouseup', (e) => {
+    if (arrastrando_reloj) {
+      arrastrando_reloj = false;
+      procesar_interaccion(e, true);
+    }
+  });
+
+  esfera.addEventListener('touchstart', (e) => {
+    arrastrando_reloj = true;
+    procesar_interaccion(e, false);
+    e.preventDefault();
+  }, { passive: false });
+  esfera.addEventListener('touchmove', (e) => {
+    if (arrastrando_reloj) procesar_interaccion(e, false);
+    e.preventDefault();
+  }, { passive: false });
+  esfera.addEventListener('touchend', (e) => {
+    if (arrastrando_reloj) {
+      arrastrando_reloj = false;
+      if (reloj_modo_actual === 'horas') {
+        setTimeout(() => cambiar_modo_reloj('minutos'), 220);
+      }
+    }
+  });
+}
+
+function abrir_reloj_circular(id_input) {
+  reloj_input_destino_id = id_input || 'hora-evento';
+  const input = document.getElementById(reloj_input_destino_id);
+  const valor_previo = input ? (input.getAttribute('data-hora-24') || input.value) : '';
+
+  if (valor_previo && valor_previo.includes(':')) {
+    const partes = valor_previo.split(':');
+    let h24 = parseInt(partes[0], 10);
+    let m = parseInt(partes[1], 10) || 0;
+    if (!isNaN(h24)) {
+      reloj_ampm_sel = h24 >= 12 ? 'PM' : 'AM';
+      reloj_hora_sel = h24 % 12 || 12;
+      reloj_minuto_sel = Math.round(m / 5) * 5;
+      if (reloj_minuto_sel === 60) reloj_minuto_sel = 0;
+    }
+  } else {
+    const sugerencia = new Date(Date.now() + 60 * 60 * 1000);
+    const h_sug = sugerencia.getHours();
+    let m_sug = Math.ceil(sugerencia.getMinutes() / 5) * 5;
+    if (m_sug === 60) m_sug = 0;
+    reloj_ampm_sel = h_sug >= 12 ? 'PM' : 'AM';
+    reloj_hora_sel = h_sug % 12 || 12;
+    reloj_minuto_sel = m_sug;
+  }
+  if (false) {
+    reloj_hora_sel = 12;
+    reloj_minuto_sel = 0;
+    reloj_ampm_sel = 'PM';
+  }
+
+  reloj_modo_actual = 'horas';
+  renderizar_cara_reloj();
+  document.getElementById('modal-reloj-circular').classList.remove('oculto');
+}
+
+function cambiar_modo_reloj(nuevo_modo) {
+  reloj_modo_actual = nuevo_modo;
+  renderizar_cara_reloj();
+}
+
+function seleccionar_ampm_reloj(periodo) {
+  reloj_ampm_sel = periodo;
+  renderizar_cara_reloj();
+}
+
+function renderizar_cara_reloj() {
+  const btn_h = document.getElementById('reloj-btn-hora');
+  const btn_m = document.getElementById('reloj-btn-minuto');
+  const btn_am = document.getElementById('reloj-btn-am');
+  const btn_pm = document.getElementById('reloj-btn-pm');
+  const capa_numeros = document.getElementById('reloj-capa-numeros');
+  const aguja = document.getElementById('reloj-aguja-linea');
+
+  if (!btn_h || !capa_numeros || !aguja) return;
+
+  btn_h.textContent = String(reloj_hora_sel).padStart(2, '0');
+  btn_m.textContent = String(reloj_minuto_sel).padStart(2, '0');
+
+  btn_h.classList.toggle('activo', reloj_modo_actual === 'horas');
+  btn_m.classList.toggle('activo', reloj_modo_actual === 'minutos');
+  btn_am.classList.toggle('activo', reloj_ampm_sel === 'AM');
+  btn_pm.classList.toggle('activo', reloj_ampm_sel === 'PM');
+
+  const radio = 86;
+  const centro = 118;
+  let html = '';
+
+  if (reloj_modo_actual === 'horas') {
+    const angulo_aguja = (reloj_hora_sel % 12) * 30;
+    aguja.style.transform = `rotate(${angulo_aguja}deg)`;
+
+    for (let i = 1; i <= 12; i++) {
+      const rad = ((i * 30) - 90) * (Math.PI / 180);
+      const x = centro + radio * Math.cos(rad);
+      const y = centro + radio * Math.sin(rad);
+      const sel = i === reloj_hora_sel ? 'seleccionado' : '';
+      html += `<div class="reloj-num-item ${sel}" style="left: ${x}px; top: ${y}px;">${i}</div>`;
+    }
+  } else {
+    const angulo_aguja = reloj_minuto_sel * 6;
+    aguja.style.transform = `rotate(${angulo_aguja}deg)`;
+
+    for (let i = 0; i < 60; i += 5) {
+      const rad = ((i * 6) - 90) * (Math.PI / 180);
+      const x = centro + radio * Math.cos(rad);
+      const y = centro + radio * Math.sin(rad);
+      const sel = i === reloj_minuto_sel ? 'seleccionado' : '';
+      const etiqueta = String(i).padStart(2, '0');
+      html += `<div class="reloj-num-item ${sel}" style="left: ${x}px; top: ${y}px;">${etiqueta}</div>`;
+    }
+  }
+
+  capa_numeros.innerHTML = html;
+}
+
+function cerrar_reloj_circular() {
+  document.getElementById('modal-reloj-circular').classList.add('oculto');
+}
+
+function obtener_fecha_iso_hoy() {
+  const ahora = new Date();
+  const anio = ahora.getFullYear();
+  const mes = String(ahora.getMonth() + 1).padStart(2, '0');
+  const dia = String(ahora.getDate()).padStart(2, '0');
+  return `${anio}-${mes}-${dia}`;
+}
+
+function es_fecha_hora_futura(fecha_iso, hora_24) {
+  if (!fecha_iso || !hora_24) return false;
+  const hora_limpia = String(hora_24).slice(0, 5);
+  const fecha_hora_ev = new Date(`${fecha_iso}T${hora_limpia}:00`);
+  if (isNaN(fecha_hora_ev.getTime())) return false;
+  return fecha_hora_ev.getTime() > new Date().getTime();
+}
+
+function confirmar_reloj_circular() {
+  let h24 = reloj_hora_sel;
+  if (reloj_ampm_sel === 'PM' && h24 < 12) h24 += 12;
+  if (reloj_ampm_sel === 'AM' && h24 === 12) h24 = 0;
+
+  const cadena_24 = `${String(h24).padStart(2, '0')}:${String(reloj_minuto_sel).padStart(2, '0')}`;
+  const cadena_vista = `${String(reloj_hora_sel).padStart(2, '0')}:${String(reloj_minuto_sel).padStart(2, '0')} ${reloj_ampm_sel === 'AM' ? 'A.M.' : 'P.M.'}`;
+
+  const input_fecha_ev = document.getElementById('fecha-evento');
+  const fecha_seleccionada = input_fecha_ev ? input_fecha_ev.value : '';
+
+  if (fecha_seleccionada && !es_fecha_hora_futura(fecha_seleccionada, cadena_24)) {
+    Swal.fire({
+      icon: 'warning',
+      title: 'Hora ya transcurrida',
+      text: 'No puedes asignar un evento en una hora que ya pasó. Selecciona una hora posterior a la actual.',
+      confirmButtonColor: '#1B396A'
+    });
+    return;
+  }
+
+  const input = document.getElementById(reloj_input_destino_id);
+  if (input) {
+    input.setAttribute('data-hora-24', cadena_24);
+    input.value = cadena_vista;
+  }
+
+  cerrar_reloj_circular();
+}
+
+function inicializar_controles_visuales() {
+  const select_el = document.getElementById('selector-mes-reporte');
+  if (select_el && window.TomSelect) {
+    select_el.value = mes_filtro_activo;
+    if (selector_mes_instancia) {
+      selector_mes_instancia.destroy();
+    }
+    selector_mes_instancia = new TomSelect(select_el, {
+      create: false,
+      allowEmptyOption: false,
+      controlInput: null,
+      onDelete: () => false,
+      onChange: (valor) => {
+        if (!valor) {
+          selector_mes_instancia.setValue(mes_actual_sistema, true);
+          mes_filtro_activo = mes_actual_sistema;
+        } else {
+          mes_filtro_activo = valor;
+        }
+        renderizar_tickets();
+      }
+    });
+    selector_mes_instancia.setValue(mes_filtro_activo, true);
+  }
+
+  configurar_calendario_evento();
+  inicializar_selectores_formulario();
+  inicializar_eventos_reloj_circular();
+}
+
+function inicializar_selectores_formulario() {
+  if (!window.TomSelect) return;
+
+  const select_depto = document.getElementById('solicitante');
+  if (select_depto) {
+    select_depto.required = false;
+    select_depto.innerHTML = catalogo_departamentos_itp
+      .map((d, i) => `<option value="${d}" ${i === 0 ? 'selected' : ''}>${d}</option>`)
+      .join('');
+    if (selector_solicitante_instancia) {
+      try { selector_solicitante_instancia.destroy(); } catch (e) {}
+    }
+    selector_solicitante_instancia = new TomSelect(select_depto, {
+      create: false,
+      allowEmptyOption: false,
+      controlInput: null,
+      onDelete: () => false
+    });
+    selector_solicitante_instancia.setValue(catalogo_departamentos_itp[0], true);
+  }
+
+  const select_lugar = document.getElementById('lugar-evento');
+  if (select_lugar) {
+    select_lugar.required = false;
+    select_lugar.innerHTML = catalogo_sitios_itp
+      .map((s, i) => `<option value="${s}" ${i === 0 ? 'selected' : ''}>${s}</option>`)
+      .join('');
+    if (selector_lugar_instancia) {
+      try { selector_lugar_instancia.destroy(); } catch (e) {}
+    }
+    selector_lugar_instancia = new TomSelect(select_lugar, {
+      create: false,
+      allowEmptyOption: false,
+      controlInput: null,
+      onDelete: () => false
+    });
+    selector_lugar_instancia.setValue(catalogo_sitios_itp[0], true);
+  }
+}
+
+function configurar_calendario_evento() {
+  const fecha_input = document.getElementById('fecha-evento');
+  if (fecha_input && window.flatpickr) {
+    fecha_input.required = false;
+    if (calendario_evento_instancia) {
+      calendario_evento_instancia.destroy();
+    }
+    calendario_evento_instancia = flatpickr(fecha_input, {
+      locale: 'es',
+      dateFormat: 'Y-m-d',
+      altInput: true,
+      altFormat: 'd/m/Y',
+      altInputClass: 'input-fecha-con-icono',
+      minDate: 'today',
+      onChange: function(selectedDates, dateStr) {
+        const input_h = document.getElementById('hora-evento');
+        const hora_guardada = input_h ? (input_h.getAttribute('data-hora-24') || input_h.value) : '';
+        if (dateStr && hora_guardada && !es_fecha_hora_futura(dateStr, hora_guardada)) {
+          input_h.value = '';
+          input_h.removeAttribute('data-hora-24');
+          Swal.fire({
+            icon: 'warning',
+            title: 'Ajusta la hora del evento',
+            text: 'La hora seleccionada previamente ya transcurrió el día de hoy. Por favor elige una hora futura.',
+            confirmButtonColor: '#1B396A'
+          });
+        }
+      },
+      allowInput: false,
+      disableMobile: true,
+      onReady: function(selectedDates, dateStr, instance) {
+        if (instance.altInput) {
+          instance.altInput.placeholder = 'dd/mm/aaaa';
+          instance.altInput.required = false;
+        }
+      }
+    });
+  }
+
+  const hora_input = document.getElementById('hora-evento');
+  if (hora_input) {
+    hora_input.placeholder = '--:--';
+    hora_input.required = false;
+  }
+
+  refrescar_iconos();
+}
+
+function inicializar_calendarios_panel_interno() {
+  if (!window.flatpickr) return;
+  document.querySelectorAll('.input-fecha-limite-panel').forEach(el => {
+    const fecha_min_panel = obtener_fecha_iso_hoy();
+    flatpickr(el, {
+      minDate: fecha_min_panel,
+      locale: 'es',
+      dateFormat: 'Y-m-d',
+      altInput: true,
+      altFormat: 'd/m/Y',
+      allowInput: false,
+      disableMobile: true,
+      onChange: function(selectedDates, dateStr) {
+        const idx = parseInt(el.getAttribute('data-index'), 10);
+        if (!isNaN(idx)) {
+          actualizar_campo(idx, 'fecha_limite', dateStr);
+        }
+      }
+    });
+  });
+}
+
 function extraer_mes_solicitud(item) {
   if (item.fecha_solicitud && item.fecha_solicitud.includes('/')) {
     const partes = item.fecha_solicitud.split('/');
@@ -130,18 +921,30 @@ function extraer_mes_solicitud(item) {
   return '';
 }
 
-function obtener_solicitudes_por_mes() {
-  if (mes_filtro_activo === 'todos') {
+function obtener_solicitudes_por_periodo() {
+  if (!mes_filtro_activo || mes_filtro_activo === 'todos') {
     return solicitudes;
+  }
+  if (mes_filtro_activo === 'sem-1') {
+    return solicitudes.filter(item => {
+      const mes = parseInt(extraer_mes_solicitud(item), 10);
+      return mes >= 1 && mes <= 6;
+    });
+  }
+  if (mes_filtro_activo === 'sem-2') {
+    return solicitudes.filter(item => {
+      const mes = parseInt(extraer_mes_solicitud(item), 10);
+      return mes >= 7 && mes <= 12;
+    });
   }
   return solicitudes.filter(item => extraer_mes_solicitud(item) === mes_filtro_activo);
 }
 
 function cambiar_mes_filtro() {
   const select = document.getElementById('selector-mes-reporte');
-  mes_filtro_activo = select ? select.value : 'todos';
+  const valor_elegido = select && select.value ? select.value : mes_actual_sistema;
+  mes_filtro_activo = nombres_meses[valor_elegido] ? valor_elegido : mes_actual_sistema;
   renderizar_tickets();
-  mostrar_toast(`Filtro aplicado: ${nombres_meses[mes_filtro_activo]}`);
 }
 
 function animar_contador(id_elemento, valor_final) {
@@ -163,7 +966,7 @@ function animar_contador(id_elemento, valor_final) {
 }
 
 function actualizar_metricas_panel() {
-  const lista_base = obtener_solicitudes_por_mes();
+  const lista_base = obtener_solicitudes_por_periodo();
   let pendientes = 0;
   let en_proceso = 0;
   let terminados = 0;
@@ -181,10 +984,78 @@ function actualizar_metricas_panel() {
   animar_contador('stat-terminados', terminados);
 }
 
+let liquid_morph_listener_activo = false;
+
+function inicializar_brillo_liquid_morph() {
+  if (liquid_morph_listener_activo) return;
+  liquid_morph_listener_activo = true;
+
+  document.addEventListener('mousemove', (e) => {
+    const tarjeta = e.target.closest('.tarjeta-servicio, .ticket-item, .item-metrica-unificada');
+    if (!tarjeta) return;
+    const rect = tarjeta.getBoundingClientRect();
+    const x = Math.round(e.clientX - rect.left);
+    const y = Math.round(e.clientY - rect.top);
+    tarjeta.style.setProperty('--mouse-x', `${x}px`);
+    tarjeta.style.setProperty('--mouse-y', `${y}px`);
+  }, { passive: true });
+}
+
+function aplicar_tema_visual(tema) {
+  const es_oscuro = tema === 'oscuro';
+  if (es_oscuro) {
+    document.documentElement.setAttribute('data-tema', 'oscuro');
+  } else {
+    document.documentElement.removeAttribute('data-tema');
+  }
+
+  const meta_theme = document.querySelector('meta[name="theme-color"]');
+  if (meta_theme) {
+    meta_theme.setAttribute('content', es_oscuro ? '#070d19' : '#1B396A');
+  }
+
+  const btn_tema = document.getElementById('btn-tema-ios');
+  if (btn_tema) {
+    btn_tema.innerHTML = `<i data-lucide="${es_oscuro ? 'sun' : 'moon'}" id="icono-tema-ios"></i>`;
+    btn_tema.setAttribute('title', es_oscuro ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro');
+    refrescar_iconos();
+  }
+}
+
+function inicializar_tema_preferido() {
+  let tema_actual = 'claro';
+  try {
+    const guardado = localStorage.getItem('itp_tema_preferido');
+    if (guardado === 'oscuro' || guardado === 'claro') {
+      tema_actual = guardado;
+    }
+  } catch (e) {}
+  aplicar_tema_visual(tema_actual);
+}
+
+function alternar_modo_oscuro() {
+  const es_oscuro_actual = document.documentElement.getAttribute('data-tema') === 'oscuro';
+  const nuevo_tema = es_oscuro_actual ? 'claro' : 'oscuro';
+  try {
+    localStorage.setItem('itp_tema_preferido', nuevo_tema);
+  } catch (e) {}
+  aplicar_tema_visual(nuevo_tema);
+}
+
 async function inicializar() {
+  inicializar_tema_preferido();
   const hoy = new Date();
   document.getElementById('fecha-actual').textContent = hoy.toLocaleDateString('es-MX');
   window.addEventListener('scroll', controlar_flecha_flotante);
+  inicializar_brillo_liquid_morph();
+
+  if (window.emailjs && emailjs_public_key) {
+    try {
+      window.emailjs.init({ publicKey: emailjs_public_key });
+    } catch (e) {
+      try { window.emailjs.init(emailjs_public_key); } catch (e2) {}
+    }
+  }
 
   const badge = document.getElementById('estado-conexion');
   if (usar_nube) {
@@ -195,11 +1066,13 @@ async function inicializar() {
     badge.classList.remove('online');
   }
 
+  inicializar_controles_visuales();
   actualizar_icono_candado();
   await cargar_solicitudes();
 
   setInterval(() => {
     renderizar_tickets();
+    actualizar_notificaciones_ios();
   }, 60000);
 }
 
@@ -233,7 +1106,6 @@ function verificar_pin(e) {
     actualizar_icono_candado();
     cerrar_modal_pin();
     cambiar_vista('panel');
-    mostrar_toast('Sesión iniciada correctamente');
   } else {
     sesion_autorizada = false;
     sessionStorage.removeItem('itp_sesion_activa_segura');
@@ -241,7 +1113,12 @@ function verificar_pin(e) {
     tarjeta.classList.remove('sacudir');
     void tarjeta.offsetWidth;
     tarjeta.classList.add('sacudir');
-    mostrar_toast('PIN institucional incorrecto');
+    Swal.fire({
+      icon: 'error',
+      title: 'Acceso Denegado',
+      text: 'PIN institucional incorrecto.',
+      confirmButtonColor: '#1B396A'
+    });
   }
 }
 
@@ -249,12 +1126,30 @@ function cerrar_modal_pin() {
   document.getElementById('modal-pin').classList.add('oculto');
 }
 
-function cerrar_sesion_admin() {
-  sesion_autorizada = false;
-  sessionStorage.removeItem('itp_sesion_activa_segura');
-  actualizar_icono_candado();
-  cambiar_vista('formulario');
-  mostrar_toast('Sesión cerrada');
+async function cerrar_sesion_admin() {
+  const resultado = await Swal.fire({
+    title: '¿Estás seguro?',
+    text: '¿Deseas cerrar sesión del panel administrativo?',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#1B396A',
+    cancelButtonColor: '#d33',
+    confirmButtonText: 'Sí, cerrar sesión',
+    cancelButtonText: 'Cancelar',
+    showCloseButton: true,
+    allowOutsideClick: true,
+    allowEscapeKey: true,
+    hideClass: {
+      popup: ''
+    }
+  });
+
+  if (resultado.isConfirmed) {
+    sesion_autorizada = false;
+    sessionStorage.removeItem('itp_sesion_activa_segura');
+    actualizar_icono_candado();
+    cambiar_vista('formulario');
+  }
 }
 
 async function consultar_folio_publico(e) {
@@ -286,24 +1181,22 @@ async function consultar_folio_publico(e) {
     : `<div class="sin-fecha-aviso">Sin notas registradas por el departamento.</div>`;
 
   const info_evento_publico = encontrado.aplica_evento
-    ? `<div class="ticket-detalles">
-        <span class="badge-lugar-evento"><i data-lucide="map-pin"></i> Lugar: ${encontrado.lugar_evento}</span>
-        <span class="badge-fecha-evento"><i data-lucide="calendar"></i> ${encontrado.fecha_evento} <em>(${encontrado.hora_evento} hrs)</em></span>
-      </div>`
-    : `<div class="ticket-detalles"><span class="badge-sin-evento"><i data-lucide="info"></i> Sin evento presencial asociado</span></div>`;
+    ? `<span class="badge-lugar-evento"><i data-lucide="map-pin"></i> Lugar: ${encontrado.lugar_evento}</span>
+       <span class="badge-fecha-evento"><i data-lucide="calendar"></i> ${encontrado.fecha_evento} <em>(${encontrado.hora_evento} hrs)</em></span>`
+    : `<span class="badge-sin-evento"><i data-lucide="info"></i> Sin evento presencial asociado</span>`;
 
   contenedor_res.innerHTML = `
     <div class="tarjeta-rastreo-publico">
       <div class="ticket-header-line">
         <div>
-          <span class="ticket-folio">${encontrado.folio} · Solicitado el ${encontrado.fecha_solicitud}</span>
-          <div class="ticket-servicio">${encontrado.servicio}</div>
+          <span class="ticket-folio">${String(encontrado.folio).toUpperCase()} · Solicitado el ${encontrado.fecha_solicitud}</span>
+          <div class="ticket-servicio">${capitalizar_inicial(encontrado.servicio)}</div>
           <div class="ticket-detalles">
             <i data-lucide="user"></i>
             <span class="tag-solicitante-color">${encontrado.solicitante}:</span>
             ${formatear_descripcion_color(encontrado.descripcion)}
+            ${info_evento_publico}
           </div>
-          ${info_evento_publico}
         </div>
         <span class="badge-estado-actual ${clase_estado}">
           <span class="punto-estado"></span>
@@ -312,7 +1205,7 @@ async function consultar_folio_publico(e) {
       </div>
 
       <div class="rastreo-grid-meta">
-        <div><strong>Responsable asignado:</strong> ${encontrado.responsable || 'Por asignar'}</div>
+        <div><strong>Responsable asignado:</strong> ${capitalizar_inicial(encontrado.responsable || 'Por asignar')}</div>
         <div><strong>Fecha límite estimada:</strong> ${encontrado.fecha_limite || 'Sin asignar'}</div>
       </div>
 
@@ -339,7 +1232,7 @@ function calcular_estado_automatico(item) {
   const ahora = new Date();
 
   if (item.aplica_evento && item.fecha_evento) {
-    const hora_ev = item.hora_evento || '23:59';
+    const hora_ev = (item.hora_evento || '23:59').slice(0, 5);
     const fecha_evento_completa = new Date(`${item.fecha_evento}T${hora_ev}:00`);
     if (ahora >= fecha_evento_completa) {
       return 'Terminado';
@@ -399,7 +1292,7 @@ async function cargar_solicitudes() {
         hora_evento: '11:00',
         lugar_evento: 'Auditorio Principal',
         estado: 'En proceso',
-        responsable: 'Equipo Audiovisual ITP',
+        responsable: 'Karla',
         fecha_limite: '',
         observaciones: '[22/10/2026] Solicitud recibida y en proceso de asignación.'
       }
@@ -408,6 +1301,7 @@ async function cargar_solicitudes() {
 
   actualizar_folio_preview();
   renderizar_tickets();
+  actualizar_notificaciones_ios();
 }
 
 function controlar_flecha_flotante() {
@@ -420,7 +1314,14 @@ function controlar_flecha_flotante() {
 }
 
 function actualizar_folio_preview() {
-  const siguiente_numero = solicitudes.length + 1;
+  let max_num = 0;
+  solicitudes.forEach(s => {
+    const num = parseInt(String(s.folio || '').replace(/\D/g, ''), 10);
+    if (!isNaN(num) && num > max_num) {
+      max_num = num;
+    }
+  });
+  const siguiente_numero = Math.max(solicitudes.length, max_num) + 1;
   const codigo = 'SRV-' + String(siguiente_numero).padStart(3, '0');
   document.getElementById('folio-preview').textContent = codigo;
   return codigo;
@@ -432,7 +1333,10 @@ function seleccionar_servicio(elemento, nombre_servicio) {
   servicio_actual = nombre_servicio;
   document.getElementById('texto-servicio-elegido').textContent = nombre_servicio;
 
-  const conf = configuracion_servicios[nombre_servicio];
+  const clave_conf = Object.keys(configuracion_servicios).find(
+    k => k.toLowerCase() === nombre_servicio.toLowerCase()
+  );
+  const conf = configuracion_servicios[clave_conf];
   if (conf) {
     document.getElementById('label-especifico').textContent = conf.label_esp;
     document.getElementById('detalle-especifico').placeholder = conf.placeholder_esp;
@@ -442,11 +1346,20 @@ function seleccionar_servicio(elemento, nombre_servicio) {
 
   alternar_evento(true);
 
+  if (calendario_evento_instancia && calendario_evento_instancia.altInput) {
+    calendario_evento_instancia.altInput.placeholder = 'dd/mm/aaaa';
+  }
+  const input_hora = document.getElementById('hora-evento');
+  if (input_hora) {
+    input_hora.placeholder = '--:--';
+  }
+  refrescar_iconos();
+
   const seccion_detalles = document.getElementById('seccion-detalles');
   seccion_detalles.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
   setTimeout(() => {
-    document.getElementById('solicitante').focus({ preventScroll: true });
+    document.getElementById('detalle-especifico').focus({ preventScroll: true });
   }, 450);
 }
 
@@ -459,25 +1372,83 @@ function alternar_evento(forzar_estado) {
   aplica_evento = typeof forzar_estado === 'boolean' ? forzar_estado : !aplica_evento;
   const bloque = document.getElementById('bloque-evento');
   const boton_switch = document.getElementById('switch-evento');
+  const input_fecha_orig = document.getElementById('fecha-evento');
+  const input_visible_fecha = calendario_evento_instancia && calendario_evento_instancia.altInput
+    ? calendario_evento_instancia.altInput
+    : input_fecha_orig;
+  const input_visible_hora = document.getElementById('hora-evento');
+  const input_lugar = document.getElementById('lugar-evento');
+
+  // nunca dejamos required en el input oculto de flatpickr para evitar bloqueo del navegador
+  if (input_fecha_orig) input_fecha_orig.required = false;
+  if (input_visible_fecha) input_visible_fecha.required = false;
+  if (input_visible_hora) input_visible_hora.required = false;
 
   if (aplica_evento) {
     bloque.classList.add('abierto');
     boton_switch.classList.add('activo');
-    document.getElementById('fecha-evento').required = true;
-    document.getElementById('hora-evento').required = true;
-    document.getElementById('lugar-evento').required = true;
+    if (input_visible_fecha) {
+      input_visible_fecha.placeholder = 'dd/mm/aaaa';
+    }
+    if (input_visible_hora) {
+      input_visible_hora.placeholder = '--:--';
+    }
+    if (input_lugar) input_lugar.required = false;
   } else {
     bloque.classList.remove('abierto');
     boton_switch.classList.remove('activo');
-    document.getElementById('fecha-evento').required = false;
-    document.getElementById('hora-evento').required = false;
-    document.getElementById('lugar-evento').required = false;
+    if (input_lugar) input_lugar.required = false;
   }
 }
 
 async function guardar_solicitud(e) {
   e.preventDefault();
+
+  if (aplica_evento && !document.getElementById('fecha-evento').value) {
+    Swal.fire({
+      icon: 'warning',
+      title: 'Fecha requerida',
+      text: 'Por favor selecciona la fecha del evento en el calendario.',
+      confirmButtonColor: '#1B396A'
+    });
+    return;
+  }
+
+  const input_hora_el = document.getElementById('hora-evento');
+  const valor_hora_24 = input_hora_el.getAttribute('data-hora-24') || input_hora_el.value;
+
+  if (aplica_evento && !valor_hora_24) {
+    Swal.fire({
+      icon: 'warning',
+      title: 'Hora requerida',
+      text: 'Por favor selecciona la hora del evento en el reloj.',
+      confirmButtonColor: '#1B396A'
+    });
+    return;
+  }
+
+  const input_lugar_el = document.getElementById('lugar-evento');
+  if (aplica_evento && (!input_lugar_el || !input_lugar_el.value.trim())) {
+    Swal.fire({
+      icon: 'warning',
+      title: 'Sitio requerido',
+      text: 'Por favor escribe el sitio o lugar del evento.',
+      confirmButtonColor: '#1B396A'
+    });
+    return;
+  }
+
   const btn_submit = document.getElementById('btn-submit-form');
+  const valor_fecha_ev = document.getElementById('fecha-evento').value;
+  if (aplica_evento && !es_fecha_hora_futura(valor_fecha_ev, valor_hora_24)) {
+    Swal.fire({
+      icon: 'warning',
+      title: 'Fecha u hora no válida',
+      text: 'No se permite programar un evento en una fecha u hora que ya transcurrió. Selecciona un horario futuro.',
+      confirmButtonColor: '#1B396A'
+    });
+    return;
+  }
   const texto_btn = document.getElementById('texto-btn-enviar');
   btn_submit.disabled = true;
   texto_btn.textContent = 'Enviando solicitud...';
@@ -491,13 +1462,13 @@ async function guardar_solicitud(e) {
   const nueva = {
     folio: nuevo_folio,
     fecha_solicitud: fecha_hoy,
-    servicio: servicio_actual,
+    servicio: capitalizar_inicial(servicio_actual),
     solicitante: sanitizar_texto(document.getElementById('solicitante').value.trim()),
     descripcion: `[${esp_valor}] — ${desc_valor}`,
     aplica_evento: aplica_evento,
     fecha_evento: aplica_evento ? document.getElementById('fecha-evento').value : '',
-    hora_evento: aplica_evento ? document.getElementById('hora-evento').value : '',
-    lugar_evento: aplica_evento ? sanitizar_texto(document.getElementById('lugar-evento').value.trim()) : '',
+    hora_evento: aplica_evento ? valor_hora_24 : '',
+    lugar_evento: aplica_evento ? sanitizar_texto(input_lugar_el.value.trim()) : '',
     estado: 'Pendiente',
     responsable: 'Sin asignar',
     fecha_limite: '',
@@ -509,7 +1480,12 @@ async function guardar_solicitud(e) {
   if (usar_nube) {
     const { error } = await cliente_db.from('solicitudes').insert([nueva]);
     if (error) {
-      alert('Error al guardar: ' + error.message);
+      Swal.fire({
+        icon: 'error',
+        title: 'Error al Guardar',
+        text: error.message,
+        confirmButtonColor: '#1B396A'
+      });
       btn_submit.disabled = false;
       texto_btn.textContent = 'Enviar solicitud oficial';
       return;
@@ -520,9 +1496,29 @@ async function guardar_solicitud(e) {
     localStorage.setItem('tickets_itp_v6', JSON.stringify(solicitudes));
     actualizar_folio_preview();
     renderizar_tickets();
+    actualizar_notificaciones_ios();
   }
 
+  await notificar_nueva_solicitud_correo(nueva);
+
   document.getElementById('form-solicitud').reset();
+  if (selector_solicitante_instancia) {
+    selector_solicitante_instancia.setValue(catalogo_departamentos_itp[0], true);
+  }
+  if (selector_lugar_instancia) {
+    selector_lugar_instancia.setValue(catalogo_sitios_itp[0], true);
+  }
+  if (calendario_evento_instancia) {
+    calendario_evento_instancia.clear();
+    if (calendario_evento_instancia.altInput) {
+      calendario_evento_instancia.altInput.placeholder = 'dd/mm/aaaa';
+    }
+  }
+  if (input_hora_el) {
+    input_hora_el.value = '';
+    input_hora_el.removeAttribute('data-hora-24');
+    input_hora_el.placeholder = '--:--';
+  }
   alternar_evento(true);
   btn_submit.disabled = false;
   texto_btn.textContent = 'Enviar solicitud oficial';
@@ -548,11 +1544,11 @@ function renderizar_tickets() {
   const input_busqueda = document.getElementById('buscador-tickets');
   const texto_busqueda = input_busqueda ? input_busqueda.value.toLowerCase() : '';
   
-  const lista_mes = obtener_solicitudes_por_mes();
+  const lista_periodo = obtener_solicitudes_por_periodo();
 
-  const filtrados = lista_mes.filter(item => {
+  const filtrados = lista_periodo.filter(item => {
     const estado_calculado = calcular_estado_automatico(item);
-    const cumple_estado = filtro_activo === 'todos' || estado_calculado === filtro_activo;
+    const cumple_estado = filtro_activo === 'todos' || estado_calculado.toLowerCase() === filtro_activo.toLowerCase();
     const cumple_busqueda = item.solicitante.toLowerCase().includes(texto_busqueda) || 
                             item.folio.toLowerCase().includes(texto_busqueda) ||
                             item.servicio.toLowerCase().includes(texto_busqueda);
@@ -577,12 +1573,40 @@ function renderizar_tickets() {
     const lista_notas = obtener_arreglo_notas(item.observaciones);
     const delay_anim = Math.min(idx_vista * 0.05, 0.35);
 
-    const info_evento = item.aplica_evento
-      ? `<div class="ticket-detalles">
-          <span class="badge-lugar-evento"><i data-lucide="map-pin"></i> Lugar: ${item.lugar_evento}</span>
-          <span class="badge-fecha-evento"><i data-lucide="calendar"></i> ${item.fecha_evento} <em>(${item.hora_evento} hrs)</em></span>
-        </div>`
-      : `<div class="ticket-detalles"><span class="badge-sin-evento"><i data-lucide="info"></i> Sin evento presencial asociado</span></div>`;
+    const resp_guardado = (item.responsable || 'Sin asignar').trim();
+    const mapa_nombres_fijos = {
+      'sin asignar': 'Sin asignar',
+      'karla': 'Karla',
+      'juan': 'Juan',
+      'lina': 'Lina',
+      'yessica': 'Yessica'
+    };
+
+    let valor_select = 'Sin asignar';
+    let es_chico_servicio = false;
+    let nombre_manual_ss = '';
+
+    if (mapa_nombres_fijos[resp_guardado.toLowerCase()]) {
+      valor_select = mapa_nombres_fijos[resp_guardado.toLowerCase()];
+    } else if (resp_guardado.toLowerCase().startsWith('chico(a) de servicio')) {
+      valor_select = 'Chico(a) de servicio';
+      es_chico_servicio = true;
+      const partes_ss = resp_guardado.split(':');
+      nombre_manual_ss = partes_ss.length > 1 ? partes_ss.slice(1).join(':').trim() : '';
+    } else if (resp_guardado !== '') {
+      valor_select = 'Chico(a) de servicio';
+      es_chico_servicio = true;
+      nombre_manual_ss = resp_guardado;
+    }
+
+    const tiene_responsable_activo = resp_guardado !== '' && resp_guardado.toLowerCase() !== 'sin asignar';
+    const folio_mayus = String(item.folio || '').toUpperCase();
+    const servicio_titulo = capitalizar_inicial(item.servicio);
+
+    const info_evento_inline = item.aplica_evento
+      ? `<span class="badge-lugar-evento"><i data-lucide="map-pin"></i> Lugar: ${item.lugar_evento}</span>
+         <span class="badge-fecha-evento"><i data-lucide="calendar"></i> ${item.fecha_evento} <em>(${item.hora_evento} hrs)</em></span>`
+      : `<span class="badge-sin-evento"><i data-lucide="info"></i> Sin evento presencial asociado</span>`;
 
     const html_notas = lista_notas.length > 0
       ? lista_notas.map((nota_texto, idx_nota) => `
@@ -601,17 +1625,17 @@ function renderizar_tickets() {
       : `<div class="sin-fecha-aviso">Sin notas registradas.</div>`;
 
     return `
-      <div class="ticket-item borde-${sufijo_estado}" style="--t-delay: ${delay_anim}s">
+      <div class="ticket-item borde-${sufijo_estado}" id="ticket-${folio_mayus}" style="--t-delay: ${delay_anim}s">
         <div class="ticket-header-line">
           <div>
-            <span class="ticket-folio">${item.folio} · Solicitado: ${item.fecha_solicitud}</span>
-            <div class="ticket-servicio">${item.servicio}</div>
+            <span class="ticket-folio">${folio_mayus} · Solicitado: ${item.fecha_solicitud}</span>
+            <div class="ticket-servicio">${servicio_titulo}</div>
             <div class="ticket-detalles">
               <i data-lucide="user"></i>
               <span class="tag-solicitante-color">${item.solicitante}:</span>
               ${formatear_descripcion_color(item.descripcion)}
+              ${info_evento_inline}
             </div>
-            ${info_evento}
           </div>
 
           <div class="selector-estado-contenedor">
@@ -626,7 +1650,28 @@ function renderizar_tickets() {
         <div class="panel-gestion-interno">
           <div class="campo-interno">
             <label>Responsable asignado</label>
-            <input type="text" value="${item.responsable || 'Sin asignar'}" placeholder="Personal de comunicación" onchange="actualizar_campo(${index_real}, 'responsable', sanitizar_texto(this.value))">
+            <div class="fila-responsable-acciones">
+              <select class="select-responsable-tom" data-index="${index_real}">
+                <option value="Sin asignar" ${valor_select === 'Sin asignar' ? 'selected' : ''}>Sin asignar</option>
+                <option value="Karla" ${valor_select === 'Karla' ? 'selected' : ''}>Karla</option>
+                <option value="Juan" ${valor_select === 'Juan' ? 'selected' : ''}>Juan</option>
+                <option value="Lina" ${valor_select === 'Lina' ? 'selected' : ''}>Lina</option>
+                <option value="Yessica" ${valor_select === 'Yessica' ? 'selected' : ''}>Yessica</option>
+                <option value="Chico(a) de servicio" ${valor_select === 'Chico(a) de servicio' ? 'selected' : ''}>Chico(a) de servicio</option>
+              </select>
+              ${tiene_responsable_activo
+                ? `<button type="button" class="btn-notificar-wa" onclick="enviar_whatsapp_responsable(${index_real})" title="Enviar recordatorio por WhatsApp a ${resp_guardado}">
+                    <svg viewBox="0 0 24 24" fill="currentColor" style="width: 15px; height: 15px;"><path d="M12.031 2c-5.506 0-9.989 4.478-9.99 9.984a9.964 9.964 0 0 0 1.333 4.993L2 22l5.233-1.237a9.994 9.994 0 0 0 4.779 1.217h.004c5.505 0 9.988-4.478 9.989-9.984 0-2.669-1.037-5.176-2.922-7.062A9.935 9.935 0 0 0 12.031 2zm5.829 14.144c-.245.693-1.43 1.326-1.981 1.408-.507.075-1.148.107-1.855-.117-.428-.135-.978-.316-1.682-.62-2.961-1.278-4.896-4.261-5.044-4.459-.148-.197-1.204-1.601-1.204-3.054 0-1.453.763-2.167 1.034-2.463.271-.296.591-.37.788-.37.197 0 .394.002.566.01.182.009.426-.069.666.508.246.591.838 2.045.912 2.193.074.148.123.32.025.517-.098.197-.148.32-.296.493-.148.172-.311.385-.444.517-.148.148-.302.308-.13.604.172.296.766 1.264 1.645 2.047 1.13 1.007 2.083 1.319 2.379 1.467.296.148.468.123.641-.074.172-.197.739-.862.936-1.158.197-.296.394-.246.665-.148.271.098 1.725.813 2.02.961.296.148.493.222.567.345.074.123.074.714-.171 1.407z"></path></svg> WhatsApp
+                  </button>`
+                : ''
+              }
+            </div>
+            <div id="bloque-ss-${index_real}" class="caja-servicio-social-manual ${es_chico_servicio ? '' : 'oculto'}">
+              <input type="text" id="input-ss-${index_real}" value="${nombre_manual_ss}" placeholder="Escribe el nombre del prestador(a) de servicio..." onkeydown="if(event.key==='Enter'){event.preventDefault();guardar_nombre_servicio_social(${index_real});}">
+              <button type="button" class="btn-confirmar-ss" onclick="guardar_nombre_servicio_social(${index_real})">
+                <i data-lucide="check"></i> Asignar
+              </button>
+            </div>
           </div>
 
           <div class="campo-interno">
@@ -638,7 +1683,10 @@ function renderizar_tickets() {
               </label>
             </div>
             ${tiene_fecha_limite 
-              ? `<input type="date" value="${item.fecha_limite}" onchange="actualizar_campo(${index_real}, 'fecha_limite', this.value)">`
+              ? `<div class="contenedor-input-calendario">
+                  <input type="text" class="input-fecha-limite-panel input-fecha-con-icono" data-index="${index_real}" value="${item.fecha_limite}" placeholder="dd/mm/aaaa">
+                  <i data-lucide="calendar" class="icono-calendario-fijo"></i>
+                </div>`
               : `<div class="sin-fecha-aviso">Sin fecha límite asignada</div>`
             }
           </div>
@@ -664,13 +1712,14 @@ function renderizar_tickets() {
   }).join('');
 
   refrescar_iconos();
+  inicializar_calendarios_panel_interno();
+  inicializar_selectores_responsable_tarjetas();
 }
 
-// funciones para generar documento formal tabular estilo oficio tecnm
 function contar_frecuencias(lista, propiedad) {
   const mapa = {};
   lista.forEach(item => {
-    const clave = (item[propiedad] || 'Sin especificar').trim();
+    const clave = capitalizar_inicial((item[propiedad] || 'Sin especificar').trim());
     mapa[clave] = (mapa[clave] || 0) + 1;
   });
   return Object.entries(mapa).sort((a, b) => b[1] - a[1]);
@@ -694,18 +1743,17 @@ function generar_filas_frecuencia(arreglo, total) {
 
 function abrir_modal_reporte() {
   if (!sesion_autorizada || sessionStorage.getItem('itp_sesion_activa_segura') !== token_sesion_seguro) {
-    mostrar_toast('Inicie sesión para generar reportes');
     return;
   }
 
-  const lista_mes = obtener_solicitudes_por_mes();
-  const total = lista_mes.length;
+  const lista_periodo = obtener_solicitudes_por_periodo();
+  const total = lista_periodo.length;
   let pendientes = 0;
   let en_proceso = 0;
   let terminados = 0;
   let con_evento = 0;
 
-  lista_mes.forEach(item => {
+  lista_periodo.forEach(item => {
     const est = calcular_estado_automatico(item);
     if (est === 'Pendiente') pendientes++;
     else if (est === 'En proceso') en_proceso++;
@@ -714,16 +1762,16 @@ function abrir_modal_reporte() {
   });
 
   const tasa_cumplimiento = total > 0 ? ((terminados / total) * 100).toFixed(1) : '0.0';
-  const por_servicio = contar_frecuencias(lista_mes, 'servicio');
-  const por_departamento = contar_frecuencias(lista_mes, 'solicitante');
-  const por_responsable = contar_frecuencias(lista_mes, 'responsable');
+  const por_servicio = contar_frecuencias(lista_periodo, 'servicio');
+  const por_departamento = contar_frecuencias(lista_periodo, 'solicitante');
+  const por_responsable = contar_frecuencias(lista_periodo, 'responsable');
 
-  const nombre_periodo = nombres_meses[mes_filtro_activo];
+  const nombre_periodo = nombres_meses[mes_filtro_activo] || nombres_meses[mes_actual_sistema];
   const fecha_emision = new Date().toLocaleDateString('es-MX');
-  document.getElementById('titulo-mes-reporte').textContent = `Reporte Mensual — ${nombre_periodo}`;
+  document.getElementById('titulo-mes-reporte').textContent = `Reporte Oficial — ${nombre_periodo}`;
 
-  const filas_padron = lista_mes.length > 0
-    ? lista_mes.map((item, idx) => {
+  const filas_padron = lista_periodo.length > 0
+    ? lista_periodo.map((item, idx) => {
         const est = calcular_estado_automatico(item);
         const ev_texto = item.aplica_evento
           ? `${item.fecha_evento} (${item.hora_evento} hrs) — ${item.lugar_evento}`
@@ -732,12 +1780,12 @@ function abrir_modal_reporte() {
         return `
           <tr>
             <td class="num-centro">${idx + 1}</td>
-            <td class="num-centro"><strong>${item.folio}</strong></td>
+            <td class="num-centro"><strong>${String(item.folio).toUpperCase()}</strong></td>
             <td class="num-centro">${item.fecha_solicitud}</td>
             <td>${item.solicitante}</td>
-            <td><strong>${item.servicio}</strong><br><span style="font-size: 7.5pt; color: #333;">${item.descripcion}</span></td>
+            <td><strong>${capitalizar_inicial(item.servicio)}</strong><br><span style="font-size: 7.5pt; color: #333;">${item.descripcion}</span></td>
             <td>${ev_texto}</td>
-            <td>${item.responsable || 'Sin asignar'}</td>
+            <td>${capitalizar_inicial(item.responsable || 'Sin asignar')}</td>
             <td class="num-centro"><strong>${est.toUpperCase()}</strong></td>
             <td style="font-size: 7.5pt;">${acuerdos || 'Sin observaciones'}</td>
           </tr>
@@ -751,7 +1799,6 @@ function abrir_modal_reporte() {
       <img src="img/TecPachuca.png" alt="Marca de agua ITP" class="marca-agua-oficio" onerror="this.style.display='none'">
 
       <div class="contenido-sobre-marca">
-        <!-- cuadro de membrete formal estilo sistema de gestión de calidad -->
         <table class="tabla-membrete-sgc">
           <tr>
             <td class="celda-logos-membrete">
@@ -775,10 +1822,9 @@ function abrir_modal_reporte() {
           </tr>
         </table>
 
-        <!-- cintillo de oficio -->
         <div class="bloque-asunto-oficio">
           <div>
-            <strong>DOCUMENTO:</strong> REPORTE MENSUAL DE SOLICITUDES DE SERVICIO Y PRODUCTIVIDAD
+            <strong>DOCUMENTO:</strong> REPORTE OFICIAL DE SOLICITUDES Y PRODUCTIVIDAD
           </div>
           <div>
             <strong>LUGAR:</strong> Pachuca de Soto, Hgo.
@@ -786,10 +1832,9 @@ function abrir_modal_reporte() {
         </div>
 
         <p class="parrafo-introductorio-oficio">
-          Por medio del presente documento se hace constar el concentrado estadístico y padrón operativo de las solicitudes de diseño gráfico, difusión institucional, cobertura audiovisual y validación de materiales recibidas y gestionadas por el <strong>Departamento de Comunicación y Difusión</strong> del Instituto Tecnológico de Pachuca correspondiente al periodo <strong>${nombre_periodo}</strong>.
+          Por medio del presente documento se hace constar el concentrado estadístico y padrón operativo de las solicitudes de diseño e impresión de material gráfico, difusión institucional, cobertura audiovisual y validación de materiales recibidas y gestionadas por el <strong>Departamento de Comunicación y Difusión</strong> del Instituto Tecnológico de Pachuca correspondiente al periodo <strong>${nombre_periodo}</strong>.
         </p>
 
-        <!-- sección 1: resumen ejecutivo en tabla -->
         <div class="titulo-seccion-oficio">I. Resumen Ejecutivo de Indicadores Operativos</div>
         <table class="tabla-oficio-formal">
           <thead>
@@ -814,7 +1859,6 @@ function abrir_modal_reporte() {
           </tbody>
         </table>
 
-        <!-- sección 2: desglose estadístico tabular -->
         <div class="titulo-seccion-oficio">II. Desglose Estadístico por Rubro y Asignación</div>
         <div class="grid-tablas-estadisticas">
           <div>
@@ -864,7 +1908,6 @@ function abrir_modal_reporte() {
           </div>
         </div>
 
-        <!-- sección 3: bitácora detallada -->
         <div class="titulo-seccion-oficio">III. Padrón Detallado y Bitácora de Solicitudes del Periodo</div>
         <table class="tabla-oficio-formal">
           <thead>
@@ -885,7 +1928,6 @@ function abrir_modal_reporte() {
           </tbody>
         </table>
 
-        <!-- firmas oficiales -->
         <div class="bloque-firmas-oficio">
           <div class="caja-firma-oficio">
             <div class="linea-firma-formal">
@@ -916,8 +1958,122 @@ function cerrar_modal_reporte() {
   document.getElementById('modal-reporte').classList.add('oculto');
 }
 
-function imprimir_reporte_pdf() {
+async function imprimir_reporte_pdf() {
   window.print();
+
+  if (mes_filtro_activo === 'sem-1' || mes_filtro_activo === 'sem-2') {
+    setTimeout(() => {
+      confirmar_purga_post_reporte_semestral();
+    }, 500);
+  }
+}
+
+async function confirmar_purga_post_reporte_semestral() {
+  if (!sesion_autorizada || sessionStorage.getItem('itp_sesion_activa_segura') !== token_sesion_seguro) {
+    return;
+  }
+
+  const icono_advertencia_gordito = `
+    <div class="alerta-icono-minimal ambar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+        <line x1="12" y1="9" x2="12" y2="13"></line>
+        <line x1="12" y1="17.2" x2="12.01" y2="17.2"></line>
+      </svg>
+    </div>
+  `;
+
+  const aviso_1 = await Swal.fire({
+    html: `
+      ${icono_advertencia_gordito}
+      <span class="alerta-tag-sup">Aviso de Cierre Semestral</span>
+      <h3 class="alerta-titulo-custom">Corte Semestral de Base de Datos</h3>
+      <p class="alerta-cuerpo-custom">
+        Al concluir el reporte semestral se eliminarán todos los registros.
+        <span class="alerta-pregunta-resaltada">¿Ya guardaste o imprimiste con éxito el PDF del reporte?</span>
+      </p>
+    `,
+    showCancelButton: true,
+    confirmButtonColor: '#1B396A',
+    cancelButtonColor: '#64748b',
+    confirmButtonText: 'Sí, ya guardé con éxito el PDF',
+    cancelButtonText: 'No, aún no lo guardo'
+  });
+
+  if (!aviso_1.isConfirmed) return;
+
+  const icono_seguridad_gordito = `
+    <div class="alerta-icono-minimal rojo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+        <line x1="12" y1="8" x2="12" y2="12"></line>
+        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+      </svg>
+    </div>
+  `;
+
+  const aviso_2 = await Swal.fire({
+    html: `
+      ${icono_seguridad_gordito}
+      <span class="alerta-tag-sup" style="color: #dc2626; background: #fef2f2;">Verificación de Seguridad</span>
+      <h3 class="alerta-titulo-custom">Confirmación Definitiva</h3>
+      <p class="alerta-cuerpo-custom">
+        Esta acción vaciará toda la base de datos y reiniciará el contador de folios a <strong>1</strong>. Escribe la palabra <strong style="color: #dc2626;">ELIMINAR</strong> para confirmar:
+      </p>
+    `,
+    input: 'text',
+    inputPlaceholder: 'Escribe ELIMINAR',
+    showCancelButton: true,
+    confirmButtonColor: '#dc2626',
+    cancelButtonColor: '#64748b',
+    confirmButtonText: 'Vaciar Base de Datos',
+    cancelButtonText: 'Cancelar',
+    showCloseButton: true,
+    allowOutsideClick: true,
+    allowEscapeKey: true,
+    hideClass: {
+      popup: ''
+    },
+    inputValidator: (value) => {
+      if (value !== 'ELIMINAR') {
+        return 'Debes escribir exactamente la palabra ELIMINAR';
+      }
+    }
+  });
+
+  if (!aviso_2.isConfirmed) return;
+
+  if (usar_nube) {
+    const { error: error_rpc } = await cliente_db.rpc('reiniciar_tabla_solicitudes');
+
+    if (error_rpc) {
+      const { error: error_del } = await cliente_db.from('solicitudes').delete().neq('id', 0);
+      if (error_del) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Error de Supabase',
+          text: error_del.message,
+          confirmButtonColor: '#1B396A'
+        });
+        return;
+      }
+    }
+  } else {
+    localStorage.removeItem('tickets_itp_v6');
+  }
+
+  solicitudes = [];
+  cerrar_modal_reporte();
+  actualizar_folio_preview();
+  renderizar_tickets();
+  actualizar_notificaciones_ios();
+
+  Swal.fire({
+    icon: 'success',
+    title: 'Base de Datos Reiniciada',
+    text: 'Se eliminaron todas las solicitudes y el contador volverá a iniciar desde el folio e ID 1.',
+    confirmButtonColor: '#1B396A'
+  });
 }
 
 async function alternar_fecha_limite_manual(index, habilitado) {
@@ -931,7 +2087,6 @@ async function alternar_fecha_limite_manual(index, habilitado) {
 
 async function actualizar_campo(index, campo, valor) {
   if (!sesion_autorizada || sessionStorage.getItem('itp_sesion_activa_segura') !== token_sesion_seguro) {
-    mostrar_toast('Acción no autorizada. Inicie sesión nuevamente.');
     intentar_abrir_panel();
     return;
   }
@@ -950,8 +2105,8 @@ async function actualizar_campo(index, campo, valor) {
     localStorage.setItem('tickets_itp_v6', JSON.stringify(solicitudes));
   }
 
-  mostrar_toast(`Actualizado (${nuevo_estado})`);
   renderizar_tickets();
+  actualizar_notificaciones_ios();
 }
 
 async function agregar_nota(index) {
@@ -972,8 +2127,24 @@ async function editar_nota(index_ticket, index_nota) {
   const lista = obtener_arreglo_notas(item.observaciones);
   const texto_actual = lista[index_nota];
 
-  const nuevo_texto = prompt('Editar nota de seguimiento:', texto_actual);
-  if (nuevo_texto !== null && nuevo_texto.trim() !== '') {
+  const { value: nuevo_texto } = await Swal.fire({
+    title: 'Editar nota de seguimiento',
+    input: 'text',
+    inputValue: texto_actual,
+    showCancelButton: true,
+    confirmButtonColor: '#1B396A',
+    cancelButtonColor: '#64748b',
+    confirmButtonText: 'Guardar',
+    cancelButtonText: 'Cancelar',
+    showCloseButton: true,
+    allowOutsideClick: true,
+    allowEscapeKey: true,
+    hideClass: {
+      popup: ''
+    }
+  });
+
+  if (nuevo_texto !== undefined && nuevo_texto.trim() !== '') {
     lista[index_nota] = sanitizar_texto(nuevo_texto.trim());
     await actualizar_campo(index_ticket, 'observaciones', lista.join(' | '));
   }
@@ -982,9 +2153,28 @@ async function editar_nota(index_ticket, index_nota) {
 async function eliminar_nota(index_ticket, index_nota) {
   const item = solicitudes[index_ticket];
   const lista = obtener_arreglo_notas(item.observaciones);
-  lista.splice(index_nota, 1);
 
-  await actualizar_campo(index_ticket, 'observaciones', lista.join(' | '));
+  const resultado = await Swal.fire({
+    title: '¿Eliminar nota?',
+    text: 'Esta acción no se puede deshacer.',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#d33',
+    cancelButtonColor: '#64748b',
+    confirmButtonText: 'Sí, eliminar',
+    cancelButtonText: 'Cancelar',
+    showCloseButton: true,
+    allowOutsideClick: true,
+    allowEscapeKey: true,
+    hideClass: {
+      popup: ''
+    }
+  });
+
+  if (resultado.isConfirmed) {
+    lista.splice(index_nota, 1);
+    await actualizar_campo(index_ticket, 'observaciones', lista.join(' | '));
+  }
 }
 
 function cambiar_vista(vista) {
@@ -1008,6 +2198,7 @@ function cambiar_vista(vista) {
     b_nueva.classList.remove('activo');
     b_panel.classList.add('activo');
     actualizar_metricas_panel();
+    actualizar_notificaciones_ios();
   }
 }
 
