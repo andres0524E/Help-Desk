@@ -30,7 +30,7 @@
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.14.5/dist/sweetalert2.all.min.js"></script>
 
 
-  <link rel="stylesheet" href="styles.css?v=20261104c">
+  <link rel="stylesheet" href="styles.css?v=20261104e">
   <script>
     (function() {
       try {
@@ -1280,7 +1280,18 @@
           </div>
         </div>
 
+        <!-- conmutador entre vista de lista y vista de calendario de eventos -->
+        <div class="conmutador-vista-panel">
+          <button type="button" class="btn-conmutar-vista activo" id="btn-vista-lista" data-accion="vista-panel" data-vista="lista">
+            <i data-lucide="list"></i> Lista
+          </button>
+          <button type="button" class="btn-conmutar-vista" id="btn-vista-calendario" data-accion="vista-panel" data-vista="calendario">
+            <i data-lucide="calendar-days"></i> Calendario
+          </button>
+        </div>
+
         <div class="lista-tickets" id="contenedor-tickets"></div>
+        <div class="calendario-panel oculto" id="contenedor-calendario"></div>
       </div>
     </section>
 
@@ -1536,7 +1547,7 @@
               <div class="cabecera-paso-manual">
                 <span class="numero-paso-manual">3</span>
                 <div>
-                  <h4>Estatus Automático y Botón "Denegar / Reactivar"</h4>
+                  <h4>Estado y Botón "Denegar / Reactivar"</h4>
                   <span class="etiqueta-ubicacion-manual">Esquina superior derecha de cada tarjeta de solicitud</span>
                 </div>
               </div>
@@ -1642,6 +1653,6 @@
     </defs>
   </svg>
 
-  <script src="app.js?v=20261104c"></script>
+  <script src="app.js?v=20261104e"></script>
 </body>
 </html>

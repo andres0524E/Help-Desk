@@ -67,6 +67,9 @@ let servicio_actual = 'Diseño e impresión de material gráfico';
 let aplica_evento = true;
 let solicitudes = [];
 let filtro_activo = 'todos';
+let pagina_actual_tickets = 1;
+const limite_tickets_pagina = 10;
+let ultima_busqueda_tickets = '';
 
 // detecta automáticamente el mes actual (01 al 12) para seleccionarlo por defecto
 const mes_actual_sistema = String(new Date().getMonth() + 1).padStart(2, '0');
@@ -428,6 +431,13 @@ function ir_a_solicitud_notificacion(folio_destino) {
 
   const input_busqueda = document.getElementById('buscador-tickets');
   if (input_busqueda) input_busqueda.value = '';
+  ultima_busqueda_tickets = '';
+
+  const lista_final_notif = obtener_solicitudes_por_periodo();
+  const idx_notif = lista_final_notif.findIndex(
+    s => String(s.folio).toUpperCase() === String(folio_destino).toUpperCase()
+  );
+  pagina_actual_tickets = idx_notif !== -1 ? Math.floor(idx_notif / limite_tickets_pagina) + 1 : 1;
 
   renderizar_tickets();
 
@@ -648,6 +658,19 @@ function inicializar_delegacion_eventos_segura() {
       editar_nota(idx, idx_nota);
     } else if (accion === 'eliminar-nota' && !isNaN(idx) && !isNaN(idx_nota)) {
       eliminar_nota(idx, idx_nota);
+    } else if (accion === 'vista-panel') {
+      cambiar_vista_panel(nodo_accion.getAttribute('data-vista') || 'lista');
+    } else if (accion === 'cal-mes') {
+      mover_mes_calendario(parseInt(nodo_accion.getAttribute('data-delta'), 10) || 0);
+    } else if (accion === 'cal-evento') {
+      const folio_cal = nodo_accion.getAttribute('data-folio') || '';
+      cambiar_vista_panel('lista');
+      ir_a_solicitud_notificacion(folio_cal);
+    } else if (accion === 'cambiar-pagina-tickets') {
+      const num_pag = parseInt(nodo_accion.getAttribute('data-pagina'), 10);
+      if (!isNaN(num_pag)) {
+        cambiar_pagina_tickets(num_pag);
+      }
     }
   });
 
@@ -904,6 +927,7 @@ function inicializar_controles_visuales() {
         } else {
           mes_filtro_activo = valor;
         }
+        pagina_actual_tickets = 1;
         renderizar_tickets();
       }
     });
@@ -1077,6 +1101,7 @@ function cambiar_mes_filtro() {
   const select = document.getElementById('selector-mes-reporte');
   const valor_elegido = select && select.value ? select.value : mes_actual_sistema;
   mes_filtro_activo = nombres_meses[valor_elegido] ? valor_elegido : mes_actual_sistema;
+  pagina_actual_tickets = 1;
   renderizar_tickets();
 }
 
@@ -1411,6 +1436,7 @@ async function consultar_folio_publico(e) {
       </div>
 
       ${aviso_denegacion_html}
+      ${construir_linea_tiempo_rastreo(encontrado, estado_calculado, info_den_pub.denegada)}
       <div class="rastreo-grid-meta">
         <div><strong>Responsable asignado:</strong> ${esc(capitalizar_inicial(encontrado.responsable || 'Por asignar'))}</div>
         <div><strong>Fecha límite estimada:</strong> ${esc(encontrado.fecha_limite || 'Sin asignar')}</div>
@@ -1433,6 +1459,171 @@ async function consultar_folio_publico(e) {
 function cerrar_rastreo_publico() {
   document.getElementById('resultado-rastreo').classList.add('oculto');
   document.getElementById('input-rastreo-folio').value = '';
+}
+
+// =========================================================================
+// línea de tiempo visual estilo rastreo de paquete (buscador público)
+// =========================================================================
+function construir_linea_tiempo_rastreo(item, estado_calc, es_denegada) {
+  const resp = String(item.responsable || '').trim();
+  const tiene_resp = resp !== '' && !['sin asignar', 'denegada'].includes(resp.toLowerCase());
+  const nombre_resp = tiene_resp ? capitalizar_inicial(resp.replace(/^chico\(a\) de servicio:\s*/i, '')) : '';
+
+  let pasos;
+  if (es_denegada) {
+    pasos = [
+      { titulo: 'Recibida', detalle: item.fecha_solicitud || '', icono: 'scroll-text', estado: 'hecho' },
+      { titulo: 'Revisión', detalle: 'Evaluada por el departamento', icono: 'scan-search', estado: 'hecho' },
+      { titulo: 'Denegada', detalle: 'Consulta el motivo arriba', icono: 'octagon-x', estado: 'denegado' }
+    ];
+  } else {
+    const terminado = estado_calc === 'Terminado';
+    const en_proceso = estado_calc === 'En proceso' || terminado;
+    pasos = [
+      { titulo: 'Recibida', detalle: item.fecha_solicitud || '', icono: 'scroll-text', estado: 'hecho' },
+      { titulo: 'Asignada', detalle: tiene_resp ? nombre_resp : 'Por asignar', icono: 'handshake', estado: tiene_resp ? 'hecho' : 'actual' },
+      { titulo: 'En producción', detalle: en_proceso ? 'Trabajando en tu solicitud' : 'En espera', icono: 'pen-tool', estado: terminado ? 'hecho' : (en_proceso ? 'actual' : 'pendiente') },
+      { titulo: 'Concluida', detalle: terminado ? 'Servicio entregado' : (item.fecha_limite || item.fecha_evento || 'Próximamente'), icono: 'badge-check', estado: terminado ? 'hecho' : 'pendiente' }
+    ];
+    if (!tiene_resp) {
+      pasos[2].estado = 'pendiente';
+    }
+  }
+
+  const hechos = pasos.filter(p => p.estado === 'hecho' || p.estado === 'denegado').length;
+  const actual = pasos.some(p => p.estado === 'actual') ? 0.5 : 0;
+  const progreso = Math.min(100, ((hechos - 1 + actual) / (pasos.length - 1)) * 100);
+
+  return `
+    <div class="linea-tiempo-rastreo ${es_denegada ? 'es-denegada' : ''}" style="--progreso-lt: ${Math.max(0, progreso)}%; --total-pasos: ${pasos.length};">
+      <div class="lt-riel"><div class="lt-riel-relleno"></div></div>
+      ${pasos.map((p, i) => `
+        <div class="lt-paso lt-${p.estado}" style="--lt-delay: ${i * 0.18}s">
+          <div class="lt-nodo"><i data-lucide="${p.icono}"></i></div>
+          <span class="lt-titulo">${esc(p.titulo)}</span>
+          <span class="lt-detalle">${esc(p.detalle)}</span>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+// =========================================================================
+// vista conmutable de calendario / cronograma de eventos (panel interno)
+// =========================================================================
+let vista_panel_actual = 'lista';
+let calendario_mes_vista = new Date().getMonth();
+let calendario_anio_vista = new Date().getFullYear();
+
+function cambiar_vista_panel(vista) {
+  vista_panel_actual = vista === 'calendario' ? 'calendario' : 'lista';
+  const cont_lista = document.getElementById('contenedor-tickets');
+  const cont_cal = document.getElementById('contenedor-calendario');
+  const btn_lista = document.getElementById('btn-vista-lista');
+  const btn_cal = document.getElementById('btn-vista-calendario');
+  const es_cal = vista_panel_actual === 'calendario';
+
+  if (cont_lista) cont_lista.classList.toggle('oculto', es_cal);
+  if (cont_cal) cont_cal.classList.toggle('oculto', !es_cal);
+  if (btn_lista) btn_lista.classList.toggle('activo', !es_cal);
+  if (btn_cal) btn_cal.classList.toggle('activo', es_cal);
+
+  if (es_cal) renderizar_calendario_panel();
+}
+
+function mover_mes_calendario(delta) {
+  calendario_mes_vista += delta;
+  if (calendario_mes_vista < 0) { calendario_mes_vista = 11; calendario_anio_vista--; }
+  if (calendario_mes_vista > 11) { calendario_mes_vista = 0; calendario_anio_vista++; }
+  renderizar_calendario_panel();
+}
+
+function renderizar_calendario_panel() {
+  const cont = document.getElementById('contenedor-calendario');
+  if (!cont || vista_panel_actual !== 'calendario') return;
+
+  const anio = calendario_anio_vista;
+  const mes = calendario_mes_vista;
+  const prefijo_mes = `${anio}-${String(mes + 1).padStart(2, '0')}-`;
+  const nombres_mes = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+
+  // agrupa solicitudes por día usando la fecha del evento o, en su defecto, la fecha límite
+  const eventos_por_dia = {};
+  solicitudes.forEach(item => {
+    const fecha_ref = (item.aplica_evento && item.fecha_evento) ? item.fecha_evento : (item.fecha_limite || '');
+    if (!fecha_ref || !fecha_ref.startsWith(prefijo_mes)) return;
+    const dia = parseInt(fecha_ref.slice(8, 10), 10);
+    if (!eventos_por_dia[dia]) eventos_por_dia[dia] = [];
+    eventos_por_dia[dia].push(item);
+  });
+  Object.values(eventos_por_dia).forEach(lista => {
+    lista.sort((a, b) => String(a.hora_evento || '99').localeCompare(String(b.hora_evento || '99')));
+  });
+
+  const primer_dia = (new Date(anio, mes, 1).getDay() + 6) % 7; // semana inicia en lunes
+  const dias_mes = new Date(anio, mes + 1, 0).getDate();
+  const hoy = new Date();
+  const es_mes_hoy = hoy.getFullYear() === anio && hoy.getMonth() === mes;
+  const total_mes = Object.values(eventos_por_dia).reduce((acc, l) => acc + l.length, 0);
+
+  let celdas = '';
+  for (let i = 0; i < primer_dia; i++) {
+    celdas += `<div class="cal-celda cal-vacia"></div>`;
+  }
+  for (let d = 1; d <= dias_mes; d++) {
+    const lista = eventos_por_dia[d] || [];
+    const es_hoy = es_mes_hoy && hoy.getDate() === d;
+    const visibles = lista.slice(0, 3);
+    const extra = lista.length - visibles.length;
+
+    celdas += `
+      <div class="cal-celda ${es_hoy ? 'cal-hoy' : ''} ${lista.length ? 'cal-con-eventos' : ''}">
+        <span class="cal-num-dia">${d}</span>
+        ${visibles.map(ev => {
+          const info_den = obtener_info_denegacion(ev);
+          const est = info_den.denegada ? 'Denegada' : calcular_estado_automatico(ev);
+          const clase_est = 'cal-ev-' + est.replace(' ', '-');
+          const resp = String(ev.responsable || '').trim();
+          const resp_corto = (!resp || resp.toLowerCase() === 'sin asignar' || resp.toLowerCase() === 'denegada')
+            ? 'Sin asignar'
+            : capitalizar_inicial(resp.replace(/^chico\(a\) de servicio:\s*/i, ''));
+          const hora = ev.aplica_evento && ev.hora_evento ? String(ev.hora_evento).slice(0, 5) : 'Límite';
+          const folio_ev = esc(String(ev.folio || '').toUpperCase());
+          return `
+            <button type="button" class="cal-evento ${clase_est}" data-accion="cal-evento" data-folio="${folio_ev}"
+              title="${folio_ev} · ${esc(capitalizar_inicial(ev.servicio))} · ${esc(ev.solicitante)}${ev.lugar_evento ? ' · ' + esc(ev.lugar_evento) : ''} · ${esc(resp_corto)}">
+              <span class="cal-ev-hora">${esc(hora)}</span>
+              <span class="cal-ev-texto">${esc(capitalizar_inicial(ev.servicio))}</span>
+              <span class="cal-ev-resp">${esc(resp_corto)}</span>
+            </button>
+          `;
+        }).join('')}
+        ${extra > 0 ? `<span class="cal-mas">+${extra} más</span>` : ''}
+      </div>
+    `;
+  }
+
+  cont.innerHTML = `
+    <div class="cal-cabecera">
+      <button type="button" class="btn-pagina-ticket nav" data-accion="cal-mes" data-delta="-1" title="Mes anterior"><i data-lucide="chevron-left"></i></button>
+      <div class="cal-titulo">
+        <strong>${nombres_mes[mes]} ${anio}</strong>
+        <span>${total_mes} ${total_mes === 1 ? 'evento programado' : 'eventos programados'}</span>
+      </div>
+      <button type="button" class="btn-pagina-ticket nav" data-accion="cal-mes" data-delta="1" title="Mes siguiente"><i data-lucide="chevron-right"></i></button>
+    </div>
+    <div class="cal-leyenda">
+      <span><i class="cal-punto cal-ev-Pendiente"></i> Pendiente</span>
+      <span><i class="cal-punto cal-ev-En-proceso"></i> En proceso</span>
+      <span><i class="cal-punto cal-ev-Terminado"></i> Terminado</span>
+      <span><i class="cal-punto cal-ev-Denegada"></i> Denegada</span>
+    </div>
+    <div class="cal-grid">
+      ${['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'].map(n => `<div class="cal-dia-semana">${n}</div>`).join('')}
+      ${celdas}
+    </div>
+  `;
+  refrescar_iconos();
 }
 
 function calcular_estado_automatico(item) {
@@ -1730,28 +1921,59 @@ async function guardar_solicitud(e) {
     };
 
     if (usar_nube && cliente_db) {
-      // registro atómico mediante rpc crear_solicitud (con respaldo directo si el sql aún no se ha ejecutado)
-      const { data: respuesta_rpc, error: error_rpc } = await cliente_db.rpc('crear_solicitud', { p_datos: nueva });
+      // registro atómico en servidor con reintento automático anti-colisión para envíos simultáneos
+      let guardado_exitoso = false;
+      let ultimo_error_db = null;
 
-      if (error_rpc) {
+      for (let intento = 0; intento < 4 && !guardado_exitoso; intento++) {
+        if (intento > 0) {
+          await new Promise(res => setTimeout(res, 90 + Math.floor(Math.random() * 140)));
+          folio_confirmado = await actualizar_folio_preview();
+          nueva.folio = folio_confirmado;
+        }
+
+        const { data: respuesta_rpc, error: error_rpc } = await cliente_db.rpc('crear_solicitud', { p_datos: nueva });
+
+        if (!error_rpc) {
+          if (typeof respuesta_rpc === 'string' && respuesta_rpc.startsWith('SRV-')) {
+            folio_confirmado = respuesta_rpc;
+            nueva.folio = folio_confirmado;
+          } else if (respuesta_rpc && respuesta_rpc.folio) {
+            folio_confirmado = respuesta_rpc.folio;
+            nueva.folio = folio_confirmado;
+          }
+          guardado_exitoso = true;
+          break;
+        }
+
         const msg_err = String(error_rpc.message || '');
-        const rpc_no_existe = msg_err.includes('crear_solicitud') || error_rpc.code === 'PGRST202' || error_rpc.code === '42883';
+        const es_colision = error_rpc.code === '23505' || msg_err.toLowerCase().includes('duplicate') || msg_err.includes('solicitudes_folio_unico');
+        if (es_colision) {
+          ultimo_error_db = error_rpc;
+          continue;
+        }
 
+        const rpc_no_existe = msg_err.includes('crear_solicitud') || error_rpc.code === 'PGRST202' || error_rpc.code === '42883';
         if (rpc_no_existe) {
           nueva.estado = calcular_estado_automatico(nueva);
           const { error: error_insert } = await cliente_db.from('solicitudes').insert([nueva]);
-          if (error_insert) {
-            throw new Error(error_insert.message);
+          if (!error_insert) {
+            guardado_exitoso = true;
+            break;
           }
-        } else {
-          throw new Error(msg_err || 'No se pudo guardar la solicitud en la base de datos.');
+          const msg_ins = String(error_insert.message || '');
+          if (error_insert.code === '23505' || msg_ins.toLowerCase().includes('duplicate')) {
+            ultimo_error_db = error_insert;
+            continue;
+          }
+          throw new Error(msg_ins);
         }
-      } else if (typeof respuesta_rpc === 'string' && respuesta_rpc.startsWith('SRV-')) {
-        folio_confirmado = respuesta_rpc;
-        nueva.folio = folio_confirmado;
-      } else if (respuesta_rpc && respuesta_rpc.folio) {
-        folio_confirmado = respuesta_rpc.folio;
-        nueva.folio = folio_confirmado;
+
+        throw new Error(msg_err || 'No se pudo guardar la solicitud en la base de datos.');
+      }
+
+      if (!guardado_exitoso && ultimo_error_db) {
+        throw new Error(ultimo_error_db.message || 'No se pudo asignar el folio tras varios intentos.');
       }
 
       if (sesion_autorizada) {
@@ -1809,9 +2031,19 @@ async function guardar_solicitud(e) {
 
 function filtrar_estado(estado, btn) {
   filtro_activo = estado;
+  pagina_actual_tickets = 1;
   document.querySelectorAll('.btn-filtro').forEach(b => b.classList.remove('activo'));
   btn.classList.add('activo');
   renderizar_tickets();
+}
+
+function cambiar_pagina_tickets(nueva_pagina) {
+  pagina_actual_tickets = nueva_pagina;
+  renderizar_tickets();
+  const contenedor = document.getElementById('contenedor-tickets');
+  if (contenedor) {
+    contenedor.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
 }
 
 function obtener_arreglo_notas(cadena_observaciones) {
@@ -1994,6 +2226,10 @@ function renderizar_tickets() {
   if (!contenedor) return;
   const input_busqueda = document.getElementById('buscador-tickets');
   const texto_busqueda = input_busqueda ? input_busqueda.value.toLowerCase() : '';
+  if (texto_busqueda !== ultima_busqueda_tickets) {
+    pagina_actual_tickets = 1;
+    ultima_busqueda_tickets = texto_busqueda;
+  }
   
   const lista_periodo = obtener_solicitudes_por_periodo();
 
@@ -2014,7 +2250,18 @@ function renderizar_tickets() {
     return;
   }
 
-  contenedor.innerHTML = filtrados.map((item, idx_vista) => {
+  const total_paginas = Math.max(1, Math.ceil(filtrados.length / limite_tickets_pagina));
+  if (pagina_actual_tickets > total_paginas) {
+    pagina_actual_tickets = total_paginas;
+  }
+  if (pagina_actual_tickets < 1) {
+    pagina_actual_tickets = 1;
+  }
+
+  const indice_inicio = (pagina_actual_tickets - 1) * limite_tickets_pagina;
+  const filtrados_pagina = filtrados.slice(indice_inicio, indice_inicio + limite_tickets_pagina);
+
+  const html_tarjetas = filtrados_pagina.map((item, idx_vista) => {
     const index_real = solicitudes.findIndex(s => s.folio === item.folio);
     const tiene_fecha_limite = Boolean(item.fecha_limite && item.fecha_limite.trim() !== '');
     
@@ -2099,7 +2346,7 @@ function renderizar_tickets() {
           </div>
 
           <div class="selector-estado-contenedor">
-            <span class="selector-estado-label">Estatus automático</span>
+            <span class="selector-estado-label">Estado</span>
             <div class="fila-estado-acciones">
               <span class="badge-estado-actual ${clase_estado_visual}">
                 <span class="punto-estado"></span>
@@ -2193,9 +2440,38 @@ function renderizar_tickets() {
     `;
   }).join('');
 
+  let html_paginacion = '';
+  if (total_paginas > 1) {
+    let botones_nums = '';
+    for (let p = 1; p <= total_paginas; p++) {
+      botones_nums += `<button type="button" class="btn-pagina-ticket ${p === pagina_actual_tickets ? 'activo' : ''}" data-accion="cambiar-pagina-tickets" data-pagina="${p}">${p}</button>`;
+    }
+
+    const desde_num = indice_inicio + 1;
+    const hasta_num = Math.min(indice_inicio + limite_tickets_pagina, filtrados.length);
+
+    html_paginacion = `
+      <div class="barra-paginacion-tickets">
+        <span class="info-paginacion-tickets">Mostrando <strong>${desde_num}–${hasta_num}</strong> de <strong>${filtrados.length}</strong> solicitudes</span>
+        <div class="controles-paginacion-tickets">
+          <button type="button" class="btn-pagina-ticket nav" data-accion="cambiar-pagina-tickets" data-pagina="${pagina_actual_tickets - 1}" ${pagina_actual_tickets === 1 ? 'disabled' : ''} title="Página anterior">
+            <i data-lucide="chevron-left"></i>
+          </button>
+          ${botones_nums}
+          <button type="button" class="btn-pagina-ticket nav" data-accion="cambiar-pagina-tickets" data-pagina="${pagina_actual_tickets + 1}" ${pagina_actual_tickets === total_paginas ? 'disabled' : ''} title="Página siguiente">
+            <i data-lucide="chevron-right"></i>
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  contenedor.innerHTML = html_tarjetas + html_paginacion;
+
   refrescar_iconos();
   inicializar_calendarios_panel_interno();
   inicializar_selectores_responsable_tarjetas();
+  renderizar_calendario_panel();
 }
 
 function contar_frecuencias(lista, propiedad) {
