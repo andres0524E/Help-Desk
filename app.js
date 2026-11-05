@@ -1202,18 +1202,20 @@ async function inicializar() {
       await cargar_directorio_responsables();
     }
 
-    cliente_db.auth.onAuthStateChange(async (_evento, sesion) => {
+    cliente_db.auth.onAuthStateChange((_evento, sesion) => {
       sesion_autorizada = Boolean(sesion);
       actualizar_icono_candado();
-      if (sesion_autorizada) {
-        await cargar_directorio_responsables();
-        await cargar_solicitudes();
-      } else {
-        limpiar_directorio_responsables_memoria();
-        solicitudes = [];
-        renderizar_tickets();
-        actualizar_notificaciones_ios();
-      }
+      setTimeout(async () => {
+        if (sesion_autorizada) {
+          await cargar_directorio_responsables();
+          await cargar_solicitudes();
+        } else {
+          limpiar_directorio_responsables_memoria();
+          solicitudes = [];
+          renderizar_tickets();
+          actualizar_notificaciones_ios();
+        }
+      }, 0);
     });
   }
 
