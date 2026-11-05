@@ -4,11 +4,12 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#1B396A">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Mesa ITP">
   <!-- política de seguridad de contenido (csp) para restringir orígenes permitidos -->
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com https://api.fontshare.com; font-src 'self' https://fonts.gstatic.com https://api.fontshare.com https://cdn.fontshare.com data:; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://script.google.com https://script.googleusercontent.com https://api.emailjs.com https://cdn.jsdelivr.net; frame-ancestors 'none'; base-uri 'self'; form-action 'self';">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com https://api.fontshare.com; font-src 'self' https://fonts.gstatic.com https://api.fontshare.com https://cdn.fontshare.com data:; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://script.google.com https://script.googleusercontent.com https://cdn.jsdelivr.net; base-uri 'self'; form-action 'self';">
   <title>Mesa de Comunicación y Difusión | ITP</title>
   <link rel="icon" type="image/png" href="img/help-desk.png">
   <link rel="apple-touch-icon" href="img/help-desk.png">
@@ -27,9 +28,9 @@
   <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/es.js"></script>
 
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.14.5/dist/sweetalert2.all.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4.4.1/dist/email.min.js"></script>
 
-  <link rel="stylesheet" href="styles.css">
+
+  <link rel="stylesheet" href="styles.css?v=20261104">
   <script>
     (function() {
       try {
@@ -960,7 +961,7 @@
         </div>
       </div>
       <div class="acciones-header">
-        <a href="https://supabase.com/dashboard/project/ijcytjuvgexjzilrbdeg/editor/17606?schema=public" target="_blank" class="badge-conexion" id="estado-conexion" title="Abrir base de datos en Supabase">Verificando...</a>
+        <span class="badge-conexion" id="estado-conexion">Verificando...</span>
         <div class="selector-vista">
           <button class="btn-vista activo" id="btn-nueva" onclick="cambiar_vista('formulario')">Solicitar servicio</button>
           <button class="btn-vista" id="btn-panel" onclick="intentar_abrir_panel()">
@@ -1641,6 +1642,6 @@
     </defs>
   </svg>
 
-  <script src="app.js"></script>
+  <script src="app.js?v=20261104"></script>
 </body>
 </html>

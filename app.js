@@ -22,12 +22,42 @@ const catalogo_responsables = {
   'Chico(a) de servicio': { correo: '', telefono: '' }
 };
 
-// cliente supabase configurado con sessionstorage para mantener la sesión jwt segura por pestaña
+// almacenamiento adaptable para sesión jwt de supabase auth (soporta "mantener sesión abierta en este equipo")
+const almacenamiento_sesion_itp = {
+  getItem: (clave) => {
+    try {
+      const recordar = localStorage.getItem('itp_recordar_equipo') !== '0';
+      return (recordar ? localStorage.getItem(clave) : null) || sessionStorage.getItem(clave);
+    } catch (e) {
+      return sessionStorage.getItem(clave);
+    }
+  },
+  setItem: (clave, valor) => {
+    try {
+      const recordar = localStorage.getItem('itp_recordar_equipo') !== '0';
+      if (recordar) {
+        localStorage.setItem(clave, valor);
+        sessionStorage.setItem(clave, valor);
+      } else {
+        localStorage.removeItem(clave);
+        sessionStorage.setItem(clave, valor);
+      }
+    } catch (e) {
+      sessionStorage.setItem(clave, valor);
+    }
+  },
+  removeItem: (clave) => {
+    try { localStorage.removeItem(clave); } catch (e) {}
+    try { sessionStorage.removeItem(clave); } catch (e) {}
+  }
+};
+
+// cliente supabase configurado con almacenamiento adaptable para mantener la sesión jwt segura
 const usar_nube = supabase_url.startsWith('https://') && supabase_key.length > 20;
 const cliente_db = usar_nube
   ? window.supabase.createClient(supabase_url, supabase_key, {
       auth: {
-        storage: window.sessionStorage,
+        storage: almacenamiento_sesion_itp,
         persistSession: true
       }
     })
@@ -1229,6 +1259,10 @@ async function intentar_abrir_panel() {
 async function verificar_pin(e) {
   e.preventDefault();
   const pin_ingresado = document.getElementById('input-pin').value.trim();
+  const check_recordar = document.getElementById('check-recordar-pin');
+  try {
+    localStorage.setItem('itp_recordar_equipo', (!check_recordar || check_recordar.checked) ? '1' : '0');
+  } catch (err) {}
 
   if (usar_nube && cliente_db) {
     const { data, error } = await cliente_db.auth.signInWithPassword({
@@ -1283,6 +1317,7 @@ async function cerrar_sesion_admin() {
   });
 
   if (resultado.isConfirmed) {
+    try { localStorage.removeItem('itp_recordar_equipo'); } catch (err) {}
     if (usar_nube && cliente_db) {
       await cliente_db.auth.signOut();
     }
