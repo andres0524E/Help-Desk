@@ -1344,6 +1344,15 @@ async function consultar_folio_publico(e) {
       const { data, error } = await cliente_db.rpc('consultar_folio', { p_folio: codigo_buscado });
       if (!error && data) {
         encontrado = Array.isArray(data) ? (data[0] || null) : data;
+      } else if (error) {
+        const { data: fila_directa } = await cliente_db
+          .from('solicitudes')
+          .select('folio, fecha_solicitud, servicio, solicitante, descripcion, aplica_evento, fecha_evento, hora_evento, lugar_evento, estado, responsable, fecha_limite, observaciones')
+          .ilike('folio', codigo_buscado)
+          .limit(1);
+        if (Array.isArray(fila_directa) && fila_directa.length > 0) {
+          encontrado = fila_directa[0];
+        }
       }
     } else {
       encontrado = solicitudes.find(s => String(s.folio).toUpperCase() === codigo_buscado) || null;
@@ -1526,6 +1535,18 @@ async function actualizar_folio_preview() {
         if (el_preview) el_preview.textContent = data;
         return data;
       }
+      const { data: folios_db } = await cliente_db.from('solicitudes').select('folio');
+      if (Array.isArray(folios_db) && folios_db.length > 0) {
+        let max_db = 0;
+        folios_db.forEach(f => {
+          const n = parseInt(String(f.folio || '').replace(/\D/g, ''), 10);
+          if (!isNaN(n) && n > max_db) max_db = n;
+        });
+        const sig_db = Math.max(folios_db.length, max_db) + 1;
+        const cod_db = 'SRV-' + String(sig_db).padStart(3, '0');
+        if (el_preview) el_preview.textContent = cod_db;
+        return cod_db;
+      }
     } catch (e) {}
   }
 
@@ -1683,90 +1704,105 @@ async function guardar_solicitud(e) {
   btn_submit.disabled = true;
   texto_btn.textContent = 'Enviando solicitud...';
 
-  const fecha_hoy = document.getElementById('fecha-actual').textContent;
-  const esp_valor = sanitizar_texto(document.getElementById('detalle-especifico').value.trim()).slice(0, 180);
-  const desc_valor = sanitizar_texto(document.getElementById('descripcion').value.trim()).slice(0, 400);
+  try {
+    const fecha_hoy = document.getElementById('fecha-actual').textContent;
+    const esp_valor = sanitizar_texto(document.getElementById('detalle-especifico').value.trim()).slice(0, 180);
+    const desc_valor = sanitizar_texto(document.getElementById('descripcion').value.trim()).slice(0, 400);
 
-  let folio_confirmado = await actualizar_folio_preview();
+    let folio_confirmado = await actualizar_folio_preview();
 
-  const nueva = {
-    folio: folio_confirmado,
-    fecha_solicitud: fecha_hoy,
-    servicio: capitalizar_inicial(servicio_actual),
-    solicitante: sanitizar_texto(document.getElementById('solicitante').value.trim()).slice(0, 150),
-    descripcion: `[${esp_valor}] — ${desc_valor}`,
-    aplica_evento: aplica_evento,
-    fecha_evento: aplica_evento ? document.getElementById('fecha-evento').value : '',
-    hora_evento: aplica_evento ? valor_hora_24 : '',
-    lugar_evento: aplica_evento ? sanitizar_texto(valor_lugar_final).slice(0, 150) : '',
-    estado: 'Pendiente',
-    responsable: 'Sin asignar',
-    fecha_limite: '',
-    observaciones: `[${fecha_hoy}] Solicitud registrada en plataforma.`
-  };
+    const nueva = {
+      folio: folio_confirmado,
+      fecha_solicitud: fecha_hoy,
+      servicio: capitalizar_inicial(servicio_actual),
+      solicitante: sanitizar_texto(document.getElementById('solicitante').value.trim()).slice(0, 150),
+      descripcion: `[${esp_valor}] — ${desc_valor}`,
+      aplica_evento: aplica_evento,
+      fecha_evento: aplica_evento ? document.getElementById('fecha-evento').value : '',
+      hora_evento: aplica_evento ? valor_hora_24 : '',
+      lugar_evento: aplica_evento ? sanitizar_texto(valor_lugar_final).slice(0, 150) : '',
+      estado: 'Pendiente',
+      responsable: 'Sin asignar',
+      fecha_limite: '',
+      observaciones: `[${fecha_hoy}] Solicitud registrada en plataforma.`
+    };
 
-  if (usar_nube && cliente_db) {
-    // registro atómico mediante rpc crear_solicitud (asigna folio consecutivo en servidor)
-    const { data: respuesta_rpc, error } = await cliente_db.rpc('crear_solicitud', { p_datos: nueva });
-    if (error) {
-      Swal.fire({
-        icon: 'error',
-        title: 'Error al Guardar',
-        text: error.message,
-        confirmButtonColor: '#1B396A'
-      });
-      btn_submit.disabled = false;
-      texto_btn.textContent = 'Enviar solicitud oficial';
-      return;
-    }
+    if (usar_nube && cliente_db) {
+      // registro atómico mediante rpc crear_solicitud (con respaldo directo si el sql aún no se ha ejecutado)
+      const { data: respuesta_rpc, error: error_rpc } = await cliente_db.rpc('crear_solicitud', { p_datos: nueva });
 
-    if (respuesta_rpc && respuesta_rpc.folio) {
-      folio_confirmado = respuesta_rpc.folio;
-      nueva.folio = folio_confirmado;
-    }
+      if (error_rpc) {
+        const msg_err = String(error_rpc.message || '');
+        const rpc_no_existe = msg_err.includes('crear_solicitud') || error_rpc.code === 'PGRST202' || error_rpc.code === '42883';
 
-    if (sesion_autorizada) {
-      await cargar_solicitudes();
+        if (rpc_no_existe) {
+          nueva.estado = calcular_estado_automatico(nueva);
+          const { error: error_insert } = await cliente_db.from('solicitudes').insert([nueva]);
+          if (error_insert) {
+            throw new Error(error_insert.message);
+          }
+        } else {
+          throw new Error(msg_err || 'No se pudo guardar la solicitud en la base de datos.');
+        }
+      } else if (typeof respuesta_rpc === 'string' && respuesta_rpc.startsWith('SRV-')) {
+        folio_confirmado = respuesta_rpc;
+        nueva.folio = folio_confirmado;
+      } else if (respuesta_rpc && respuesta_rpc.folio) {
+        folio_confirmado = respuesta_rpc.folio;
+        nueva.folio = folio_confirmado;
+      }
+
+      if (sesion_autorizada) {
+        await cargar_solicitudes();
+      } else {
+        await actualizar_folio_preview();
+      }
     } else {
+      nueva.estado = calcular_estado_automatico(nueva);
+      solicitudes.unshift(nueva);
+      localStorage.setItem('tickets_itp_v6', JSON.stringify(solicitudes));
       await actualizar_folio_preview();
+      renderizar_tickets();
+      actualizar_notificaciones_ios();
     }
-  } else {
-    nueva.estado = calcular_estado_automatico(nueva);
-    solicitudes.unshift(nueva);
-    localStorage.setItem('tickets_itp_v6', JSON.stringify(solicitudes));
-    await actualizar_folio_preview();
-    renderizar_tickets();
-    actualizar_notificaciones_ios();
-  }
 
-  document.getElementById('form-solicitud').reset();
-  if (selector_solicitante_instancia) {
-    selector_solicitante_instancia.setValue(catalogo_departamentos_itp[0], true);
-  }
-  if (selector_lugar_instancia) {
-    selector_lugar_instancia.setValue(catalogo_sitios_itp[0], true);
-  }
-  const bloque_otro_reset = document.getElementById('bloque-lugar-otro');
-  const input_otro_reset = document.getElementById('input-lugar-otro');
-  if (bloque_otro_reset) bloque_otro_reset.classList.add('oculto');
-  if (input_otro_reset) input_otro_reset.value = '';
-  if (calendario_evento_instancia) {
-    calendario_evento_instancia.clear();
-    if (calendario_evento_instancia.altInput) {
-      calendario_evento_instancia.altInput.placeholder = 'dd/mm/aaaa';
+    document.getElementById('form-solicitud').reset();
+    if (selector_solicitante_instancia) {
+      selector_solicitante_instancia.setValue(catalogo_departamentos_itp[0], true);
     }
-  }
-  if (input_hora_el) {
-    input_hora_el.value = '';
-    input_hora_el.removeAttribute('data-hora-24');
-    input_hora_el.placeholder = '--:--';
-  }
-  alternar_evento(true);
-  btn_submit.disabled = false;
-  texto_btn.textContent = 'Enviar solicitud oficial';
+    if (selector_lugar_instancia) {
+      selector_lugar_instancia.setValue(catalogo_sitios_itp[0], true);
+    }
+    const bloque_otro_reset = document.getElementById('bloque-lugar-otro');
+    const input_otro_reset = document.getElementById('input-lugar-otro');
+    if (bloque_otro_reset) bloque_otro_reset.classList.add('oculto');
+    if (input_otro_reset) input_otro_reset.value = '';
+    if (calendario_evento_instancia) {
+      calendario_evento_instancia.clear();
+      if (calendario_evento_instancia.altInput) {
+        calendario_evento_instancia.altInput.placeholder = 'dd/mm/aaaa';
+      }
+    }
+    if (input_hora_el) {
+      input_hora_el.value = '';
+      input_hora_el.removeAttribute('data-hora-24');
+      input_hora_el.placeholder = '--:--';
+    }
+    alternar_evento(true);
 
-  document.getElementById('modal-folio-texto').textContent = folio_confirmado;
-  document.getElementById('modal-exito').classList.remove('oculto');
+    document.getElementById('modal-folio-texto').textContent = folio_confirmado;
+    document.getElementById('modal-exito').classList.remove('oculto');
+  } catch (err_envio) {
+    Swal.fire({
+      icon: 'error',
+      title: 'Error al Guardar',
+      text: err_envio && err_envio.message ? err_envio.message : 'Ocurrió un error al registrar la solicitud.',
+      confirmButtonColor: '#1B396A'
+    });
+  } finally {
+    btn_submit.disabled = false;
+    texto_btn.textContent = 'Enviar solicitud oficial';
+  }
 }
 
 function filtrar_estado(estado, btn) {
