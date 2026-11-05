@@ -1,55 +1,96 @@
 // =========================================================================
-// script de google apps script para envío de hasta 3,000 correos al mes
-// cuenta emisora oficial: Avisos.MesaCD@gmail.com
+// webhook seguro de google apps script para notificaciones institucionales
 // remitente visible: "Mesa de Comunicación y Difusión ITP"
 // =========================================================================
-// instrucciones de despliegue en script.google.com:
-// 1. inicia sesión con la cuenta Avisos.MesaCD@gmail.com en https://script.google.com
-// 2. crea un nuevo proyecto y pega este código completo en Código.gs
-// 3. haz clic en "Implementar" > "Nueva implementación"
-// 4. selecciona tipo: "Aplicación web"
-// 5. en "Ejecutar como": selecciona "Yo (Avisos.MesaCD@gmail.com)"
-// 6. en "Quién tiene acceso": selecciona "Cualquier persona"
-// 7. autoriza los permisos y copia la url de la aplicación web en la constante
-//    endpoint_google_script dentro de tu archivo app.js
-// id de implementación activo: AKfycby2SE_6wEIYEspg1GO1MOhQFivz9oVjeuFWERLDFcLafzFk00JnTPkX4vNc6AsQNiQliw
-// url de app web activa: https://script.google.com/macros/s/AKfycby2SE_6wEIYEspg1GO1MOhQFivz9oVjeuFWERLDFcLafzFk00JnTPkX4vNc6AsQNiQliw/exec
+// configuración de script properties en script.google.com:
+// 1. entra a "Configuración del proyecto" (ícono de engrane) > "Propiedades de secuencia de comandos"
+// 2. agrega la propiedad: WEBHOOK_SECRET = (tu clave secreta aleatoria)
+// 3. agrega la propiedad: DESTINATARIO_ALERTAS = (correo receptor de alertas)
 // =========================================================================
 
-function limpiar_entidades_html(texto) {
+// seguridad: escapa caracteres especiales html para impedir inyección en el cuerpo del correo
+function escapar_html_correo(texto) {
   if (!texto) return '';
   return String(texto)
-    .replace(/&#x2F;/gi, '/')
-    .replace(/&#47;/g, '/')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#039;/g, "'");
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+// seguridad: recorta la longitud máxima de un campo antes de procesarlo
+function recortar_texto_seguro(texto, max_len) {
+  if (!texto) return '';
+  return String(texto).trim().slice(0, max_len);
 }
 
 function doPost(e) {
   try {
+    // 1. validación obligatoria de clave secreta por parámetro (?clave=...)
+    const propiedades = PropertiesService.getScriptProperties();
+    const secreto_configurado = propiedades.getProperty('WEBHOOK_SECRET');
+    const clave_recibida = (e && e.parameter && e.parameter.clave) ? String(e.parameter.clave) : '';
+
+    if (!secreto_configurado || clave_recibida !== secreto_configurado) {
+      return ContentService
+        .createTextOutput(JSON.stringify({ ok: false, error: 'No autorizado' }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // 2. soporte tanto para database webhook de supabase (body.record) como json directo
     const contenido_raw = e && e.postData && e.postData.contents ? e.postData.contents : '{}';
-    const datos = JSON.parse(contenido_raw);
+    const body = JSON.parse(contenido_raw);
+    const registro = (body && typeof body.record === 'object' && body.record !== null) ? body.record : body;
 
-    const destinatario = limpiar_entidades_html(datos.email || 'andres.0524e@gmail.com');
-    const folio = limpiar_entidades_html(datos.folio || 'SRV-000').toUpperCase();
-    const servicio = limpiar_entidades_html(datos.servicio || 'Servicio general');
-    const solicitante = limpiar_entidades_html(datos.solicitante || 'Departamento del ITP');
-    const descripcion = limpiar_entidades_html(datos.descripcion || 'Sin descripción adicional');
-    const evento_info = limpiar_entidades_html(datos.evento_info || 'Sin evento presencial asociado');
+    // 3. validación estricta del formato de folio institucional (^SRV-\d{3,6}$)
+    const folio_bruto = recortar_texto_seguro(registro.folio || '', 12).toUpperCase();
+    if (!/^SRV-\d{3,6}$/.test(folio_bruto)) {
+      return ContentService
+        .createTextOutput(JSON.stringify({ ok: false, error: 'Formato de folio inválido' }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
 
-    const asunto = 'Nueva solicitud registrada [' + folio + '] — Mesa de Comunicación y Difusión ITP';
+    // 4. destinatario fijo desde propiedades del script (ignora cualquier email del payload)
+    const destinatario_fijo = recortar_texto_seguro(
+      propiedades.getProperty('DESTINATARIO_ALERTAS') || 'andres.0524e@gmail.com',
+      150
+    );
+
+    // 5. recorte de longitudes y armado seguro de información de evento
+    const servicio_bruto = recortar_texto_seguro(registro.servicio || 'Servicio general', 120);
+    const solicitante_bruto = recortar_texto_seguro(registro.solicitante || 'Departamento del ITP', 150);
+    const descripcion_bruta = recortar_texto_seguro(registro.descripcion || 'Sin descripción adicional', 600);
+
+    let evento_bruto = '';
+    if (registro.evento_info) {
+      evento_bruto = recortar_texto_seguro(registro.evento_info, 220);
+    } else if (registro.aplica_evento) {
+      const f_ev = recortar_texto_seguro(registro.fecha_evento || '', 20);
+      const h_ev = recortar_texto_seguro(registro.hora_evento || '', 20);
+      const l_ev = recortar_texto_seguro(registro.lugar_evento || '', 150);
+      evento_bruto = `${f_ev} a las ${h_ev} hrs en ${l_ev}`;
+    } else {
+      evento_bruto = 'Sin evento presencial asociado';
+    }
+
+    // 6. escape html estricto antes de inyectar en htmlBody
+    const folio = escapar_html_correo(folio_bruto);
+    const servicio = escapar_html_correo(servicio_bruto);
+    const solicitante = escapar_html_correo(solicitante_bruto);
+    const descripcion = escapar_html_correo(descripcion_bruta);
+    const evento_info = escapar_html_correo(evento_bruto);
+
+    const asunto = 'Nueva solicitud registrada [' + folio_bruto + '] — Mesa de Comunicación y Difusión ITP';
 
     const cuerpo_texto =
       'Mesa de Comunicación y Difusión | Instituto Tecnológico de Pachuca (ITP)\n\n' +
       'Se ha registrado una nueva solicitud en plataforma:\n\n' +
-      'Folio: ' + folio + '\n' +
-      'Servicio: ' + servicio + '\n' +
-      'Área solicitante: ' + solicitante + '\n' +
-      'Detalles y requerimientos: ' + descripcion + '\n' +
-      'Información del evento: ' + evento_info + '\n\n' +
+      'Folio: ' + folio_bruto + '\n' +
+      'Servicio: ' + servicio_bruto + '\n' +
+      'Área solicitante: ' + solicitante_bruto + '\n' +
+      'Detalles y requerimientos: ' + descripcion_bruta + '\n' +
+      'Información del evento: ' + evento_bruto + '\n\n' +
       'Ingresa al Panel Interno de la Mesa de Comunicación y Difusión para asignar un responsable.';
 
     const cuerpo_html = `
@@ -127,8 +168,7 @@ function doPost(e) {
           </tr>
           <tr>
             <td style="background-color: #f8fafc; padding: 16px 24px; text-align: center; border-top: 1px solid #e2e8f0; font-size: 12px; color: #94a3b8;">
-              Instituto Tecnológico de Pachuca · Departamento de Comunicación y Difusión<br>
-              Cuenta emisora oficial: Avisos.MesaCD@gmail.com
+              Instituto Tecnológico de Pachuca · Departamento de Comunicación y Difusión
             </td>
           </tr>
         </table>
@@ -136,17 +176,17 @@ function doPost(e) {
       </html>
     `;
 
-    GmailApp.sendEmail(destinatario, asunto, cuerpo_texto, {
+    GmailApp.sendEmail(destinatario_fijo, asunto, cuerpo_texto, {
       name: 'Mesa de Comunicación y Difusión ITP',
       htmlBody: cuerpo_html
     });
 
     return ContentService
-      .createTextOutput(JSON.stringify({ ok: true, folio: folio, destinatario: destinatario }))
+      .createTextOutput(JSON.stringify({ ok: true, folio: folio_bruto }))
       .setMimeType(ContentService.MimeType.JSON);
   } catch (error) {
     return ContentService
-      .createTextOutput(JSON.stringify({ ok: false, error: String(error) }))
+      .createTextOutput(JSON.stringify({ ok: false, error: 'Error interno al procesar notificación' }))
       .setMimeType(ContentService.MimeType.JSON);
   }
 }
@@ -155,9 +195,7 @@ function doGet() {
   return ContentService
     .createTextOutput(JSON.stringify({
       ok: true,
-      servicio: 'Endpoint activo — Mesa de Comunicación y Difusión ITP',
-      cuenta_oficial: 'Avisos.MesaCD@gmail.com'
+      servicio: 'Endpoint activo — Mesa de Comunicación y Difusión ITP'
     }))
     .setMimeType(ContentService.MimeType.JSON);
 }
-

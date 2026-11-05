@@ -1,0 +1,6 @@
+# entorno virtual y archivos locales no publicables
+.venv/
+.env
+*.log
+.DS_Store
+

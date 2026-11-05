@@ -1,55 +1,37 @@
+// protección contra clickjacking: impide incrustar la aplicación dentro de iframes externos
+if (window.top !== window.self) {
+  window.top.location = window.self.location;
+}
+
 // credenciales de supabase
 const supabase_url = 'https://ijcytjuvgexjzilrbdeg.supabase.co';
 const supabase_key = 'sb_publishable_iCtqB1w6QHXS-QJ5Ourc8w_CFBv-DPJ';
 
-// pin de acceso administrativo
-const pin_departamento = '2026';
-// token de seguridad interno para validar la sesión de forma robusta
-const token_sesion_seguro = 'itp_comunicacion_token_autenticado_2026';
+// cuenta compartida única del departamento en supabase auth (el pin se valida en el servidor como contraseña)
+const correo_panel_compartido = 'avisos.mesacd@gmail.com';
 
-// configuración de correos y números de prueba para notificaciones
-const correo_notificaciones_prueba = 'andres.0524e@gmail.com';
-// pega aquí la url de implementación web de google apps script (Avisos.MesaCD@gmail.com)
-const google_script_deployment_id = 'AKfycby2SE_6wEIYEspg1GO1MOhQFivz9oVjeuFWERLDFcLafzFk00JnTPkX4vNc6AsQNiQliw';
-const endpoint_google_script = 'https://script.google.com/macros/s/AKfycby2SE_6wEIYEspg1GO1MOhQFivz9oVjeuFWERLDFcLafzFk00JnTPkX4vNc6AsQNiQliw/exec';
-const telefono_prueba_general = '5217713908178';
-const telefono_prueba_yessica = '5217711622228';
-
-// directorio de responsables del departamento de comunicación y difusión
+// directorio de responsables en memoria sin datos personales expuestos en el código fuente
+// los teléfonos y correos reales se cargan desde public.responsables únicamente tras iniciar sesión en supabase auth
 const catalogo_responsables = {
-  'Sin asignar': {
-    correo: '',
-    telefono: ''
-  },
-  'Karla': {
-    correo: correo_notificaciones_prueba,
-    telefono: telefono_prueba_general
-  },
-  'Juan': {
-    correo: correo_notificaciones_prueba,
-    telefono: telefono_prueba_general
-  },
-  'Lina': {
-    correo: correo_notificaciones_prueba,
-    telefono: telefono_prueba_general
-  },
-  'Yessica': {
-    correo: correo_notificaciones_prueba,
-    telefono: telefono_prueba_yessica
-  },
-  'Chico(a) de servicio': {
-    correo: correo_notificaciones_prueba,
-    telefono: telefono_prueba_general
-  }
+  'Sin asignar': { correo: '', telefono: '' },
+  'Karla': { correo: '', telefono: '' },
+  'Lina': { correo: '', telefono: '' },
+  'Juan': { correo: '', telefono: '' },
+  'Karina': { correo: '', telefono: '' },
+  'Arge': { correo: '', telefono: '' },
+  'Chico(a) de servicio': { correo: '', telefono: '' }
 };
 
-// credenciales integradas de emailjs
-const emailjs_public_key = 'ziihGrLOHnbPKFenK';
-const emailjs_service_id = 'service_6yoeb1m';
-const emailjs_template_id = 'template_geruv36';
-
+// cliente supabase configurado con sessionstorage para mantener la sesión jwt segura por pestaña
 const usar_nube = supabase_url.startsWith('https://') && supabase_key.length > 20;
-const cliente_db = usar_nube ? window.supabase.createClient(supabase_url, supabase_key) : null;
+const cliente_db = usar_nube
+  ? window.supabase.createClient(supabase_url, supabase_key, {
+      auth: {
+        storage: window.sessionStorage,
+        persistSession: true
+      }
+    })
+  : null;
 
 let servicio_actual = 'Diseño e impresión de material gráfico';
 let aplica_evento = true;
@@ -63,8 +45,48 @@ let mes_filtro_activo = mes_actual_sistema;
 let selector_mes_instancia = null;
 let selector_solicitante_instancia = null;
 let selector_lugar_instancia = null;
-const catalogo_departamentos_itp = ['Comunicación y Difusión'];
-const catalogo_sitios_itp = ['Gimnasio Olímpico'];
+const catalogo_departamentos_itp = [
+  'Subdirección Académica',
+  'Departamento de Desarrollo Académico',
+  'División de Estudios Profesionales',
+  'División de Estudios de Posgrado e Investigación',
+  'Departamento de Ciencias Básicas',
+  'Departamento de Metal-Mecánica',
+  'Departamento de Ciencias de la Tierra',
+  'Departamento de Sistemas y Computación',
+  'Departamento de Ingeniería Industrial',
+  'Departamento de Ingeniería Eléctrica y Electrónica',
+  'Departamento de Ingeniería Química y Bioquímica',
+  'Departamento de Ciencias Económico-Administrativas',
+  'Coordinación de Educación a Distancia',
+  'Subdirección de Planeación y Vinculación',
+  'Departamento de Planeación, Programación y Presupuestación',
+  'Departamento de Comunicación y Difusión',
+  'Departamento de Gestión Tecnológica y Vinculación',
+  'Coordinación de Lenguas Extranjeras',
+  'Departamento de Servicios Escolares',
+  'Centro de Información',
+  'Departamento de Actividades Extraescolares',
+  'Subdirección de Servicios Administrativos',
+  'Departamento de Recursos Humanos',
+  'Departamento de Recursos Financieros',
+  'Departamento de Recursos Materiales y Servicios',
+  'Centro de Cómputo',
+  'Departamento de Mantenimiento y Equipo'
+];
+
+const catalogo_sitios_itp = [
+  'Sala Rafael Rosado',
+  'Aula Institutos',
+  'Foro Cultural',
+  'Sala de Usos Múltiples',
+  'Gimnasio Miguel Hidalgo',
+  'Gimnasio Olímpico',
+  'Sala de Juntas de Dirección',
+  'Plaza Cívica',
+  'Otro (especificar aula)'
+];
+
 let calendario_evento_instancia = null;
 let selectores_responsable_instancias = [];
 
@@ -76,8 +98,8 @@ let reloj_minuto_sel = 0;
 let reloj_ampm_sel = 'PM';
 let arrastrando_reloj = false;
 
-// validación de sesión robusta utilizando sessionstorage y token en memoria
-let sesion_autorizada = sessionStorage.getItem('itp_sesion_activa_segura') === token_sesion_seguro;
+// estado de sesión derivado exclusivamente de la sesión jwt de supabase auth
+let sesion_autorizada = false;
 
 const nombres_meses = {
   'todos': 'Histórico General Acumulado',
@@ -142,50 +164,21 @@ const configuracion_servicios = {
   }
 };
 
-// puente api global para integración futura con app móvil (ios / android)
-window.itp_api_movil = {
-  obtener_estado_conexion: () => usar_nube ? 'nube_supabase' : 'local_storage',
-  obtener_todas_solicitudes: () => solicitudes,
-  obtener_solicitudes_periodo_actual: () => obtener_solicitudes_por_periodo(),
-  consultar_por_folio: (folio) => solicitudes.find(s => s.folio.toUpperCase() === String(folio).toUpperCase()),
-  crear_solicitud_externa: async (datos_solicitud) => {
-    const folio_nuevo = actualizar_folio_preview();
-    const fecha_emision = new Date().toLocaleDateString('es-MX');
-    const registro = {
-      folio: folio_nuevo,
-      fecha_solicitud: fecha_emision,
-      servicio: sanitizar_texto(datos_solicitud.servicio || 'Diseño e impresión de material gráfico'),
-      solicitante: sanitizar_texto(datos_solicitud.solicitante || ''),
-      descripcion: sanitizar_texto(datos_solicitud.descripcion || ''),
-      aplica_evento: Boolean(datos_solicitud.aplica_evento),
-      fecha_evento: datos_solicitud.fecha_evento || '',
-      hora_evento: datos_solicitud.hora_evento || '',
-      lugar_evento: sanitizar_texto(datos_solicitud.lugar_evento || ''),
-      estado: 'Pendiente',
-      responsable: 'Sin asignar',
-      fecha_limite: '',
-      observaciones: `[${fecha_emision}] Solicitud registrada desde App Móvil.`
-    };
-    if (usar_nube) {
-      await cliente_db.from('solicitudes').insert([registro]);
-      await cargar_solicitudes();
-    } else {
-      solicitudes.unshift(registro);
-      localStorage.setItem('tickets_itp_v6', JSON.stringify(solicitudes));
-      renderizar_tickets();
-      actualizar_notificaciones_ios();
-    }
-    await notificar_nueva_solicitud_correo(registro);
-    return registro;
-  },
-  sincronizar_remoto: async () => { await cargar_solicitudes(); return solicitudes; }
-};
+// función de escape html estricto para blindar todas las interpolaciones contra xss
+function esc(texto) {
+  if (texto === null || texto === undefined) return '';
+  return String(texto)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
 
+// limpieza de texto plano sin codificar html antes de guardar en la base de datos
 function sanitizar_texto(texto) {
-  if (!texto) return '';
-  const div = document.createElement('div');
-  div.textContent = texto;
-  return div.innerHTML;
+  if (texto === null || texto === undefined) return '';
+  return String(texto).replace(/[\u0000-\u001F\u007F]/g, '').trim();
 }
 
 function capitalizar_inicial(texto) {
@@ -194,15 +187,72 @@ function capitalizar_inicial(texto) {
   return limpio.charAt(0).toUpperCase() + limpio.slice(1);
 }
 
+// formatea la descripción aplicando escape xss seguro a los fragmentos extraídos
 function formatear_descripcion_color(texto_desc) {
   if (!texto_desc) return '';
+  const texto_limpio = String(texto_desc).replace(/&#x2F;/gi, '/');
   const regex = /^\[(.*?)\]\s*—\s*(.*)$/;
-  const coincidencia = texto_desc.match(regex);
+  const coincidencia = texto_limpio.match(regex);
   if (coincidencia) {
-    return `<span class="tag-especificacion-color">[${capitalizar_inicial(coincidencia[1])}]</span> <span class="texto-descripcion-color">— ${capitalizar_inicial(coincidencia[2])}</span>`;
+    return `<span class="tag-especificacion-color">[${esc(capitalizar_inicial(coincidencia[1]))}]</span> <span class="texto-descripcion-color">— ${esc(capitalizar_inicial(coincidencia[2]))}</span>`;
   }
-  return `<span class="texto-descripcion-color">${capitalizar_inicial(texto_desc)}</span>`;
+  return `<span class="texto-descripcion-color">${esc(capitalizar_inicial(texto_limpio))}</span>`;
 }
+
+// puente api móvil protegido con object.freeze y restringido según estado de autenticación
+window.itp_api_movil = Object.freeze({
+  obtener_estado_conexion: () => usar_nube ? 'nube_supabase' : 'local_storage',
+  obtener_todas_solicitudes: () => sesion_autorizada ? [...solicitudes] : [],
+  obtener_solicitudes_periodo_actual: () => sesion_autorizada ? [...obtener_solicitudes_por_periodo()] : [],
+  consultar_por_folio: async (folio) => {
+    const codigo = sanitizar_texto(folio).toUpperCase();
+    if (!/^SRV-\d{3,6}$/.test(codigo)) return null;
+    if (usar_nube && cliente_db) {
+      const { data } = await cliente_db.rpc('consultar_folio', { p_folio: codigo });
+      return Array.isArray(data) && data.length > 0 ? data[0] : (data || null);
+    }
+    return solicitudes.find(s => String(s.folio).toUpperCase() === codigo) || null;
+  },
+  crear_solicitud_externa: async (datos_solicitud) => {
+    const fecha_emision = new Date().toLocaleDateString('es-MX');
+    const registro = {
+      fecha_solicitud: fecha_emision,
+      servicio: sanitizar_texto(datos_solicitud.servicio || 'Diseño e impresión de material gráfico'),
+      solicitante: sanitizar_texto(datos_solicitud.solicitante || ''),
+      descripcion: sanitizar_texto(datos_solicitud.descripcion || ''),
+      aplica_evento: Boolean(datos_solicitud.aplica_evento),
+      fecha_evento: sanitizar_texto(datos_solicitud.fecha_evento || ''),
+      hora_evento: sanitizar_texto(datos_solicitud.hora_evento || ''),
+      lugar_evento: sanitizar_texto(datos_solicitud.lugar_evento || '')
+    };
+    if (usar_nube && cliente_db) {
+      const { data, error } = await cliente_db.rpc('crear_solicitud', { p_datos: registro });
+      if (error) throw error;
+      if (sesion_autorizada) await cargar_solicitudes();
+      await actualizar_folio_preview();
+      return data;
+    }
+    const folio_local = await actualizar_folio_preview();
+    const reg_local = {
+      ...registro,
+      folio: folio_local,
+      estado: 'Pendiente',
+      responsable: 'Sin asignar',
+      fecha_limite: '',
+      observaciones: `[${fecha_emision}] Solicitud registrada desde App Móvil.`
+    };
+    solicitudes.unshift(reg_local);
+    localStorage.setItem('tickets_itp_v6', JSON.stringify(solicitudes));
+    renderizar_tickets();
+    actualizar_notificaciones_ios();
+    return reg_local;
+  },
+  sincronizar_remoto: async () => {
+    if (!sesion_autorizada) return [];
+    await cargar_solicitudes();
+    return [...solicitudes];
+  }
+});
 
 function refrescar_iconos() {
   if (window.lucide) {
@@ -215,10 +265,43 @@ function mostrar_toast() {
 }
 
 // =========================================================================
+// carga protegida del directorio de responsables (solo usuarios autenticados)
+// =========================================================================
+async function cargar_directorio_responsables() {
+  if (!usar_nube || !cliente_db || !sesion_autorizada) return;
+  try {
+    const { data, error } = await cliente_db
+      .from('responsables')
+      .select('nombre, correo, telefono');
+    if (!error && Array.isArray(data)) {
+      data.forEach(item => {
+        if (item && item.nombre) {
+          catalogo_responsables[item.nombre] = {
+            correo: item.correo || '',
+            telefono: item.telefono || ''
+          };
+        }
+      });
+    }
+  } catch (err) {
+    console.warn('No se pudo cargar el directorio de responsables:', err);
+  }
+}
+
+function limpiar_directorio_responsables_memoria() {
+  Object.keys(catalogo_responsables).forEach(nombre => {
+    catalogo_responsables[nombre] = { correo: '', telefono: '' };
+  });
+}
+
+// =========================================================================
 // centro de notificaciones estilo ios (solicitudes sin responsable asignado)
 // =========================================================================
 function obtener_solicitudes_sin_responsable() {
+  if (!sesion_autorizada) return [];
   return solicitudes.filter(item => {
+    const info_den = obtener_info_denegacion(item);
+    if (info_den && info_den.denegada) return false;
     const resp = (item.responsable || '').trim().toLowerCase();
     return resp === '' || resp === 'sin asignar';
   });
@@ -254,17 +337,20 @@ function actualizar_notificaciones_ios() {
     return;
   }
 
+  // se utilizan atributos data-* y escape html para evitar xss en notificaciones
   lista.innerHTML = pendientes_asignar.map(item => {
-    const folio_sup = String(item.folio || '').toUpperCase();
-    const servicio_cap = capitalizar_inicial(item.servicio);
+    const folio_sup = esc(String(item.folio || '').toUpperCase());
+    const servicio_cap = esc(capitalizar_inicial(item.servicio));
+    const fecha_sol = esc(item.fecha_solicitud);
+    const solicitante_esc = esc(item.solicitante);
     return `
-      <div class="tarjeta-notif-ios" onclick="ir_a_solicitud_notificacion('${item.folio}')">
+      <div class="tarjeta-notif-ios" data-accion="ir-notif" data-folio="${folio_sup}">
         <div class="notif-ios-top">
           <span class="notif-ios-folio">${folio_sup}</span>
-          <span class="notif-ios-fecha">${item.fecha_solicitud}</span>
+          <span class="notif-ios-fecha">${fecha_sol}</span>
         </div>
         <div class="notif-ios-servicio">${servicio_cap}</div>
-        <div class="notif-ios-depto">Solicita: ${item.solicitante}</div>
+        <div class="notif-ios-depto">Solicita: ${solicitante_esc}</div>
         <span class="notif-ios-accion">
           Asignar responsable <i data-lucide="chevron-right" style="width: 14px; height: 14px;"></i>
         </span>
@@ -289,7 +375,7 @@ function ir_a_solicitud_notificacion(folio_destino) {
   const popover = document.getElementById('popover-notificaciones-ios');
   if (popover) popover.classList.add('oculto');
 
-  if (!sesion_autorizada || sessionStorage.getItem('itp_sesion_activa_segura') !== token_sesion_seguro) {
+  if (!sesion_autorizada) {
     intentar_abrir_panel();
     return;
   }
@@ -316,7 +402,7 @@ function ir_a_solicitud_notificacion(folio_destino) {
   renderizar_tickets();
 
   setTimeout(() => {
-    const id_limpio = 'ticket-' + String(folio_destino).toUpperCase();
+    const id_limpio = 'ticket-' + String(folio_destino).toUpperCase().replace(/[^A-Z0-9-]/g, '');
     const tarjeta = document.getElementById(id_limpio);
     if (tarjeta) {
       tarjeta.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -336,90 +422,34 @@ document.addEventListener('click', (e) => {
 });
 
 // =========================================================================
-// sistema de notificación por correo mediante emailjs con limpieza de diagonal
+// directorio de contacto en memoria y recordatorios por whatsapp
+// las alertas por correo se disparan desde el servidor vía database webhook
 // =========================================================================
 function obtener_contacto_responsable(nombre_responsable) {
   if (!nombre_responsable || nombre_responsable.toLowerCase() === 'sin asignar') {
-    return { correo: correo_notificaciones_prueba, telefono: telefono_prueba_general };
+    return { correo: '', telefono: '' };
   }
   if (nombre_responsable.toLowerCase().startsWith('chico(a) de servicio')) {
-    return catalogo_responsables['Chico(a) de servicio'];
+    return catalogo_responsables['Chico(a) de servicio'] || { correo: '', telefono: '' };
   }
   const clave_exacta = Object.keys(catalogo_responsables).find(
     k => k.toLowerCase() === nombre_responsable.toLowerCase()
   );
   return catalogo_responsables[clave_exacta] || {
-    correo: correo_notificaciones_prueba,
-    telefono: telefono_prueba_general
+    correo: '',
+    telefono: ''
   };
 }
 
-async function notificar_nueva_solicitud_correo(solicitud) {
-  const info_evento_texto = solicitud.aplica_evento
-    ? `${solicitud.fecha_evento} a las ${solicitud.hora_evento} hrs en ${solicitud.lugar_evento}`
-    : 'Sin evento presencial asociado';
-
-  const servicio_limpio = String(solicitud.servicio || '')
-    .replace(/&#x2F;/gi, '/')
-    .replace(/\//g, '/');
-
-  const parametros_correo = {
-    email: correo_notificaciones_prueba,
-    folio: String(solicitud.folio || '').toUpperCase(),
-    servicio: capitalizar_inicial(servicio_limpio),
-    solicitante: solicitud.solicitante,
-    descripcion: solicitud.descripcion,
-    evento_info: info_evento_texto
-  };
-
-  parametros_correo.solicitante = String(parametros_correo.solicitante || '').replace(/&#x2F;/gi, '/');
-  parametros_correo.descripcion = String(parametros_correo.descripcion || '').replace(/&#x2F;/gi, '/');
-  parametros_correo.evento_info = String(parametros_correo.evento_info || '').replace(/&#x2F;/gi, '/');
-
-  // 1. envío primario mediante google apps script (Avisos.MesaCD@gmail.com - hasta 3,000 correos/mes)
-  if (endpoint_google_script && endpoint_google_script.trim().startsWith('https://script.google.com/')) {
-    try {
-      await fetch(endpoint_google_script.trim(), {
-        method: 'post',
-        mode: 'no-cors',
-        headers: {
-          'content-type': 'text/plain;charset=utf-8'
-        },
-        body: JSON.stringify(parametros_correo)
-      });
-      return;
-    } catch (err_gs) {
-      console.warn('Respaldo activado tras fallo en Google Apps Script:', err_gs);
-    }
-  }
-
-  // 2. respaldo automático (fallback) mediante emailjs si la url no está configurada o falla la petición
-  if (window.emailjs && emailjs_public_key && emailjs_service_id && emailjs_template_id) {
-    try {
-      await window.emailjs.send(
-        emailjs_service_id,
-        emailjs_template_id,
-        parametros_correo,
-        { publicKey: emailjs_public_key }
-      );
-    } catch (err) {
-      try {
-        await window.emailjs.send(
-          emailjs_service_id,
-          emailjs_template_id,
-          parametros_correo,
-          emailjs_public_key
-        );
-      } catch (err2) {
-        console.warn('Error al enviar correo con EmailJS:', err2);
-      }
-    }
-  }
+// las notificaciones por correo ahora son enviadas en segundo plano por el webhook de supabase hacia google apps script
+async function notificar_nueva_solicitud_correo() {
+  return;
 }
 
 function construir_url_whatsapp_asignacion(solicitud) {
   const contacto = obtener_contacto_responsable(solicitud.responsable);
-  const numero_wa = contacto.telefono || telefono_prueba_general;
+  const numero_wa = String(contacto.telefono || '').replace(/\D/g, '');
+  const descripcion_limpia = String(solicitud.descripcion || '').replace(/&#x2F;/gi, '/');
 
   const mensaje =
     `Hola *${solicitud.responsable}*, te ha asignado el seguimiento de una solicitud:\n\n` +
@@ -429,23 +459,27 @@ function construir_url_whatsapp_asignacion(solicitud) {
     `*Fecha del evento:* ${solicitud.aplica_evento ? solicitud.fecha_evento : 'N/A'}\n` +
     `- *Hora:* ${solicitud.aplica_evento ? solicitud.hora_evento + ' hrs' : 'N/A'}\n` +
     `*Sitio:* ${solicitud.aplica_evento ? solicitud.lugar_evento : 'N/A'}\n` +
-    `*Información clave :* ${solicitud.descripcion}\n\n` +
+    `*Información clave :* ${descripcion_limpia}\n\n` +
     `Por favor verifica los detalles o dudas en la *Mesa de Comunicación y Difusión.* Gracias.`;
 
   return `https://wa.me/${numero_wa}?text=${encodeURIComponent(mensaje)}`;
 }
 
-function enviar_whatsapp_responsable(index_real) {
+async function enviar_whatsapp_responsable(index_real) {
   const item = solicitudes[index_real];
   if (!item || !item.responsable || item.responsable.toLowerCase() === 'sin asignar') return;
+  if (!obtener_contacto_responsable(item.responsable).telefono) {
+    await cargar_directorio_responsables();
+  }
   const url = construir_url_whatsapp_asignacion(item);
-  window.open(url, '_blank');
+  window.open(url, '_blank', 'noopener,noreferrer');
 }
 
 async function notificar_asignacion_responsable(index_real) {
   const item = solicitudes[index_real];
   if (!item || !item.responsable || item.responsable.toLowerCase() === 'sin asignar') return;
 
+  const responsable_seguro = esc(item.responsable);
   const icono_notificacion = `
     <div class="alerta-icono-minimal verde">
       <svg viewBox="0 0 24 24" fill="currentColor" style="width: 38px; height: 38px; color: #16a34a;">
@@ -458,9 +492,9 @@ async function notificar_asignacion_responsable(index_real) {
     html: `
       ${icono_notificacion}
       <span class="alerta-tag-sup" style="color: #15803d; background: #ecfdf5;">Responsable Asignado</span>
-      <h3 class="alerta-titulo-custom">Notificar a ${item.responsable}</h3>
+      <h3 class="alerta-titulo-custom">Notificar a ${responsable_seguro}</h3>
       <p class="alerta-cuerpo-custom">
-        Has asignado esta solicitud a <strong>${item.responsable}</strong>.
+        Has asignado esta solicitud a <strong>${responsable_seguro}</strong>.
         <span class="alerta-pregunta-resaltada">¿Deseas abrir WhatsApp para enviarle el recordatorio con los datos del servicio?</span>
       </p>
     `,
@@ -478,7 +512,7 @@ async function notificar_asignacion_responsable(index_real) {
   });
 
   if (respuesta.isConfirmed) {
-    enviar_whatsapp_responsable(index_real);
+    await enviar_whatsapp_responsable(index_real);
   }
 }
 
@@ -504,14 +538,14 @@ async function cambiar_responsable_select(index_real, opcion_seleccionada) {
   }
 
   await actualizar_campo(index_real, 'responsable', sanitizar_texto(opcion_seleccionada));
-  if (opcion_seleccionada !== 'Sin asignar') {
+  if (opcion_seleccionada !== 'Sin asignar' && opcion_seleccionada !== 'Chico(a) de servicio') {
     await notificar_asignacion_responsable(index_real);
   }
 }
 
 async function guardar_nombre_servicio_social(index_real) {
   const input_ss = document.getElementById(`input-ss-${index_real}`);
-  const nombre_manual = input_ss ? sanitizar_texto(input_ss.value.trim()) : '';
+  const nombre_manual = input_ss ? sanitizar_texto(input_ss.value.trim()).slice(0, 80) : '';
 
   if (!nombre_manual) {
     Swal.fire({
@@ -525,7 +559,6 @@ async function guardar_nombre_servicio_social(index_real) {
 
   const etiqueta_final = `Chico(a) de servicio: ${nombre_manual}`;
   await actualizar_campo(index_real, 'responsable', etiqueta_final);
-  await notificar_asignacion_responsable(index_real);
 }
 
 function inicializar_selectores_responsable_tarjetas() {
@@ -550,6 +583,68 @@ function inicializar_selectores_responsable_tarjetas() {
       }
     });
     selectores_responsable_instancias.push(inst);
+  });
+}
+
+// =========================================================================
+// delegación segura de eventos para evitar handlers onclick con datos dinámicos
+// =========================================================================
+let delegacion_eventos_activa = false;
+
+function inicializar_delegacion_eventos_segura() {
+  if (delegacion_eventos_activa) return;
+  delegacion_eventos_activa = true;
+
+  document.addEventListener('click', (e) => {
+    const nodo_accion = e.target.closest('[data-accion]');
+    if (!nodo_accion) return;
+
+    const accion = nodo_accion.getAttribute('data-accion');
+    const idx = parseInt(nodo_accion.getAttribute('data-index'), 10);
+    const idx_nota = parseInt(nodo_accion.getAttribute('data-nota-index'), 10);
+
+    if (accion === 'ir-notif') {
+      const folio = nodo_accion.getAttribute('data-folio') || '';
+      ir_a_solicitud_notificacion(folio);
+    } else if (accion === 'denegar-solicitud' && !isNaN(idx)) {
+      denegar_solicitud_panel(idx);
+    } else if (accion === 'enviar-wa' && !isNaN(idx)) {
+      enviar_whatsapp_responsable(idx);
+    } else if (accion === 'guardar-ss' && !isNaN(idx)) {
+      guardar_nombre_servicio_social(idx);
+    } else if (accion === 'agregar-nota' && !isNaN(idx)) {
+      agregar_nota(idx);
+    } else if (accion === 'editar-nota' && !isNaN(idx) && !isNaN(idx_nota)) {
+      editar_nota(idx, idx_nota);
+    } else if (accion === 'eliminar-nota' && !isNaN(idx) && !isNaN(idx_nota)) {
+      eliminar_nota(idx, idx_nota);
+    }
+  });
+
+  document.addEventListener('change', (e) => {
+    const nodo_cambio = e.target.closest('[data-cambio]');
+    if (!nodo_cambio) return;
+
+    const tipo_cambio = nodo_cambio.getAttribute('data-cambio');
+    const idx = parseInt(nodo_cambio.getAttribute('data-index'), 10);
+    if (isNaN(idx)) return;
+
+    if (tipo_cambio === 'tipo-comunicacion') {
+      const subtipo = nodo_cambio.getAttribute('data-tipo') || '';
+      alternar_tipo_comunicacion(idx, subtipo, nodo_cambio.checked);
+    } else if (tipo_cambio === 'fecha-limite-manual') {
+      alternar_fecha_limite_manual(idx, nodo_cambio.checked);
+    }
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter') return;
+    const input_ss = e.target.closest('[data-enter="guardar-ss"]');
+    if (input_ss) {
+      e.preventDefault();
+      const idx = parseInt(input_ss.getAttribute('data-index'), 10);
+      if (!isNaN(idx)) guardar_nombre_servicio_social(idx);
+    }
   });
 }
 
@@ -610,7 +705,7 @@ function inicializar_eventos_reloj_circular() {
     if (arrastrando_reloj) procesar_interaccion(e, false);
     e.preventDefault();
   }, { passive: false });
-  esfera.addEventListener('touchend', (e) => {
+  esfera.addEventListener('touchend', () => {
     if (arrastrando_reloj) {
       arrastrando_reloj = false;
       if (reloj_modo_actual === 'horas') {
@@ -643,11 +738,6 @@ function abrir_reloj_circular(id_input) {
     reloj_ampm_sel = h_sug >= 12 ? 'PM' : 'AM';
     reloj_hora_sel = h_sug % 12 || 12;
     reloj_minuto_sel = m_sug;
-  }
-  if (false) {
-    reloj_hora_sel = 12;
-    reloj_minuto_sel = 0;
-    reloj_ampm_sel = 'PM';
   }
 
   reloj_modo_actual = 'horas';
@@ -802,7 +892,7 @@ function inicializar_selectores_formulario() {
   if (select_depto) {
     select_depto.required = false;
     select_depto.innerHTML = catalogo_departamentos_itp
-      .map((d, i) => `<option value="${d}" ${i === 0 ? 'selected' : ''}>${d}</option>`)
+      .map((d, i) => `<option value="${esc(d)}" ${i === 0 ? 'selected' : ''}>${esc(d)}</option>`)
       .join('');
     if (selector_solicitante_instancia) {
       try { selector_solicitante_instancia.destroy(); } catch (e) {}
@@ -811,6 +901,7 @@ function inicializar_selectores_formulario() {
       create: false,
       allowEmptyOption: false,
       controlInput: null,
+      dropdownParent: 'body',
       onDelete: () => false
     });
     selector_solicitante_instancia.setValue(catalogo_departamentos_itp[0], true);
@@ -820,7 +911,7 @@ function inicializar_selectores_formulario() {
   if (select_lugar) {
     select_lugar.required = false;
     select_lugar.innerHTML = catalogo_sitios_itp
-      .map((s, i) => `<option value="${s}" ${i === 0 ? 'selected' : ''}>${s}</option>`)
+      .map((s, i) => `<option value="${esc(s)}" ${i === 0 ? 'selected' : ''}>${esc(s)}</option>`)
       .join('');
     if (selector_lugar_instancia) {
       try { selector_lugar_instancia.destroy(); } catch (e) {}
@@ -829,7 +920,19 @@ function inicializar_selectores_formulario() {
       create: false,
       allowEmptyOption: false,
       controlInput: null,
-      onDelete: () => false
+      dropdownParent: 'body',
+      onDelete: () => false,
+      onChange: (valor) => {
+        const bloque_otro = document.getElementById('bloque-lugar-otro');
+        const input_otro = document.getElementById('input-lugar-otro');
+        if (valor === 'Otro (especificar aula)') {
+          if (bloque_otro) bloque_otro.classList.remove('oculto');
+          if (input_otro) setTimeout(() => input_otro.focus(), 60);
+        } else {
+          if (bloque_otro) bloque_otro.classList.add('oculto');
+          if (input_otro) input_otro.value = '';
+        }
+      }
     });
     selector_lugar_instancia.setValue(catalogo_sitios_itp[0], true);
   }
@@ -1044,18 +1147,11 @@ function alternar_modo_oscuro() {
 
 async function inicializar() {
   inicializar_tema_preferido();
+  inicializar_delegacion_eventos_segura();
   const hoy = new Date();
   document.getElementById('fecha-actual').textContent = hoy.toLocaleDateString('es-MX');
   window.addEventListener('scroll', controlar_flecha_flotante);
   inicializar_brillo_liquid_morph();
-
-  if (window.emailjs && emailjs_public_key) {
-    try {
-      window.emailjs.init({ publicKey: emailjs_public_key });
-    } catch (e) {
-      try { window.emailjs.init(emailjs_public_key); } catch (e2) {}
-    }
-  }
 
   const badge = document.getElementById('estado-conexion');
   if (usar_nube) {
@@ -1067,12 +1163,41 @@ async function inicializar() {
   }
 
   inicializar_controles_visuales();
+
+  // sincronización de estado de sesión real mediante supabase auth
+  if (usar_nube && cliente_db) {
+    const { data: datos_sesion } = await cliente_db.auth.getSession();
+    sesion_autorizada = Boolean(datos_sesion && datos_sesion.session);
+    if (sesion_autorizada) {
+      await cargar_directorio_responsables();
+    }
+
+    cliente_db.auth.onAuthStateChange(async (_evento, sesion) => {
+      sesion_autorizada = Boolean(sesion);
+      actualizar_icono_candado();
+      if (sesion_autorizada) {
+        await cargar_directorio_responsables();
+        await cargar_solicitudes();
+      } else {
+        limpiar_directorio_responsables_memoria();
+        solicitudes = [];
+        renderizar_tickets();
+        actualizar_notificaciones_ios();
+      }
+    });
+  }
+
   actualizar_icono_candado();
-  await cargar_solicitudes();
+  await actualizar_folio_preview();
+  if (sesion_autorizada || !usar_nube) {
+    await cargar_solicitudes();
+  }
 
   setInterval(() => {
-    renderizar_tickets();
-    actualizar_notificaciones_ios();
+    if (sesion_autorizada || !usar_nube) {
+      renderizar_tickets();
+      actualizar_notificaciones_ios();
+    }
   }, 60000);
 }
 
@@ -1084,42 +1209,55 @@ function actualizar_icono_candado() {
   }
 }
 
-function intentar_abrir_panel() {
-  if (sesion_autorizada && sessionStorage.getItem('itp_sesion_activa_segura') === token_sesion_seguro) {
+async function intentar_abrir_panel() {
+  if (usar_nube && cliente_db) {
+    const { data: datos_sesion } = await cliente_db.auth.getSession();
+    sesion_autorizada = Boolean(datos_sesion && datos_sesion.session);
+  }
+
+  if (sesion_autorizada) {
     cambiar_vista('panel');
   } else {
     sesion_autorizada = false;
-    sessionStorage.removeItem('itp_sesion_activa_segura');
     document.getElementById('input-pin').value = '';
     document.getElementById('modal-pin').classList.remove('oculto');
     setTimeout(() => document.getElementById('input-pin').focus(), 100);
   }
 }
 
-function verificar_pin(e) {
+// validación del pin directamente en el servidor mediante supabase auth (sin exponer el pin en el código)
+async function verificar_pin(e) {
   e.preventDefault();
   const pin_ingresado = document.getElementById('input-pin').value.trim();
 
-  if (pin_ingresado === pin_departamento) {
-    sesion_autorizada = true;
-    sessionStorage.setItem('itp_sesion_activa_segura', token_sesion_seguro);
-    actualizar_icono_candado();
-    cerrar_modal_pin();
-    cambiar_vista('panel');
-  } else {
-    sesion_autorizada = false;
-    sessionStorage.removeItem('itp_sesion_activa_segura');
-    const tarjeta = document.getElementById('tarjeta-pin');
-    tarjeta.classList.remove('sacudir');
-    void tarjeta.offsetWidth;
-    tarjeta.classList.add('sacudir');
-    Swal.fire({
-      icon: 'error',
-      title: 'Acceso Denegado',
-      text: 'PIN institucional incorrecto.',
-      confirmButtonColor: '#1B396A'
+  if (usar_nube && cliente_db) {
+    const { data, error } = await cliente_db.auth.signInWithPassword({
+      email: correo_panel_compartido,
+      password: pin_ingresado
     });
+
+    if (!error && data && data.session) {
+      sesion_autorizada = true;
+      actualizar_icono_candado();
+      cerrar_modal_pin();
+      await cargar_directorio_responsables();
+      await cargar_solicitudes();
+      cambiar_vista('panel');
+      return;
+    }
   }
+
+  sesion_autorizada = false;
+  const tarjeta = document.getElementById('tarjeta-pin');
+  tarjeta.classList.remove('sacudir');
+  void tarjeta.offsetWidth;
+  tarjeta.classList.add('sacudir');
+  Swal.fire({
+    icon: 'error',
+    title: 'Acceso Denegado',
+    text: 'PIN institucional incorrecto.',
+    confirmButtonColor: '#1B396A'
+  });
 }
 
 function cerrar_modal_pin() {
@@ -1145,28 +1283,45 @@ async function cerrar_sesion_admin() {
   });
 
   if (resultado.isConfirmed) {
+    if (usar_nube && cliente_db) {
+      await cliente_db.auth.signOut();
+    }
     sesion_autorizada = false;
-    sessionStorage.removeItem('itp_sesion_activa_segura');
+    limpiar_directorio_responsables_memoria();
+    solicitudes = [];
+    document.getElementById('contador-tickets').textContent = '0';
     actualizar_icono_candado();
+    actualizar_notificaciones_ios();
     cambiar_vista('formulario');
   }
 }
 
+// rastreo público seguro mediante función rpc consultar_folio sin descargar toda la base de datos
 async function consultar_folio_publico(e) {
   e.preventDefault();
-  await cargar_solicitudes();
 
   const codigo_buscado = sanitizar_texto(document.getElementById('input-rastreo-folio').value.trim().toUpperCase());
   const contenedor_res = document.getElementById('resultado-rastreo');
-  const encontrado = solicitudes.find(s => s.folio.toUpperCase() === codigo_buscado);
+  let encontrado = null;
+
+  if (/^SRV-\d{3,6}$/.test(codigo_buscado)) {
+    if (usar_nube && cliente_db) {
+      const { data, error } = await cliente_db.rpc('consultar_folio', { p_folio: codigo_buscado });
+      if (!error && data) {
+        encontrado = Array.isArray(data) ? (data[0] || null) : data;
+      }
+    } else {
+      encontrado = solicitudes.find(s => String(s.folio).toUpperCase() === codigo_buscado) || null;
+    }
+  }
 
   contenedor_res.classList.remove('oculto');
 
-  if (!encontrado) {
+  if (!encontrado || !encontrado.folio) {
     contenedor_res.innerHTML = `
       <div class="tarjeta-rastreo-publico">
         <p style="color: #991b1b; font-size: 0.88rem; font-weight: 600;">
-          No se encontró ninguna solicitud con el folio institucional "${codigo_buscado}".
+          No se encontró ninguna solicitud con el folio institucional "${esc(codigo_buscado)}".
         </p>
       </div>
     `;
@@ -1174,39 +1329,45 @@ async function consultar_folio_publico(e) {
   }
 
   const estado_calculado = calcular_estado_automatico(encontrado);
-  const clase_estado = 'estado-' + estado_calculado.replace(' ', '-');
+  const info_den_pub = obtener_info_denegacion(encontrado);
+  const etiqueta_estado_pub = info_den_pub.denegada ? 'Denegada' : estado_calculado;
+  const clase_estado = info_den_pub.denegada ? 'estado-Denegada' : ('estado-' + estado_calculado.replace(' ', '-'));
+  const aviso_denegacion_html = info_den_pub.denegada
+    ? `<div class="alerta-denegada-rastreo"><strong>Solicitud Denegada:</strong> ${esc(info_den_pub.motivo)}</div>`
+    : '';
   const lista_notas = obtener_arreglo_notas(encontrado.observaciones);
   const notas_publicas = lista_notas.length > 0
-    ? lista_notas.map(n => `<div class="nota-individual"><span>${n}</span></div>`).join('')
+    ? lista_notas.map(n => `<div class="nota-individual"><span>${esc(n)}</span></div>`).join('')
     : `<div class="sin-fecha-aviso">Sin notas registradas por el departamento.</div>`;
 
   const info_evento_publico = encontrado.aplica_evento
-    ? `<span class="badge-lugar-evento"><i data-lucide="map-pin"></i> Lugar: ${encontrado.lugar_evento}</span>
-       <span class="badge-fecha-evento"><i data-lucide="calendar"></i> ${encontrado.fecha_evento} <em>(${encontrado.hora_evento} hrs)</em></span>`
+    ? `<span class="badge-lugar-evento"><i data-lucide="map-pin"></i> Lugar: ${esc(encontrado.lugar_evento)}</span>
+       <span class="badge-fecha-evento"><i data-lucide="calendar"></i> ${esc(encontrado.fecha_evento)} <em>(${esc(encontrado.hora_evento)} hrs)</em></span>`
     : `<span class="badge-sin-evento"><i data-lucide="info"></i> Sin evento presencial asociado</span>`;
 
   contenedor_res.innerHTML = `
     <div class="tarjeta-rastreo-publico">
       <div class="ticket-header-line">
         <div>
-          <span class="ticket-folio">${String(encontrado.folio).toUpperCase()} · Solicitado el ${encontrado.fecha_solicitud}</span>
-          <div class="ticket-servicio">${capitalizar_inicial(encontrado.servicio)}</div>
+          <span class="ticket-folio">${esc(String(encontrado.folio).toUpperCase())} · Solicitado el ${esc(encontrado.fecha_solicitud)}</span>
+          <div class="ticket-servicio">${esc(capitalizar_inicial(encontrado.servicio))}</div>
           <div class="ticket-detalles">
             <i data-lucide="user"></i>
-            <span class="tag-solicitante-color">${encontrado.solicitante}:</span>
+            <span class="tag-solicitante-color">${esc(encontrado.solicitante)}:</span>
             ${formatear_descripcion_color(encontrado.descripcion)}
             ${info_evento_publico}
           </div>
         </div>
         <span class="badge-estado-actual ${clase_estado}">
           <span class="punto-estado"></span>
-          <span>${estado_calculado}</span>
+          <span>${esc(etiqueta_estado_pub)}</span>
         </span>
       </div>
 
+      ${aviso_denegacion_html}
       <div class="rastreo-grid-meta">
-        <div><strong>Responsable asignado:</strong> ${capitalizar_inicial(encontrado.responsable || 'Por asignar')}</div>
-        <div><strong>Fecha límite estimada:</strong> ${encontrado.fecha_limite || 'Sin asignar'}</div>
+        <div><strong>Responsable asignado:</strong> ${esc(capitalizar_inicial(encontrado.responsable || 'Por asignar'))}</div>
+        <div><strong>Fecha límite estimada:</strong> ${esc(encontrado.fecha_limite || 'Sin asignar')}</div>
       </div>
 
       <div class="caja-notas" style="border-top: none; padding-top: 0;">
@@ -1256,8 +1417,9 @@ function calcular_estado_automatico(item) {
   return 'Pendiente';
 }
 
+// sincronización en la nube restringida exclusivamente a sesiones autenticadas
 async function sincronizar_estados_nube() {
-  if (!usar_nube) return;
+  if (!usar_nube || !cliente_db || !sesion_autorizada) return;
   for (const item of solicitudes) {
     const estado_real = calcular_estado_automatico(item);
     if (item.estado !== estado_real && item.id) {
@@ -1267,8 +1429,14 @@ async function sincronizar_estados_nube() {
   }
 }
 
+// carga del listado completo restringida a usuarios con sesión activa en el panel interno
 async function cargar_solicitudes() {
   if (usar_nube) {
+    if (!sesion_autorizada || !cliente_db) {
+      await actualizar_folio_preview();
+      return;
+    }
+
     const { data, error } = await cliente_db
       .from('solicitudes')
       .select('*')
@@ -1299,7 +1467,7 @@ async function cargar_solicitudes() {
     ];
   }
 
-  actualizar_folio_preview();
+  await actualizar_folio_preview();
   renderizar_tickets();
   actualizar_notificaciones_ios();
 }
@@ -1313,7 +1481,19 @@ function controlar_flecha_flotante() {
   }
 }
 
-function actualizar_folio_preview() {
+// obtiene la vista previa del siguiente folio desde la función rpc siguiente_folio
+async function actualizar_folio_preview() {
+  const el_preview = document.getElementById('folio-preview');
+  if (usar_nube && cliente_db) {
+    try {
+      const { data, error } = await cliente_db.rpc('siguiente_folio');
+      if (!error && data && typeof data === 'string') {
+        if (el_preview) el_preview.textContent = data;
+        return data;
+      }
+    } catch (e) {}
+  }
+
   let max_num = 0;
   solicitudes.forEach(s => {
     const num = parseInt(String(s.folio || '').replace(/\D/g, ''), 10);
@@ -1323,7 +1503,7 @@ function actualizar_folio_preview() {
   });
   const siguiente_numero = Math.max(solicitudes.length, max_num) + 1;
   const codigo = 'SRV-' + String(siguiente_numero).padStart(3, '0');
-  document.getElementById('folio-preview').textContent = codigo;
+  if (el_preview) el_preview.textContent = codigo;
   return codigo;
 }
 
@@ -1404,6 +1584,12 @@ function alternar_evento(forzar_estado) {
 async function guardar_solicitud(e) {
   e.preventDefault();
 
+  // validación anti-bots mediante campo honeypot invisible
+  const campo_hp = document.getElementById('campo-sitio-web-hp');
+  if (campo_hp && campo_hp.value.trim() !== '') {
+    return;
+  }
+
   if (aplica_evento && !document.getElementById('fecha-evento').value) {
     Swal.fire({
       icon: 'warning',
@@ -1428,11 +1614,19 @@ async function guardar_solicitud(e) {
   }
 
   const input_lugar_el = document.getElementById('lugar-evento');
-  if (aplica_evento && (!input_lugar_el || !input_lugar_el.value.trim())) {
+  const input_lugar_otro_el = document.getElementById('input-lugar-otro');
+  const es_lugar_otro = input_lugar_el && input_lugar_el.value === 'Otro (especificar aula)';
+  const valor_lugar_final = es_lugar_otro
+    ? (input_lugar_otro_el ? input_lugar_otro_el.value.trim() : '')
+    : (input_lugar_el ? input_lugar_el.value.trim() : '');
+
+  if (aplica_evento && !valor_lugar_final) {
     Swal.fire({
       icon: 'warning',
-      title: 'Sitio requerido',
-      text: 'Por favor escribe el sitio o lugar del evento.',
+      title: es_lugar_otro ? 'Aula o sitio requerido' : 'Sitio requerido',
+      text: es_lugar_otro
+        ? 'Por favor especifica el aula o lugar del evento.'
+        : 'Por favor selecciona el sitio o lugar del evento.',
       confirmButtonColor: '#1B396A'
     });
     return;
@@ -1449,36 +1643,36 @@ async function guardar_solicitud(e) {
     });
     return;
   }
+
   const texto_btn = document.getElementById('texto-btn-enviar');
   btn_submit.disabled = true;
   texto_btn.textContent = 'Enviando solicitud...';
 
-  const nuevo_folio = actualizar_folio_preview();
   const fecha_hoy = document.getElementById('fecha-actual').textContent;
-  
-  const esp_valor = sanitizar_texto(document.getElementById('detalle-especifico').value.trim());
-  const desc_valor = sanitizar_texto(document.getElementById('descripcion').value.trim());
+  const esp_valor = sanitizar_texto(document.getElementById('detalle-especifico').value.trim()).slice(0, 180);
+  const desc_valor = sanitizar_texto(document.getElementById('descripcion').value.trim()).slice(0, 400);
+
+  let folio_confirmado = await actualizar_folio_preview();
 
   const nueva = {
-    folio: nuevo_folio,
+    folio: folio_confirmado,
     fecha_solicitud: fecha_hoy,
     servicio: capitalizar_inicial(servicio_actual),
-    solicitante: sanitizar_texto(document.getElementById('solicitante').value.trim()),
+    solicitante: sanitizar_texto(document.getElementById('solicitante').value.trim()).slice(0, 150),
     descripcion: `[${esp_valor}] — ${desc_valor}`,
     aplica_evento: aplica_evento,
     fecha_evento: aplica_evento ? document.getElementById('fecha-evento').value : '',
     hora_evento: aplica_evento ? valor_hora_24 : '',
-    lugar_evento: aplica_evento ? sanitizar_texto(input_lugar_el.value.trim()) : '',
+    lugar_evento: aplica_evento ? sanitizar_texto(valor_lugar_final).slice(0, 150) : '',
     estado: 'Pendiente',
     responsable: 'Sin asignar',
     fecha_limite: '',
-    observaciones: sanitizar_texto(`[${fecha_hoy}] Solicitud registrada en plataforma.`)
+    observaciones: `[${fecha_hoy}] Solicitud registrada en plataforma.`
   };
 
-  nueva.estado = calcular_estado_automatico(nueva);
-
-  if (usar_nube) {
-    const { error } = await cliente_db.from('solicitudes').insert([nueva]);
+  if (usar_nube && cliente_db) {
+    // registro atómico mediante rpc crear_solicitud (asigna folio consecutivo en servidor)
+    const { data: respuesta_rpc, error } = await cliente_db.rpc('crear_solicitud', { p_datos: nueva });
     if (error) {
       Swal.fire({
         icon: 'error',
@@ -1490,16 +1684,25 @@ async function guardar_solicitud(e) {
       texto_btn.textContent = 'Enviar solicitud oficial';
       return;
     }
-    await cargar_solicitudes();
+
+    if (respuesta_rpc && respuesta_rpc.folio) {
+      folio_confirmado = respuesta_rpc.folio;
+      nueva.folio = folio_confirmado;
+    }
+
+    if (sesion_autorizada) {
+      await cargar_solicitudes();
+    } else {
+      await actualizar_folio_preview();
+    }
   } else {
+    nueva.estado = calcular_estado_automatico(nueva);
     solicitudes.unshift(nueva);
     localStorage.setItem('tickets_itp_v6', JSON.stringify(solicitudes));
-    actualizar_folio_preview();
+    await actualizar_folio_preview();
     renderizar_tickets();
     actualizar_notificaciones_ios();
   }
-
-  await notificar_nueva_solicitud_correo(nueva);
 
   document.getElementById('form-solicitud').reset();
   if (selector_solicitante_instancia) {
@@ -1508,6 +1711,10 @@ async function guardar_solicitud(e) {
   if (selector_lugar_instancia) {
     selector_lugar_instancia.setValue(catalogo_sitios_itp[0], true);
   }
+  const bloque_otro_reset = document.getElementById('bloque-lugar-otro');
+  const input_otro_reset = document.getElementById('input-lugar-otro');
+  if (bloque_otro_reset) bloque_otro_reset.classList.add('oculto');
+  if (input_otro_reset) input_otro_reset.value = '';
   if (calendario_evento_instancia) {
     calendario_evento_instancia.clear();
     if (calendario_evento_instancia.altInput) {
@@ -1523,7 +1730,7 @@ async function guardar_solicitud(e) {
   btn_submit.disabled = false;
   texto_btn.textContent = 'Enviar solicitud oficial';
 
-  document.getElementById('modal-folio-texto').textContent = nuevo_folio;
+  document.getElementById('modal-folio-texto').textContent = folio_confirmado;
   document.getElementById('modal-exito').classList.remove('oculto');
 }
 
@@ -1536,11 +1743,182 @@ function filtrar_estado(estado, btn) {
 
 function obtener_arreglo_notas(cadena_observaciones) {
   if (!cadena_observaciones || !cadena_observaciones.trim()) return [];
-  return cadena_observaciones.split(' | ').map(n => n.trim()).filter(Boolean);
+  return String(cadena_observaciones)
+    .replace(/&#x2F;/gi, '/')
+    .split(' | ')
+    .map(n => n.trim())
+    .filter(n => n && !n.startsWith('[COM:') && !n.startsWith('[DENEGADA:') && !n.includes('SOLICITUD DENEGADA — Motivo:'));
+}
+
+function obtener_info_denegacion(item) {
+  const cadena = String((item && item.observaciones) || '').replace(/&#x2F;/gi, '/');
+  const coincidencia = cadena.match(/\[DENEGADA:(.*?)\]/);
+  const resp = String((item && item.responsable) || '').trim().toLowerCase();
+  if (coincidencia) {
+    return {
+      denegada: true,
+      motivo: coincidencia[1].trim()
+    };
+  }
+  if (resp.startsWith('denegada')) {
+    return {
+      denegada: true,
+      motivo: 'Solicitud denegada por el Departamento de Comunicación y Difusión.'
+    };
+  }
+  return {
+    denegada: false,
+    motivo: ''
+  };
+}
+
+function obtener_prefijo_denegacion(cadena_observaciones) {
+  const cadena = String(cadena_observaciones || '');
+  const coincidencia = cadena.match(/\[DENEGADA:(.*?)\]/);
+  return coincidencia ? coincidencia[0] : '';
+}
+
+async function denegar_solicitud_panel(index_real) {
+  if (!sesion_autorizada) {
+    intentar_abrir_panel();
+    return;
+  }
+
+  const item = solicitudes[index_real];
+  if (!item) return;
+
+  const info_den = obtener_info_denegacion(item);
+  if (info_den.denegada) {
+    const reactivar = await Swal.fire({
+      icon: 'question',
+      title: '¿Reactivar solicitud?',
+      text: `Esta solicitud (${String(item.folio).toUpperCase()}) está marcada como DENEGADA. ¿Deseas reactivarla?`,
+      showCancelButton: true,
+      confirmButtonColor: '#1B396A',
+      cancelButtonColor: '#64748b',
+      confirmButtonText: 'Sí, reactivar',
+      cancelButtonText: 'Cancelar',
+      showCloseButton: true,
+      allowOutsideClick: true,
+      allowEscapeKey: true,
+      hideClass: { popup: '' }
+    });
+    if (!reactivar.isConfirmed) return;
+
+    const prefijo_com = obtener_prefijo_comunicacion(item.observaciones);
+    const notas_limpias = obtener_arreglo_notas(item.observaciones);
+    const nueva_obs = (prefijo_com ? [prefijo_com, ...notas_limpias] : notas_limpias).join(' | ');
+    solicitudes[index_real].responsable = 'Sin asignar';
+    if (usar_nube && item.id) {
+      await cliente_db.from('solicitudes').update({ responsable: 'Sin asignar' }).eq('id', item.id);
+    }
+    await actualizar_campo(index_real, 'observaciones', nueva_obs);
+    return;
+  }
+
+  const { value: motivo_rechazo } = await Swal.fire({
+    title: `Denegar Solicitud ${esc(String(item.folio).toUpperCase())}`,
+    html: `<p style="font-size: 0.88rem; color: var(--ink-muted); margin-bottom: 0.5rem;">Solicitante: <strong>${esc(item.solicitante)}</strong><br>Escribe el motivo por el cual se deniega esta solicitud (solo será visible cuando el departamento consulte su folio):</p>`,
+    input: 'text',
+    inputAttributes: {
+      maxlength: '300'
+    },
+    inputPlaceholder: 'Ej. Fuera de tiempo, material incompleto, no corresponde al área...',
+    showCancelButton: true,
+    confirmButtonColor: '#dc2626',
+    cancelButtonColor: '#64748b',
+    confirmButtonText: 'Denegar Solicitud',
+    cancelButtonText: 'Cancelar',
+    showCloseButton: true,
+    allowOutsideClick: true,
+    allowEscapeKey: true,
+    hideClass: { popup: '' },
+    inputValidator: (valor) => {
+      if (!valor || !valor.trim()) {
+        return 'Por favor indica el motivo de la denegación.';
+      }
+    }
+  });
+
+  if (!motivo_rechazo) return;
+
+  const motivo_limpio = sanitizar_texto(motivo_rechazo.trim()).replace(/[\[\]\|]/g, '').slice(0, 300);
+  const prefijo_com = obtener_prefijo_comunicacion(item.observaciones);
+  const etiqueta_den = `[DENEGADA:${motivo_limpio}]`;
+  const notas_limpias = obtener_arreglo_notas(item.observaciones);
+
+  const partes_obs = [];
+  if (prefijo_com) partes_obs.push(prefijo_com);
+  partes_obs.push(etiqueta_den);
+  partes_obs.push(...notas_limpias);
+
+  solicitudes[index_real].responsable = 'Denegada';
+  if (usar_nube && item.id) {
+    await cliente_db.from('solicitudes').update({ responsable: 'Denegada' }).eq('id', item.id);
+  }
+  await actualizar_campo(index_real, 'observaciones', partes_obs.join(' | '));
+}
+
+function obtener_estado_comunicacion_solicitud(item) {
+  const cadena = String((item && item.observaciones) || '');
+  const coincidencia = cadena.match(/\[COM:(I?)(E?)\]/);
+  if (coincidencia) {
+    return {
+      interna: coincidencia[1] === 'I',
+      externa: coincidencia[2] === 'E'
+    };
+  }
+  return {
+    interna: true,
+    externa: false
+  };
+}
+
+function obtener_prefijo_comunicacion(cadena_observaciones) {
+  const cadena = String(cadena_observaciones || '');
+  const coincidencia = cadena.match(/\[COM:(I?)(E?)\]/);
+  return coincidencia ? coincidencia[0] : '';
+}
+
+async function alternar_tipo_comunicacion(index, tipo, marcado) {
+  const item = solicitudes[index];
+  if (!item) return;
+  const estado_com = obtener_estado_comunicacion_solicitud(item);
+  if (tipo === 'interna') estado_com.interna = Boolean(marcado);
+  if (tipo === 'externa') estado_com.externa = Boolean(marcado);
+
+  const etiqueta_com = `[COM:${estado_com.interna ? 'I' : ''}${estado_com.externa ? 'E' : ''}]`;
+  const prefijo_den = obtener_prefijo_denegacion(item.observaciones);
+  const notas_limpias = obtener_arreglo_notas(item.observaciones);
+  const partes = [etiqueta_com];
+  if (prefijo_den) partes.push(prefijo_den);
+  partes.push(...notas_limpias);
+  const nueva_cadena = partes.join(' | ');
+  await actualizar_campo(index, 'observaciones', nueva_cadena);
+}
+
+function extraer_actividad_y_medios(item) {
+  const servicio_txt = capitalizar_inicial(String(item.servicio || '').replace(/&#x2F;/gi, '/'));
+  const desc_raw = String(item.descripcion || '').replace(/&#x2F;/gi, '/').trim();
+  const regex = /^\[(.*?)\]\s*—\s*(.*)$/;
+  const coincidencia = desc_raw.match(regex);
+  if (coincidencia) {
+    const especificacion = capitalizar_inicial(coincidencia[1].trim());
+    const detalle_actividad = capitalizar_inicial(coincidencia[2].trim());
+    return {
+      actividad: detalle_actividad ? `${servicio_txt} — ${detalle_actividad}` : servicio_txt,
+      medios: especificacion || servicio_txt
+    };
+  }
+  return {
+    actividad: desc_raw ? `${servicio_txt} — ${capitalizar_inicial(desc_raw)}` : servicio_txt,
+    medios: servicio_txt
+  };
 }
 
 function renderizar_tickets() {
   const contenedor = document.getElementById('contenedor-tickets');
+  if (!contenedor) return;
   const input_busqueda = document.getElementById('buscador-tickets');
   const texto_busqueda = input_busqueda ? input_busqueda.value.toLowerCase() : '';
   
@@ -1549,9 +1927,9 @@ function renderizar_tickets() {
   const filtrados = lista_periodo.filter(item => {
     const estado_calculado = calcular_estado_automatico(item);
     const cumple_estado = filtro_activo === 'todos' || estado_calculado.toLowerCase() === filtro_activo.toLowerCase();
-    const cumple_busqueda = item.solicitante.toLowerCase().includes(texto_busqueda) || 
-                            item.folio.toLowerCase().includes(texto_busqueda) ||
-                            item.servicio.toLowerCase().includes(texto_busqueda);
+    const cumple_busqueda = String(item.solicitante || '').toLowerCase().includes(texto_busqueda) || 
+                            String(item.folio || '').toLowerCase().includes(texto_busqueda) ||
+                            String(item.servicio || '').toLowerCase().includes(texto_busqueda);
     return cumple_estado && cumple_busqueda;
   });
 
@@ -1571,14 +1949,22 @@ function renderizar_tickets() {
     const sufijo_estado = estado_actual.replace(' ', '-');
     const clase_estado = 'estado-' + sufijo_estado;
     const lista_notas = obtener_arreglo_notas(item.observaciones);
+    const estado_com_actual = obtener_estado_comunicacion_solicitud(item);
+    const info_denegacion = obtener_info_denegacion(item);
+    const es_denegada = info_denegacion.denegada;
+    const etiqueta_estado_visual = es_denegada ? 'Denegada' : estado_actual;
+    const clase_estado_visual = es_denegada ? 'estado-Denegada' : clase_estado;
+    const clase_borde_visual = es_denegada ? 'borde-Denegada' : `borde-${sufijo_estado}`;
     const delay_anim = Math.min(idx_vista * 0.05, 0.35);
 
     const resp_guardado = (item.responsable || 'Sin asignar').trim();
     const mapa_nombres_fijos = {
       'sin asignar': 'Sin asignar',
       'karla': 'Karla',
-      'juan': 'Juan',
       'lina': 'Lina',
+      'juan': 'Juan',
+      'karina': 'Karina',
+      'arge': 'Arge',
       'yessica': 'Yessica'
     };
 
@@ -1593,30 +1979,31 @@ function renderizar_tickets() {
       es_chico_servicio = true;
       const partes_ss = resp_guardado.split(':');
       nombre_manual_ss = partes_ss.length > 1 ? partes_ss.slice(1).join(':').trim() : '';
-    } else if (resp_guardado !== '') {
+    } else if (resp_guardado !== '' && resp_guardado.toLowerCase() !== 'denegada' && !es_denegada) {
       valor_select = 'Chico(a) de servicio';
       es_chico_servicio = true;
       nombre_manual_ss = resp_guardado;
     }
 
-    const tiene_responsable_activo = resp_guardado !== '' && resp_guardado.toLowerCase() !== 'sin asignar';
-    const folio_mayus = String(item.folio || '').toUpperCase();
-    const servicio_titulo = capitalizar_inicial(item.servicio);
+    const tiene_responsable_activo = !es_denegada && resp_guardado !== '' && resp_guardado.toLowerCase() !== 'sin asignar' && resp_guardado.toLowerCase() !== 'denegada';
+    const folio_mayus_id = String(item.folio || '').toUpperCase().replace(/[^A-Z0-9-]/g, '');
+    const folio_mayus = esc(String(item.folio || '').toUpperCase());
+    const servicio_titulo = esc(capitalizar_inicial(String(item.servicio || '').replace(/&#x2F;/gi, '/')));
 
     const info_evento_inline = item.aplica_evento
-      ? `<span class="badge-lugar-evento"><i data-lucide="map-pin"></i> Lugar: ${item.lugar_evento}</span>
-         <span class="badge-fecha-evento"><i data-lucide="calendar"></i> ${item.fecha_evento} <em>(${item.hora_evento} hrs)</em></span>`
+      ? `<span class="badge-lugar-evento"><i data-lucide="map-pin"></i> Lugar: ${esc(item.lugar_evento)}</span>
+         <span class="badge-fecha-evento"><i data-lucide="calendar"></i> ${esc(item.fecha_evento)} <em>(${esc(item.hora_evento)} hrs)</em></span>`
       : `<span class="badge-sin-evento"><i data-lucide="info"></i> Sin evento presencial asociado</span>`;
 
     const html_notas = lista_notas.length > 0
       ? lista_notas.map((nota_texto, idx_nota) => `
           <div class="nota-individual">
-            <span>${nota_texto}</span>
+            <span>${esc(nota_texto)}</span>
             <div class="acciones-nota">
-              <button type="button" class="btn-icono-nota" onclick="editar_nota(${index_real}, ${idx_nota})" title="Editar nota">
+              <button type="button" class="btn-icono-nota" data-accion="editar-nota" data-index="${index_real}" data-nota-index="${idx_nota}" title="Editar nota">
                 <i data-lucide="pencil"></i>
               </button>
-              <button type="button" class="btn-icono-nota borrar" onclick="eliminar_nota(${index_real}, ${idx_nota})" title="Eliminar nota">
+              <button type="button" class="btn-icono-nota borrar" data-accion="eliminar-nota" data-index="${index_real}" data-nota-index="${idx_nota}" title="Eliminar nota">
                 <i data-lucide="trash-2"></i>
               </button>
             </div>
@@ -1625,14 +2012,14 @@ function renderizar_tickets() {
       : `<div class="sin-fecha-aviso">Sin notas registradas.</div>`;
 
     return `
-      <div class="ticket-item borde-${sufijo_estado}" id="ticket-${folio_mayus}" style="--t-delay: ${delay_anim}s">
+      <div class="ticket-item ${clase_borde_visual}" id="ticket-${folio_mayus_id}" style="--t-delay: ${delay_anim}s">
         <div class="ticket-header-line">
           <div>
-            <span class="ticket-folio">${folio_mayus} · Solicitado: ${item.fecha_solicitud}</span>
+            <span class="ticket-folio">${folio_mayus} · Solicitado: ${esc(item.fecha_solicitud)}</span>
             <div class="ticket-servicio">${servicio_titulo}</div>
             <div class="ticket-detalles">
               <i data-lucide="user"></i>
-              <span class="tag-solicitante-color">${item.solicitante}:</span>
+              <span class="tag-solicitante-color">${esc(item.solicitante)}:</span>
               ${formatear_descripcion_color(item.descripcion)}
               ${info_evento_inline}
             </div>
@@ -1640,9 +2027,18 @@ function renderizar_tickets() {
 
           <div class="selector-estado-contenedor">
             <span class="selector-estado-label">Estatus automático</span>
-            <span class="badge-estado-actual ${clase_estado}">
+            <div class="fila-estado-acciones">
+              <span class="badge-estado-actual ${clase_estado_visual}">
+                <span class="punto-estado"></span>
+                <span>${esc(etiqueta_estado_visual)}</span>
+              </span>
+              <button type="button" class="btn-denegar-solicitud ${es_denegada ? 'activa' : ''}" data-accion="denegar-solicitud" data-index="${index_real}" title="${es_denegada ? 'Reactivar solicitud' : 'Denegar solicitud y registrar motivo'}">
+                <i data-lucide="${es_denegada ? 'rotate-ccw' : 'ban'}"></i>
+                <span>${es_denegada ? 'Reactivar' : 'Denegar'}</span>
+              </button>
+            </div>
+            <span style="display:none">
               <span class="punto-estado"></span>
-              <span>${estado_actual}</span>
             </span>
           </div>
         </div>
@@ -1653,24 +2049,37 @@ function renderizar_tickets() {
             <div class="fila-responsable-acciones">
               <select class="select-responsable-tom" data-index="${index_real}">
                 <option value="Sin asignar" ${valor_select === 'Sin asignar' ? 'selected' : ''}>Sin asignar</option>
-                <option value="Karla" ${valor_select === 'Karla' ? 'selected' : ''}>Karla</option>
-                <option value="Juan" ${valor_select === 'Juan' ? 'selected' : ''}>Juan</option>
-                <option value="Lina" ${valor_select === 'Lina' ? 'selected' : ''}>Lina</option>
-                <option value="Yessica" ${valor_select === 'Yessica' ? 'selected' : ''}>Yessica</option>
-                <option value="Chico(a) de servicio" ${valor_select === 'Chico(a) de servicio' ? 'selected' : ''}>Chico(a) de servicio</option>
+                ${Object.keys(catalogo_responsables)
+                  .filter(nombre_resp => nombre_resp !== 'Sin asignar')
+                  .map(nombre_resp => `<option value="${esc(nombre_resp)}" ${valor_select === nombre_resp ? 'selected' : ''}>${esc(nombre_resp)}</option>`)
+                  .join('')}
               </select>
-              ${tiene_responsable_activo
-                ? `<button type="button" class="btn-notificar-wa" onclick="enviar_whatsapp_responsable(${index_real})" title="Enviar recordatorio por WhatsApp a ${resp_guardado}">
+              ${tiene_responsable_activo && !es_chico_servicio
+                ? `<button type="button" class="btn-notificar-wa" data-accion="enviar-wa" data-index="${index_real}" title="Enviar recordatorio por WhatsApp a ${esc(resp_guardado)}">
                     <svg viewBox="0 0 24 24" fill="currentColor" style="width: 15px; height: 15px;"><path d="M12.031 2c-5.506 0-9.989 4.478-9.99 9.984a9.964 9.964 0 0 0 1.333 4.993L2 22l5.233-1.237a9.994 9.994 0 0 0 4.779 1.217h.004c5.505 0 9.988-4.478 9.989-9.984 0-2.669-1.037-5.176-2.922-7.062A9.935 9.935 0 0 0 12.031 2zm5.829 14.144c-.245.693-1.43 1.326-1.981 1.408-.507.075-1.148.107-1.855-.117-.428-.135-.978-.316-1.682-.62-2.961-1.278-4.896-4.261-5.044-4.459-.148-.197-1.204-1.601-1.204-3.054 0-1.453.763-2.167 1.034-2.463.271-.296.591-.37.788-.37.197 0 .394.002.566.01.182.009.426-.069.666.508.246.591.838 2.045.912 2.193.074.148.123.32.025.517-.098.197-.148.32-.296.493-.148.172-.311.385-.444.517-.148.148-.302.308-.13.604.172.296.766 1.264 1.645 2.047 1.13 1.007 2.083 1.319 2.379 1.467.296.148.468.123.641-.074.172-.197.739-.862.936-1.158.197-.296.394-.246.665-.148.271.098 1.725.813 2.02.961.296.148.493.222.567.345.074.123.074.714-.171 1.407z"></path></svg> WhatsApp
                   </button>`
                 : ''
               }
             </div>
             <div id="bloque-ss-${index_real}" class="caja-servicio-social-manual ${es_chico_servicio ? '' : 'oculto'}">
-              <input type="text" id="input-ss-${index_real}" value="${nombre_manual_ss}" placeholder="Escribe el nombre del prestador(a) de servicio..." onkeydown="if(event.key==='Enter'){event.preventDefault();guardar_nombre_servicio_social(${index_real});}">
-              <button type="button" class="btn-confirmar-ss" onclick="guardar_nombre_servicio_social(${index_real})">
+              <input type="text" id="input-ss-${index_real}" value="${esc(nombre_manual_ss)}" maxlength="80" placeholder="Escribe el nombre del prestador(a) de servicio..." data-enter="guardar-ss" data-index="${index_real}">
+              <button type="button" class="btn-confirmar-ss" data-accion="guardar-ss" data-index="${index_real}">
                 <i data-lucide="check"></i> Asignar
               </button>
+            </div>
+          </div>
+
+          <div class="campo-interno">
+            <label>Comunicación (Reporte)</label>
+            <div class="grupo-checks-comunicacion">
+              <label class="check-comunicacion-item">
+                <input type="checkbox" ${estado_com_actual.interna ? 'checked' : ''} data-cambio="tipo-comunicacion" data-tipo="interna" data-index="${index_real}">
+                <span>Interna</span>
+              </label>
+              <label class="check-comunicacion-item">
+                <input type="checkbox" ${estado_com_actual.externa ? 'checked' : ''} data-cambio="tipo-comunicacion" data-tipo="externa" data-index="${index_real}">
+                <span>Externa</span>
+              </label>
             </div>
           </div>
 
@@ -1678,13 +2087,13 @@ function renderizar_tickets() {
             <div class="cabecera-fecha-opcional">
               <label style="margin-bottom: 0;">Fecha límite de entrega</label>
               <label class="toggle-fecha-manual">
-                <input type="checkbox" ${tiene_fecha_limite ? 'checked' : ''} onchange="alternar_fecha_limite_manual(${index_real}, this.checked)">
+                <input type="checkbox" ${tiene_fecha_limite ? 'checked' : ''} data-cambio="fecha-limite-manual" data-index="${index_real}">
                 <span>Habilitar</span>
               </label>
             </div>
             ${tiene_fecha_limite 
               ? `<div class="contenedor-input-calendario">
-                  <input type="text" class="input-fecha-limite-panel input-fecha-con-icono" data-index="${index_real}" value="${item.fecha_limite}" placeholder="dd/mm/aaaa">
+                  <input type="text" class="input-fecha-limite-panel input-fecha-con-icono" data-index="${index_real}" value="${esc(item.fecha_limite)}" placeholder="dd/mm/aaaa">
                   <i data-lucide="calendar" class="icono-calendario-fijo"></i>
                 </div>`
               : `<div class="sin-fecha-aviso">Sin fecha límite asignada</div>`
@@ -1701,8 +2110,8 @@ function renderizar_tickets() {
             ${html_notas}
           </div>
           <div class="input-nota-grupo">
-            <input type="text" id="nota-input-${index_real}" placeholder="Escribe un avance o acuerdo...">
-            <button type="button" class="btn-agregar-nota" onclick="agregar_nota(${index_real})">
+            <input type="text" id="nota-input-${index_real}" maxlength="350" placeholder="Escribe un avance o acuerdo...">
+            <button type="button" class="btn-agregar-nota" data-accion="agregar-nota" data-index="${index_real}">
               <i data-lucide="plus"></i> Agregar
             </button>
           </div>
@@ -1733,7 +2142,7 @@ function generar_filas_frecuencia(arreglo, total) {
     const porc = total > 0 ? ((cant / total) * 100).toFixed(1) : '0.0';
     return `
       <tr>
-        <td>${concepto}</td>
+        <td>${esc(concepto)}</td>
         <td class="num-centro"><strong>${cant}</strong></td>
         <td class="num-centro">${porc}%</td>
       </tr>
@@ -1742,210 +2151,123 @@ function generar_filas_frecuencia(arreglo, total) {
 }
 
 function abrir_modal_reporte() {
-  if (!sesion_autorizada || sessionStorage.getItem('itp_sesion_activa_segura') !== token_sesion_seguro) {
+  if (!sesion_autorizada) {
     return;
   }
 
   const lista_periodo = obtener_solicitudes_por_periodo();
-  const total = lista_periodo.length;
-  let pendientes = 0;
-  let en_proceso = 0;
-  let terminados = 0;
-  let con_evento = 0;
-
-  lista_periodo.forEach(item => {
-    const est = calcular_estado_automatico(item);
-    if (est === 'Pendiente') pendientes++;
-    else if (est === 'En proceso') en_proceso++;
-    else if (est === 'Terminado') terminados++;
-    if (item.aplica_evento) con_evento++;
-  });
-
-  const tasa_cumplimiento = total > 0 ? ((terminados / total) * 100).toFixed(1) : '0.0';
-  const por_servicio = contar_frecuencias(lista_periodo, 'servicio');
-  const por_departamento = contar_frecuencias(lista_periodo, 'solicitante');
-  const por_responsable = contar_frecuencias(lista_periodo, 'responsable');
-
   const nombre_periodo = nombres_meses[mes_filtro_activo] || nombres_meses[mes_actual_sistema];
-  const fecha_emision = new Date().toLocaleDateString('es-MX');
   document.getElementById('titulo-mes-reporte').textContent = `Reporte Oficial — ${nombre_periodo}`;
 
-  const filas_padron = lista_periodo.length > 0
-    ? lista_periodo.map((item, idx) => {
-        const est = calcular_estado_automatico(item);
-        const ev_texto = item.aplica_evento
-          ? `${item.fecha_evento} (${item.hora_evento} hrs) — ${item.lugar_evento}`
-          : 'No aplica';
-        const acuerdos = obtener_arreglo_notas(item.observaciones).join('; ');
-        return `
-          <tr>
-            <td class="num-centro">${idx + 1}</td>
-            <td class="num-centro"><strong>${String(item.folio).toUpperCase()}</strong></td>
-            <td class="num-centro">${item.fecha_solicitud}</td>
-            <td>${item.solicitante}</td>
-            <td><strong>${capitalizar_inicial(item.servicio)}</strong><br><span style="font-size: 7.5pt; color: #333;">${item.descripcion}</span></td>
-            <td>${ev_texto}</td>
-            <td>${capitalizar_inicial(item.responsable || 'Sin asignar')}</td>
-            <td class="num-centro"><strong>${est.toUpperCase()}</strong></td>
-            <td style="font-size: 7.5pt;">${acuerdos || 'Sin observaciones'}</td>
-          </tr>
-        `;
-      }).join('')
-    : `<tr><td colspan="9" class="num-centro">No existen solicitudes registradas durante el periodo seleccionado.</td></tr>`;
+  const total_filas_minimas = 20;
+  const total_filas_render = Math.max(total_filas_minimas, lista_periodo.length);
+  let filas_formato_exacto = '';
+
+  for (let i = 0; i < total_filas_render; i++) {
+    const item = lista_periodo[i];
+    if (item) {
+      const { actividad, medios } = extraer_actividad_y_medios(item);
+      const emisor = item.solicitante || '';
+      const fecha_recepcion = item.fecha_solicitud || '';
+      const fecha_vencimiento = (item.fecha_limite && item.fecha_limite.trim() !== '')
+        ? item.fecha_limite
+        : (item.aplica_evento && item.fecha_evento ? item.fecha_evento : '');
+      const estado_com = obtener_estado_comunicacion_solicitud(item);
+      const marca_interna = estado_com.interna ? 'X' : '';
+      const marca_externa = estado_com.externa ? 'X' : '';
+      const folio_rep = String(item.folio || '').toUpperCase();
+      const info_den_rep = obtener_info_denegacion(item);
+      const resp_rep = capitalizar_inicial((item.responsable || 'Sin asignar').trim());
+      const observaciones_txt = info_den_rep.denegada
+        ? `${folio_rep} — Denegada`
+        : `${folio_rep} — Asignado a: ${resp_rep}`;
+
+      // interpolación con escape html estricto en todas las celdas del reporte oficial
+      filas_formato_exacto += `
+        <tr>
+          <td>${esc(actividad)}</td>
+          <td>${esc(emisor)}</td>
+          <td class="num-centro">${esc(fecha_recepcion)}</td>
+          <td class="num-centro">${esc(fecha_vencimiento)}</td>
+          <td class="num-centro">${marca_interna}</td>
+          <td class="num-centro">${marca_externa}</td>
+          <td>${esc(medios)}</td>
+          <td>${esc(observaciones_txt)}</td>
+        </tr>
+      `;
+    } else {
+      filas_formato_exacto += `
+        <tr>
+          <td>&nbsp;</td>
+          <td>&nbsp;</td>
+          <td>&nbsp;</td>
+          <td>&nbsp;</td>
+          <td>&nbsp;</td>
+          <td>&nbsp;</td>
+          <td>&nbsp;</td>
+          <td>&nbsp;</td>
+        </tr>
+      `;
+    }
+  }
 
   const contenedor_rep = document.getElementById('contenido-imprimible-reporte');
   contenedor_rep.innerHTML = `
-    <div class="hoja-oficio-itp">
-      <img src="img/TecPachuca.png" alt="Marca de agua ITP" class="marca-agua-oficio" onerror="this.style.display='none'">
+    <div class="hoja-oficio-itp hoja-bitacora-horizontal">
+      <div class="contenido-sobre-marca contenedor-bitacora-iso">
+        <div class="bloque-superior-bitacora">
+          <table class="tabla-encabezado-bitacora-iso">
+            <tbody>
+              <tr>
+                <td colspan="4" class="celda-iso-inst">Instituto Tecnológico de Pachuca</td>
+              </tr>
+              <tr>
+                <td colspan="4" class="celda-iso-pag">Página 1 de 1</td>
+              </tr>
+              <tr>
+                <td rowspan="2" class="celda-iso-logo">
+                  <img src="img/TecPachuca.png" alt="ITP" class="logo-iso-itp" onerror="this.style.display='none'">
+                </td>
+                <td class="celda-iso-meta">Código: <strong>ITPAC-PL-PO-001-03</strong></td>
+                <td class="celda-iso-meta">Versión: 2</td>
+                <td class="celda-iso-meta">Norma: ISO <span class="subrayado-iso-azul">9001:2015  Requisitos</span>:7.4</td>
+              </tr>
+              <tr>
+                <td colspan="3" class="celda-iso-titulo-doc">Bitácora de Comunicación Institucional</td>
+              </tr>
+            </tbody>
+          </table>
 
-      <div class="contenido-sobre-marca">
-        <table class="tabla-membrete-sgc">
-          <tr>
-            <td class="celda-logos-membrete">
-              <div class="contenedor-logos-sgc">
-                <img src="img/SEP.png" alt="SEP" class="logo-doc-sep" onerror="this.style.display='none'">
-                <img src="img/TECNM.png" alt="TecNM" class="logo-doc-tecnm" onerror="this.style.display='none'">
-                <img src="img/TecPachuca.png" alt="ITP" class="logo-doc-itp" onerror="this.style.display='none'">
-              </div>
-            </td>
-            <td class="celda-titulo-membrete">
-              <span class="doc-inst">Tecnológico Nacional de México</span>
-              <span class="doc-plantel">Instituto Tecnológico de Pachuca</span>
-              <span class="doc-depto">Departamento de Comunicación y Difusión</span>
-            </td>
-            <td class="celda-control-membrete">
-              <div><strong>Código:</strong> ITP-CYD-REP-2026</div>
-              <div><strong>Revisión:</strong> 01</div>
-              <div><strong>Emisión:</strong> ${fecha_emision}</div>
-              <div><strong>Periodo:</strong> ${nombre_periodo}</div>
-            </td>
-          </tr>
-        </table>
-
-        <div class="bloque-asunto-oficio">
-          <div>
-            <strong>DOCUMENTO:</strong> REPORTE OFICIAL DE SOLICITUDES Y PRODUCTIVIDAD
-          </div>
-          <div>
-            <strong>LUGAR:</strong> Pachuca de Soto, Hgo.
-          </div>
+          <table class="tabla-formato-exacto-reporte">
+            <thead>
+              <tr>
+                <th rowspan="2" class="col-bit-actividad">Actividad</th>
+                <th rowspan="2" class="col-bit-emisor">Emisor</th>
+                <th rowspan="2" class="col-bit-fecha">Fecha de<br>recepción</th>
+                <th rowspan="2" class="col-bit-fecha">Fecha de<br>vencimiento</th>
+                <th colspan="2" class="col-bit-com">Comunicación</th>
+                <th rowspan="2" class="col-bit-medios">Medios a<br>utilizar</th>
+                <th rowspan="2" class="col-bit-obs">Observaciones</th>
+              </tr>
+              <tr>
+                <th class="col-bit-subcom">Interna</th>
+                <th class="col-bit-subcom">Externa</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${filas_formato_exacto}
+            </tbody>
+          </table>
         </div>
 
-        <p class="parrafo-introductorio-oficio">
-          Por medio del presente documento se hace constar el concentrado estadístico y padrón operativo de las solicitudes de diseño e impresión de material gráfico, difusión institucional, cobertura audiovisual y validación de materiales recibidas y gestionadas por el <strong>Departamento de Comunicación y Difusión</strong> del Instituto Tecnológico de Pachuca correspondiente al periodo <strong>${nombre_periodo}</strong>.
-        </p>
-
-        <div class="titulo-seccion-oficio">I. Resumen Ejecutivo de Indicadores Operativos</div>
-        <table class="tabla-oficio-formal">
-          <thead>
-            <tr>
-              <th class="num-centro">Total de Solicitudes Recibidas</th>
-              <th class="num-centro">Solicitudes Concluidas (Terminadas)</th>
-              <th class="num-centro">Solicitudes en Proceso</th>
-              <th class="num-centro">Solicitudes Pendientes</th>
-              <th class="num-centro">Eventos Institucionales Cubiertos</th>
-              <th class="num-centro">Índice de Eficiencia Operativa</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td class="num-centro" style="font-size: 11pt;"><strong>${total}</strong></td>
-              <td class="num-centro" style="font-size: 11pt;"><strong>${terminados}</strong></td>
-              <td class="num-centro" style="font-size: 11pt;"><strong>${en_proceso}</strong></td>
-              <td class="num-centro" style="font-size: 11pt;"><strong>${pendientes}</strong></td>
-              <td class="num-centro" style="font-size: 11pt;"><strong>${con_evento}</strong></td>
-              <td class="num-centro" style="font-size: 11pt;"><strong>${tasa_cumplimiento}%</strong></td>
-            </tr>
-          </tbody>
-        </table>
-
-        <div class="titulo-seccion-oficio">II. Desglose Estadístico por Rubro y Asignación</div>
-        <div class="grid-tablas-estadisticas">
-          <div>
-            <div class="subtitulo-tabla-interna">A) Demanda por Tipo de Servicio</div>
-            <table class="tabla-oficio-formal">
-              <thead>
-                <tr>
-                  <th>Catálogo de Servicio</th>
-                  <th class="num-centro" style="width: 65px;">Cant.</th>
-                  <th class="num-centro" style="width: 65px;">%</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${generar_filas_frecuencia(por_servicio, total)}
-              </tbody>
-            </table>
+        <div class="pie-bitacora-iso">
+          <div class="fila-codigos-pie-iso">
+            <span>ITPAC-PL-PO-001-03</span>
+            <span>Ver.2</span>
           </div>
-
-          <div>
-            <div class="subtitulo-tabla-interna">B) Departamentos o Áreas Solicitantes</div>
-            <table class="tabla-oficio-formal">
-              <thead>
-                <tr>
-                  <th>Departamento / Área Académica</th>
-                  <th class="num-centro" style="width: 65px;">Cant.</th>
-                  <th class="num-centro" style="width: 65px;">%</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${generar_filas_frecuencia(por_departamento, total)}
-              </tbody>
-            </table>
-
-            <div class="subtitulo-tabla-interna" style="margin-top: 8px;">C) Carga Operativa por Personal Asignado</div>
-            <table class="tabla-oficio-formal">
-              <thead>
-                <tr>
-                  <th>Responsable en Comunicación</th>
-                  <th class="num-centro" style="width: 65px;">Cant.</th>
-                  <th class="num-centro" style="width: 65px;">%</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${generar_filas_frecuencia(por_responsable, total)}
-              </tbody>
-            </table>
+          <div class="leyenda-copia-no-controlada">
+            “Toda copia en PAPEL o ARCHIVO ELECTRÓNICO es un Documento No Controlado a excepción del original”
           </div>
-        </div>
-
-        <div class="titulo-seccion-oficio">III. Padrón Detallado y Bitácora de Solicitudes del Periodo</div>
-        <table class="tabla-oficio-formal">
-          <thead>
-            <tr>
-              <th class="num-centro" style="width: 28px;">No.</th>
-              <th class="num-centro" style="width: 62px;">Folio</th>
-              <th class="num-centro" style="width: 68px;">Fecha</th>
-              <th style="width: 120px;">Área Solicitante</th>
-              <th>Servicio y Especificación Técnica</th>
-              <th style="width: 115px;">Datos del Evento</th>
-              <th style="width: 85px;">Responsable</th>
-              <th class="num-centro" style="width: 72px;">Estatus</th>
-              <th style="width: 130px;">Acuerdos / Bitácora</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${filas_padron}
-          </tbody>
-        </table>
-
-        <div class="bloque-firmas-oficio">
-          <div class="caja-firma-oficio">
-            <div class="linea-firma-formal">
-              <strong>ELABORÓ Y REVISÓ</strong><br>
-              <span>Coordinación Operativa de Mesa de Servicio<br>Departamento de Comunicación y Difusión</span>
-            </div>
-          </div>
-          <div class="caja-firma-oficio">
-            <div class="linea-firma-formal">
-              <strong>AUTORIZÓ Y SELLO DE CONFORMIDAD</strong><br>
-              <span>Jefatura del Departamento de Comunicación y Difusión<br>Instituto Tecnológico de Pachuca</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="pie-pagina-oficio">
-          <span>Carretera México - Pachuca Km. 87.5, Col. Venta Prieta, C.P. 42080, Pachuca de Soto, Hidalgo.</span>
-          <span>Documento generado por Sistema Oficial ITP · ajcr</span>
         </div>
       </div>
     </div>
@@ -1969,7 +2291,7 @@ async function imprimir_reporte_pdf() {
 }
 
 async function confirmar_purga_post_reporte_semestral() {
-  if (!sesion_autorizada || sessionStorage.getItem('itp_sesion_activa_segura') !== token_sesion_seguro) {
+  if (!sesion_autorizada) {
     return;
   }
 
@@ -2043,20 +2365,17 @@ async function confirmar_purga_post_reporte_semestral() {
 
   if (!aviso_2.isConfirmed) return;
 
-  if (usar_nube) {
+  if (usar_nube && cliente_db) {
     const { error: error_rpc } = await cliente_db.rpc('reiniciar_tabla_solicitudes');
 
     if (error_rpc) {
-      const { error: error_del } = await cliente_db.from('solicitudes').delete().neq('id', 0);
-      if (error_del) {
-        Swal.fire({
-          icon: 'error',
-          title: 'Error de Supabase',
-          text: error_del.message,
-          confirmButtonColor: '#1B396A'
-        });
-        return;
-      }
+      Swal.fire({
+        icon: 'error',
+        title: 'Error de Supabase',
+        text: error_rpc.message,
+        confirmButtonColor: '#1B396A'
+      });
+      return;
     }
   } else {
     localStorage.removeItem('tickets_itp_v6');
@@ -2064,7 +2383,7 @@ async function confirmar_purga_post_reporte_semestral() {
 
   solicitudes = [];
   cerrar_modal_reporte();
-  actualizar_folio_preview();
+  await actualizar_folio_preview();
   renderizar_tickets();
   actualizar_notificaciones_ios();
 
@@ -2086,7 +2405,7 @@ async function alternar_fecha_limite_manual(index, habilitado) {
 }
 
 async function actualizar_campo(index, campo, valor) {
-  if (!sesion_autorizada || sessionStorage.getItem('itp_sesion_activa_segura') !== token_sesion_seguro) {
+  if (!sesion_autorizada) {
     intentar_abrir_panel();
     return;
   }
@@ -2096,7 +2415,7 @@ async function actualizar_campo(index, campo, valor) {
   const nuevo_estado = calcular_estado_automatico(item);
   item.estado = nuevo_estado;
 
-  if (usar_nube && item.id) {
+  if (usar_nube && cliente_db && item.id) {
     const datos_update = {};
     datos_update[campo] = valor;
     datos_update['estado'] = nuevo_estado;
@@ -2110,19 +2429,31 @@ async function actualizar_campo(index, campo, valor) {
 }
 
 async function agregar_nota(index) {
+  if (!sesion_autorizada) {
+    intentar_abrir_panel();
+    return;
+  }
+
   const input = document.getElementById(`nota-input-${index}`);
-  const texto = sanitizar_texto(input.value.trim());
+  const texto = sanitizar_texto(input ? input.value.trim() : '').replace(/\|/g, '/').slice(0, 350);
   if (!texto) return;
 
   const item = solicitudes[index];
   const lista = obtener_arreglo_notas(item.observaciones);
   lista.push(`[${new Date().toLocaleDateString('es-MX')}] ${texto}`);
-  const nueva_cadena = lista.join(' | ');
+  const prefijo_com = obtener_prefijo_comunicacion(item.observaciones);
+  const prefijo_den = obtener_prefijo_denegacion(item.observaciones);
+  const nueva_cadena = [prefijo_com, prefijo_den, ...lista].filter(Boolean).join(' | ');
 
   await actualizar_campo(index, 'observaciones', nueva_cadena);
 }
 
 async function editar_nota(index_ticket, index_nota) {
+  if (!sesion_autorizada) {
+    intentar_abrir_panel();
+    return;
+  }
+
   const item = solicitudes[index_ticket];
   const lista = obtener_arreglo_notas(item.observaciones);
   const texto_actual = lista[index_nota];
@@ -2131,6 +2462,9 @@ async function editar_nota(index_ticket, index_nota) {
     title: 'Editar nota de seguimiento',
     input: 'text',
     inputValue: texto_actual,
+    inputAttributes: {
+      maxlength: '350'
+    },
     showCancelButton: true,
     confirmButtonColor: '#1B396A',
     cancelButtonColor: '#64748b',
@@ -2145,12 +2479,19 @@ async function editar_nota(index_ticket, index_nota) {
   });
 
   if (nuevo_texto !== undefined && nuevo_texto.trim() !== '') {
-    lista[index_nota] = sanitizar_texto(nuevo_texto.trim());
-    await actualizar_campo(index_ticket, 'observaciones', lista.join(' | '));
+    lista[index_nota] = sanitizar_texto(nuevo_texto.trim()).replace(/\|/g, '/').slice(0, 350);
+    const prefijo_com = obtener_prefijo_comunicacion(item.observaciones);
+    const prefijo_den = obtener_prefijo_denegacion(item.observaciones);
+    await actualizar_campo(index_ticket, 'observaciones', [prefijo_com, prefijo_den, ...lista].filter(Boolean).join(' | '));
   }
 }
 
 async function eliminar_nota(index_ticket, index_nota) {
+  if (!sesion_autorizada) {
+    intentar_abrir_panel();
+    return;
+  }
+
   const item = solicitudes[index_ticket];
   const lista = obtener_arreglo_notas(item.observaciones);
 
@@ -2173,7 +2514,9 @@ async function eliminar_nota(index_ticket, index_nota) {
 
   if (resultado.isConfirmed) {
     lista.splice(index_nota, 1);
-    await actualizar_campo(index_ticket, 'observaciones', lista.join(' | '));
+    const prefijo_com = obtener_prefijo_comunicacion(item.observaciones);
+    const prefijo_den = obtener_prefijo_denegacion(item.observaciones);
+    await actualizar_campo(index_ticket, 'observaciones', [prefijo_com, prefijo_den, ...lista].filter(Boolean).join(' | '));
   }
 }
 
@@ -2189,7 +2532,7 @@ function cambiar_vista(vista) {
     b_nueva.classList.add('activo');
     b_panel.classList.remove('activo');
   } else {
-    if (!sesion_autorizada || sessionStorage.getItem('itp_sesion_activa_segura') !== token_sesion_seguro) {
+    if (!sesion_autorizada) {
       intentar_abrir_panel();
       return;
     }
@@ -2205,6 +2548,61 @@ function cambiar_vista(vista) {
 function cerrar_modal() {
   document.getElementById('modal-exito').classList.add('oculto');
   volver_catalogo();
+}
+
+function abrir_modal_manual() {
+  const modal = document.getElementById('modal-manual');
+  if (!modal) return;
+
+  const tiene_acceso_admin = Boolean(sesion_autorizada);
+  const tab_admin = document.getElementById('tab-manual-admin');
+  const v_panel = document.getElementById('vista-panel');
+  const esta_en_panel = v_panel && !v_panel.classList.contains('oculto');
+
+  if (tab_admin) {
+    if (tiene_acceso_admin) {
+      tab_admin.classList.remove('oculto');
+    } else {
+      tab_admin.classList.add('oculto');
+    }
+  }
+
+  if (tiene_acceso_admin && esta_en_panel) {
+    cambiar_tab_manual('admin');
+  } else {
+    cambiar_tab_manual('publico');
+  }
+
+  modal.classList.remove('oculto');
+  refrescar_iconos();
+}
+
+function cerrar_modal_manual() {
+  const modal = document.getElementById('modal-manual');
+  if (modal) modal.classList.add('oculto');
+}
+
+function cambiar_tab_manual(tipo) {
+  const tiene_acceso_admin = Boolean(sesion_autorizada);
+  const sec_pub = document.getElementById('seccion-manual-publico');
+  const sec_adm = document.getElementById('seccion-manual-admin');
+  const tab_pub = document.getElementById('tab-manual-publico');
+  const tab_adm = document.getElementById('tab-manual-admin');
+  const cuerpo = document.getElementById('cuerpo-modal-manual');
+
+  if (tipo === 'admin' && tiene_acceso_admin) {
+    if (sec_pub) sec_pub.classList.add('oculto');
+    if (sec_adm) sec_adm.classList.remove('oculto');
+    if (tab_pub) tab_pub.classList.remove('activo');
+    if (tab_adm) tab_adm.classList.add('activo');
+  } else {
+    if (sec_pub) sec_pub.classList.remove('oculto');
+    if (sec_adm) sec_adm.classList.add('oculto');
+    if (tab_pub) tab_pub.classList.add('activo');
+    if (tab_adm) tab_adm.classList.remove('activo');
+  }
+
+  if (cuerpo) cuerpo.scrollTop = 0;
 }
 
 inicializar();
