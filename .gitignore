@@ -4,3 +4,8 @@
 *.log
 .DS_Store
 
+# scripts de servidor y base de datos que no deben exponerse en github pages
+seguridad_supabase.sql
+google_apps_script.gs
+
+
