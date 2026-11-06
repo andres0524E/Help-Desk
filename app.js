@@ -109,6 +109,7 @@ const catalogo_departamentos_itp = [
 ];
 
 const catalogo_sitios_itp = [
+  'No aplica',
   'Sala Rafael Rosado',
   'Aula Institutos',
   'Foro Cultural',
@@ -1201,7 +1202,23 @@ function alternar_modo_oscuro() {
   aplicar_tema_visual(nuevo_tema);
 }
 
+function deshabilitar_autocompletado_global() {
+  document.querySelectorAll('input:not([type="checkbox"]):not([type="radio"]), textarea, form').forEach(el => {
+    el.setAttribute('autocomplete', 'off');
+    el.setAttribute('autocorrect', 'off');
+    el.setAttribute('spellcheck', 'false');
+  });
+}
+
+document.addEventListener('focusin', (e) => {
+  if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) {
+    e.target.setAttribute('autocomplete', 'off');
+    e.target.setAttribute('autocorrect', 'off');
+  }
+}, true);
+
 async function inicializar() {
+  deshabilitar_autocompletado_global();
   inicializar_tema_preferido();
   inicializar_delegacion_eventos_segura();
   const hoy = new Date();
@@ -1228,20 +1245,26 @@ async function inicializar() {
       await cargar_directorio_responsables();
     }
 
-    cliente_db.auth.onAuthStateChange((_evento, sesion) => {
-      sesion_autorizada = Boolean(sesion);
-      actualizar_icono_candado();
-      setTimeout(async () => {
-        if (sesion_autorizada) {
+    cliente_db.auth.onAuthStateChange(async (evento, sesion) => {
+      if (evento === 'SIGNED_OUT' || !sesion) {
+        sesion_autorizada = false;
+        actualizar_icono_candado();
+        limpiar_directorio_responsables_memoria();
+        solicitudes = [];
+        renderizar_tickets();
+        actualizar_notificaciones_ios();
+      } else if (evento === 'SIGNED_IN') {
+        const ya_autorizada = sesion_autorizada;
+        sesion_autorizada = true;
+        actualizar_icono_candado();
+        if (!ya_autorizada || solicitudes.length === 0) {
           await cargar_directorio_responsables();
           await cargar_solicitudes();
-        } else {
-          limpiar_directorio_responsables_memoria();
-          solicitudes = [];
-          renderizar_tickets();
-          actualizar_notificaciones_ios();
         }
-      }, 0);
+      } else if (evento === 'TOKEN_REFRESHED' || evento === 'USER_UPDATED') {
+        sesion_autorizada = true;
+        actualizar_icono_candado();
+      }
     });
   }
 
@@ -1413,20 +1436,28 @@ async function consultar_folio_publico(e) {
     : `<div class="sin-fecha-aviso">Sin notas registradas por el departamento.</div>`;
 
   const info_evento_publico = encontrado.aplica_evento
-    ? `<span class="badge-lugar-evento"><i data-lucide="map-pin"></i> Lugar: ${esc(encontrado.lugar_evento)}</span>
-       <span class="badge-fecha-evento"><i data-lucide="calendar"></i> ${esc(encontrado.fecha_evento)} <em>(${esc(encontrado.hora_evento)} hrs)</em></span>`
-    : `<span class="badge-sin-evento"><i data-lucide="info"></i> Sin evento presencial asociado</span>`;
+    ? `<div class="ticket-dato-linea"><i data-lucide="map-pin"></i> <span>Lugar: ${esc(encontrado.lugar_evento)}</span></div>
+       <div class="ticket-dato-linea"><i data-lucide="calendar"></i> <span>${esc(encontrado.fecha_evento)} <em>(${esc(encontrado.hora_evento)} hrs)</em></span></div>`
+    : `<div class="ticket-dato-linea sin-evento"><i data-lucide="info"></i> <span>Sin evento presencial asociado</span></div>`;
 
   contenedor_res.innerHTML = `
     <div class="tarjeta-rastreo-publico">
       <div class="ticket-header-line">
         <div>
-          <span class="ticket-folio">${esc(String(encontrado.folio).toUpperCase())} · Solicitado el ${esc(encontrado.fecha_solicitud)}</span>
+          <div class="ticket-meta-sup">
+            <span class="ticket-folio"><i data-lucide="hash"></i>${esc(String(encontrado.folio).toUpperCase())}</span>
+            <span class="ticket-meta-fecha"><i data-lucide="calendar"></i>Solicitado el ${esc(encontrado.fecha_solicitud)}</span>
+          </div>
           <div class="ticket-servicio">${esc(capitalizar_inicial(encontrado.servicio))}</div>
           <div class="ticket-detalles">
-            <i data-lucide="user"></i>
-            <span class="tag-solicitante-color">${esc(encontrado.solicitante)}:</span>
-            ${formatear_descripcion_color(encontrado.descripcion)}
+            <div class="ticket-dato-linea">
+              <i data-lucide="building-2"></i>
+              <span class="tag-solicitante-color">${esc(encontrado.solicitante)}</span>
+            </div>
+            <div class="ticket-dato-linea">
+              <i data-lucide="file-text"></i>
+              <span class="texto-descripcion-color">${formatear_descripcion_color(encontrado.descripcion)}</span>
+            </div>
             ${info_evento_publico}
           </div>
         </div>
@@ -1444,7 +1475,7 @@ async function consultar_folio_publico(e) {
       </div>
 
       <div class="caja-notas" style="border-top: none; padding-top: 0;">
-        <span class="titulo-notas"><i data-lucide="message-square"></i> Bitácora de seguimiento:</span>
+        <span class="titulo-notas"><i data-lucide="message-square"></i> Notas del seguimiento:</span>
         <div class="lista-notas-items">${notas_publicas}</div>
       </div>
 
@@ -1797,9 +1828,16 @@ function seleccionar_servicio(elemento, nombre_servicio) {
   }, 450);
 }
 
+function ir_arriba_del_todo() {
+  window.scrollTo({
+    top: 0,
+    left: 0,
+    behavior: 'smooth'
+  });
+}
+
 function volver_catalogo() {
-  const seccion_catalogo = document.getElementById('seccion-catalogo');
-  seccion_catalogo.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  ir_arriba_del_todo();
 }
 
 function alternar_evento(forzar_estado) {
@@ -2316,9 +2354,9 @@ function renderizar_tickets() {
     const servicio_titulo = esc(capitalizar_inicial(String(item.servicio || '').replace(/&#x2F;/gi, '/')));
 
     const info_evento_inline = item.aplica_evento
-      ? `<span class="badge-lugar-evento"><i data-lucide="map-pin"></i> Lugar: ${esc(item.lugar_evento)}</span>
-         <span class="badge-fecha-evento"><i data-lucide="calendar"></i> ${esc(item.fecha_evento)} <em>(${esc(item.hora_evento)} hrs)</em></span>`
-      : `<span class="badge-sin-evento"><i data-lucide="info"></i> Sin evento presencial asociado</span>`;
+      ? `<div class="ticket-dato-linea"><i data-lucide="map-pin"></i> <span>Lugar: ${esc(item.lugar_evento)}</span></div>
+         <div class="ticket-dato-linea"><i data-lucide="calendar"></i> <span>${esc(item.fecha_evento)} <em>(${esc(item.hora_evento)} hrs)</em></span></div>`
+      : `<div class="ticket-dato-linea sin-evento"><i data-lucide="info"></i> <span>Sin evento presencial asociado</span></div>`;
 
     const html_notas = lista_notas.length > 0
       ? lista_notas.map((nota_texto, idx_nota) => `
@@ -2338,104 +2376,111 @@ function renderizar_tickets() {
 
     return `
       <div class="ticket-item ${clase_borde_visual}" id="ticket-${folio_mayus_id}" style="--t-delay: ${delay_anim}s">
-        <div class="ticket-header-line">
-          <div>
-            <span class="ticket-folio">${folio_mayus} · Solicitado: ${esc(item.fecha_solicitud)}</span>
+        <div class="ticket-grid-principal">
+          <div class="ticket-col-info">
+            <div class="ticket-meta-sup">
+              <span class="ticket-folio"><i data-lucide="hash"></i>${folio_mayus}</span>
+              <span class="ticket-meta-fecha"><i data-lucide="calendar"></i>Solicitado: ${esc(item.fecha_solicitud)}</span>
+            </div>
             <div class="ticket-servicio">${servicio_titulo}</div>
             <div class="ticket-detalles">
-              <i data-lucide="user"></i>
-              <span class="tag-solicitante-color">${esc(item.solicitante)}:</span>
-              ${formatear_descripcion_color(item.descripcion)}
+              <div class="ticket-dato-linea">
+                <i data-lucide="building-2"></i>
+                <span class="tag-solicitante-color">${esc(item.solicitante)}</span>
+              </div>
+              <div class="ticket-dato-linea">
+                <i data-lucide="file-text"></i>
+                <span class="texto-descripcion-color">${formatear_descripcion_color(item.descripcion)}</span>
+              </div>
               ${info_evento_inline}
             </div>
           </div>
 
-          <div class="selector-estado-contenedor">
-            <span class="selector-estado-label">Estado</span>
-            <div class="fila-estado-acciones">
-              <span class="badge-estado-actual ${clase_estado_visual}">
-                <span class="punto-estado"></span>
-                <span>${esc(etiqueta_estado_visual)}</span>
-              </span>
-              <button type="button" class="btn-denegar-solicitud ${es_denegada ? 'activa' : ''}" data-accion="denegar-solicitud" data-index="${index_real}" title="${es_denegada ? 'Reactivar solicitud' : 'Denegar solicitud y registrar motivo'}">
-                <i data-lucide="${es_denegada ? 'rotate-ccw' : 'ban'}"></i>
-                <span>${es_denegada ? 'Reactivar' : 'Denegar'}</span>
-              </button>
+          <div class="ticket-col-gestion">
+            <div class="selector-estado-contenedor">
+              <span class="selector-estado-label">Estado</span>
+              <div class="fila-estado-acciones">
+                <span class="badge-estado-actual ${clase_estado_visual}">
+                  <span class="punto-estado"></span>
+                  <span>${esc(etiqueta_estado_visual)}</span>
+                </span>
+                <button type="button" class="btn-denegar-solicitud ${es_denegada ? 'activa' : ''}" data-accion="denegar-solicitud" data-index="${index_real}" title="${es_denegada ? 'Reactivar solicitud' : 'Denegar solicitud y registrar motivo'}">
+                  <i data-lucide="${es_denegada ? 'rotate-ccw' : 'ban'}"></i>
+                  <span>${es_denegada ? 'Reactivar' : 'Denegar'}</span>
+                </button>
+              </div>
             </div>
-            <span style="display:none">
-              <span class="punto-estado"></span>
-            </span>
-          </div>
-        </div>
 
-        <div class="panel-gestion-interno">
-          <div class="campo-interno">
-            <label>Responsable asignado</label>
-            <div class="fila-responsable-acciones">
-              <select class="select-responsable-tom" data-index="${index_real}">
-                <option value="Sin asignar" ${valor_select === 'Sin asignar' ? 'selected' : ''}>Sin asignar</option>
-                ${Object.keys(catalogo_responsables)
-                  .filter(nombre_resp => nombre_resp !== 'Sin asignar')
-                  .map(nombre_resp => `<option value="${esc(nombre_resp)}" ${valor_select === nombre_resp ? 'selected' : ''}>${esc(nombre_resp)}</option>`)
-                  .join('')}
-              </select>
-              ${tiene_responsable_activo && !es_chico_servicio
-                ? `<button type="button" class="btn-notificar-wa" data-accion="enviar-wa" data-index="${index_real}" title="Enviar recordatorio por WhatsApp a ${esc(resp_guardado)}">
-                    <svg viewBox="0 0 24 24" fill="currentColor" style="width: 15px; height: 15px;"><path d="M12.031 2c-5.506 0-9.989 4.478-9.99 9.984a9.964 9.964 0 0 0 1.333 4.993L2 22l5.233-1.237a9.994 9.994 0 0 0 4.779 1.217h.004c5.505 0 9.988-4.478 9.989-9.984 0-2.669-1.037-5.176-2.922-7.062A9.935 9.935 0 0 0 12.031 2zm5.829 14.144c-.245.693-1.43 1.326-1.981 1.408-.507.075-1.148.107-1.855-.117-.428-.135-.978-.316-1.682-.62-2.961-1.278-4.896-4.261-5.044-4.459-.148-.197-1.204-1.601-1.204-3.054 0-1.453.763-2.167 1.034-2.463.271-.296.591-.37.788-.37.197 0 .394.002.566.01.182.009.426-.069.666.508.246.591.838 2.045.912 2.193.074.148.123.32.025.517-.098.197-.148.32-.296.493-.148.172-.311.385-.444.517-.148.148-.302.308-.13.604.172.296.766 1.264 1.645 2.047 1.13 1.007 2.083 1.319 2.379 1.467.296.148.468.123.641-.074.172-.197.739-.862.936-1.158.197-.296.394-.246.665-.148.271.098 1.725.813 2.02.961.296.148.493.222.567.345.074.123.074.714-.171 1.407z"></path></svg> WhatsApp
-                  </button>`
-                : ''
-              }
-            </div>
-            <div id="bloque-ss-${index_real}" class="caja-servicio-social-manual ${es_chico_servicio ? '' : 'oculto'}">
-              <input type="text" id="input-ss-${index_real}" value="${esc(nombre_manual_ss)}" maxlength="80" placeholder="Escribe el nombre del prestador(a) de servicio..." data-enter="guardar-ss" data-index="${index_real}">
-              <button type="button" class="btn-confirmar-ss" data-accion="guardar-ss" data-index="${index_real}">
-                <i data-lucide="check"></i> Asignar
-              </button>
-            </div>
-          </div>
+            <div class="panel-gestion-interno">
+              <div class="campo-interno">
+                <label>Responsable asignado</label>
+                <div class="fila-responsable-acciones">
+                  <select class="select-responsable-tom" data-index="${index_real}">
+                    <option value="Sin asignar" ${valor_select === 'Sin asignar' ? 'selected' : ''}>Sin asignar</option>
+                    ${Object.keys(catalogo_responsables)
+                      .filter(nombre_resp => nombre_resp !== 'Sin asignar')
+                      .map(nombre_resp => `<option value="${esc(nombre_resp)}" ${valor_select === nombre_resp ? 'selected' : ''}>${esc(nombre_resp)}</option>`)
+                      .join('')}
+                  </select>
+                  ${tiene_responsable_activo && !es_chico_servicio
+                    ? `<button type="button" class="btn-notificar-wa" data-accion="enviar-wa" data-index="${index_real}" title="Enviar recordatorio por WhatsApp a ${esc(resp_guardado)}">
+                        <svg viewBox="0 0 24 24" fill="currentColor" style="width: 15px; height: 15px;"><path d="M12.031 2c-5.506 0-9.989 4.478-9.99 9.984a9.964 9.964 0 0 0 1.333 4.993L2 22l5.233-1.237a9.994 9.994 0 0 0 4.779 1.217h.004c5.505 0 9.988-4.478 9.989-9.984 0-2.669-1.037-5.176-2.922-7.062A9.935 9.935 0 0 0 12.031 2zm5.829 14.144c-.245.693-1.43 1.326-1.981 1.408-.507.075-1.148.107-1.855-.117-.428-.135-.978-.316-1.682-.62-2.961-1.278-4.896-4.261-5.044-4.459-.148-.197-1.204-1.601-1.204-3.054 0-1.453.763-2.167 1.034-2.463.271-.296.591-.37.788-.37.197 0 .394.002.566.01.182.009.426-.069.666.508.246.591.838 2.045.912 2.193.074.148.123.32.025.517-.098.197-.148.32-.296.493-.148.172-.311.385-.444.517-.148.148-.302.308-.13.604.172.296.766 1.264 1.645 2.047 1.13 1.007 2.083 1.319 2.379 1.467.296.148.468.123.641-.074.172-.197.739-.862.936-1.158.197-.296.394-.246.665-.148.271.098 1.725.813 2.02.961.296.148.493.222.567.345.074.123.074.714-.171 1.407z"></path></svg> WhatsApp
+                      </button>`
+                    : ''
+                  }
+                </div>
+                <div id="bloque-ss-${index_real}" class="caja-servicio-social-manual ${es_chico_servicio ? '' : 'oculto'}">
+                  <input type="text" id="input-ss-${index_real}" value="${esc(nombre_manual_ss)}" maxlength="80" placeholder="Escribe el nombre del prestador(a) de servicio..." data-enter="guardar-ss" data-index="${index_real}" autocomplete="off">
+                  <button type="button" class="btn-confirmar-ss" data-accion="guardar-ss" data-index="${index_real}">
+                    <i data-lucide="check"></i> Asignar
+                  </button>
+                </div>
+              </div>
 
-          <div class="campo-interno">
-            <label>Comunicación (Reporte)</label>
-            <div class="grupo-checks-comunicacion">
-              <label class="check-comunicacion-item">
-                <input type="checkbox" ${estado_com_actual.interna ? 'checked' : ''} data-cambio="tipo-comunicacion" data-tipo="interna" data-index="${index_real}">
-                <span>Interna</span>
-              </label>
-              <label class="check-comunicacion-item">
-                <input type="checkbox" ${estado_com_actual.externa ? 'checked' : ''} data-cambio="tipo-comunicacion" data-tipo="externa" data-index="${index_real}">
-                <span>Externa</span>
-              </label>
-            </div>
-          </div>
+              <div class="campo-interno">
+                <label>Comunicación (Reporte)</label>
+                <div class="grupo-checks-comunicacion">
+                  <label class="check-comunicacion-item">
+                    <input type="checkbox" ${estado_com_actual.interna ? 'checked' : ''} data-cambio="tipo-comunicacion" data-tipo="interna" data-index="${index_real}">
+                    <span>Interna</span>
+                  </label>
+                  <label class="check-comunicacion-item">
+                    <input type="checkbox" ${estado_com_actual.externa ? 'checked' : ''} data-cambio="tipo-comunicacion" data-tipo="externa" data-index="${index_real}">
+                    <span>Externa</span>
+                  </label>
+                </div>
+              </div>
 
-          <div class="campo-interno">
-            <div class="cabecera-fecha-opcional">
-              <label style="margin-bottom: 0;">Fecha límite de entrega</label>
-              <label class="toggle-fecha-manual">
-                <input type="checkbox" ${tiene_fecha_limite ? 'checked' : ''} data-cambio="fecha-limite-manual" data-index="${index_real}">
-                <span>Habilitar</span>
-              </label>
+              <div class="campo-interno">
+                <div class="cabecera-fecha-opcional">
+                  <label style="margin-bottom: 0;">Fecha límite de entrega</label>
+                  <label class="toggle-fecha-manual">
+                    <input type="checkbox" ${tiene_fecha_limite ? 'checked' : ''} data-cambio="fecha-limite-manual" data-index="${index_real}">
+                    <span>Habilitar</span>
+                  </label>
+                </div>
+                ${tiene_fecha_limite 
+                  ? `<div class="contenedor-input-calendario">
+                      <input type="text" class="input-fecha-limite-panel input-fecha-con-icono" data-index="${index_real}" value="${esc(item.fecha_limite)}" placeholder="dd/mm/aaaa" autocomplete="off">
+                      <i data-lucide="calendar" class="icono-calendario-fijo"></i>
+                    </div>`
+                  : `<div class="sin-fecha-aviso">Sin fecha límite asignada</div>`
+                }
+              </div>
             </div>
-            ${tiene_fecha_limite 
-              ? `<div class="contenedor-input-calendario">
-                  <input type="text" class="input-fecha-limite-panel input-fecha-con-icono" data-index="${index_real}" value="${esc(item.fecha_limite)}" placeholder="dd/mm/aaaa">
-                  <i data-lucide="calendar" class="icono-calendario-fijo"></i>
-                </div>`
-              : `<div class="sin-fecha-aviso">Sin fecha límite asignada</div>`
-            }
           </div>
         </div>
 
         <div class="caja-notas">
           <div class="encabezado-notas">
-            <span class="titulo-notas"><i data-lucide="message-square"></i> Bitácora de seguimiento interno</span>
+            <span class="titulo-notas"><i data-lucide="message-square"></i> Notas del seguimiento</span>
             <span class="ayuda-notas">Comentarios y acuerdos de la solicitud</span>
           </div>
           <div class="lista-notas-items">
             ${html_notas}
           </div>
           <div class="input-nota-grupo">
-            <input type="text" id="nota-input-${index_real}" maxlength="350" placeholder="Escribe un avance o acuerdo...">
+            <input type="text" id="nota-input-${index_real}" maxlength="350" placeholder="Escribe un avance o acuerdo..." autocomplete="off">
             <button type="button" class="btn-agregar-nota" data-accion="agregar-nota" data-index="${index_real}">
               <i data-lucide="plus"></i> Agregar
             </button>

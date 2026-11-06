@@ -1036,8 +1036,8 @@
             <strong><i data-lucide="search" class="icono-inline"></i> Consulta el estatus de tu solicitud</strong>
             <span>Ingresa tu número de folio para verificar avances y notas del departamento.</span>
           </div>
-          <form class="form-rastreo" onsubmit="consultar_folio_publico(event)">
-            <input type="text" id="input-rastreo-folio" placeholder="Ej. SRV-001" maxlength="12" required>
+          <form class="form-rastreo" onsubmit="consultar_folio_publico(event)" autocomplete="off">
+            <input type="text" id="input-rastreo-folio" placeholder="Ej. SRV-001" maxlength="12" required autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" enterkeyhint="search">
             <button type="submit" class="btn-rastrear">Buscar</button>
           </form>
         </div>
@@ -1045,7 +1045,7 @@
       </section>
 
       <!-- formulario de creación -->
-      <form class="panel" id="form-solicitud" onsubmit="guardar_solicitud(event)">
+      <form class="form-solicitud" id="form-solicitud" onsubmit="guardar_solicitud(event)" autocomplete="off">
         <div id="seccion-catalogo">
           <span class="seccion-label">01 / Seleccione el servicio requerido</span>
           
@@ -1053,55 +1053,69 @@
             <div class="tarjeta-servicio seleccionada" style="--delay: 0.05s" onclick="seleccionar_servicio(this, 'Diseño e impresión de material gráfico')">
               <div class="tarjeta-brillo"></div>
               <span class="icono"><i data-lucide="palette"></i></span>
-              <span class="nombre">Diseño e impresión de material gráfico</span>
-              <span class="etiqueta-evento">Carteles, banners, infografías</span>
+              <div class="tarjeta-servicio-cuerpo">
+                <span class="nombre">Diseño e impresión de material gráfico</span>
+                <span class="etiqueta-evento">Carteles, banners, infografías</span>
+              </div>
             </div>
 
             <div class="tarjeta-servicio" style="--delay: 0.1s" onclick="seleccionar_servicio(this, 'Difusión en redes sociales')">
               <div class="tarjeta-brillo"></div>
               <span class="icono"><i data-lucide="share-2"></i></span>
-              <span class="nombre">Difusión en redes sociales</span>
-              <span class="etiqueta-evento">Publicación y programación</span>
+              <div class="tarjeta-servicio-cuerpo">
+                <span class="nombre">Difusión en redes sociales</span>
+                <span class="etiqueta-evento">Publicación y programación</span>
+              </div>
             </div>
 
             <div class="tarjeta-servicio" style="--delay: 0.15s" onclick="seleccionar_servicio(this, 'Cobertura fotográfica/audiovisual')">
               <div class="tarjeta-brillo"></div>
               <span class="icono"><i data-lucide="camera"></i></span>
-              <span class="nombre">Cobertura fotográfica / audiovisual</span>
-              <span class="etiqueta-evento">Eventos y ceremonias</span>
+              <div class="tarjeta-servicio-cuerpo">
+                <span class="nombre">Cobertura fotográfica / audiovisual</span>
+                <span class="etiqueta-evento">Eventos y ceremonias</span>
+              </div>
             </div>
 
             <div class="tarjeta-servicio" style="--delay: 0.2s" onclick="seleccionar_servicio(this, 'Producción de videos')">
               <div class="tarjeta-brillo"></div>
               <span class="icono"><i data-lucide="clapperboard"></i></span>
-              <span class="nombre">Producción de videos</span>
-              <span class="etiqueta-evento">Edición, cápsulas, animación</span>
+              <div class="tarjeta-servicio-cuerpo">
+                <span class="nombre">Producción de videos</span>
+                <span class="etiqueta-evento">Edición, cápsulas, animación</span>
+              </div>
             </div>
 
             <div class="tarjeta-servicio" style="--delay: 0.25s" onclick="seleccionar_servicio(this, 'Revisión y visto bueno de materiales')">
               <div class="tarjeta-brillo"></div>
               <span class="icono"><i data-lucide="badge-check"></i></span>
-              <span class="nombre">Revisión y visto bueno</span>
-              <span class="etiqueta-evento">Validación institucional</span>
+              <div class="tarjeta-servicio-cuerpo">
+                <span class="nombre">Revisión y visto bueno</span>
+                <span class="etiqueta-evento">Validación institucional</span>
+              </div>
             </div>
 
             <div class="tarjeta-servicio" style="--delay: 0.3s" onclick="seleccionar_servicio(this, 'Campañas institucionales')">
               <div class="tarjeta-brillo"></div>
               <span class="icono"><i data-lucide="megaphone"></i></span>
-              <span class="nombre">Campañas institucionales</span>
-              <span class="etiqueta-evento">Estrategia integral</span>
+              <div class="tarjeta-servicio-cuerpo">
+                <span class="nombre">Campañas institucionales</span>
+                <span class="etiqueta-evento">Estrategia integral</span>
+              </div>
             </div>
 
             <div class="tarjeta-servicio" style="--delay: 0.35s" onclick="seleccionar_servicio(this, 'Otro servicio')">
               <div class="tarjeta-brillo"></div>
               <span class="icono"><i data-lucide="plus-circle"></i></span>
-              <span class="nombre">Otro servicio</span>
-              <span class="etiqueta-evento">Solicitudes especiales o adicionales</span>
+              <div class="tarjeta-servicio-cuerpo">
+                <span class="nombre">Otro servicio</span>
+                <span class="etiqueta-evento">Solicitudes especiales o adicionales</span>
+              </div>
             </div>
           </div>
         </div>
 
-        <div id="seccion-detalles" class="bloque-destino">
+        <div id="seccion-detalles" class="bloque-destino seccion-formulario-card">
           <div class="encabezado-seccion">
             <span class="seccion-label sin-margen">02 / Datos del área solicitante y requerimientos</span>
           </div>
@@ -1121,14 +1135,14 @@
             </div>
             <div class="campo">
               <label id="label-especifico">Formato y medidas requeridas</label>
-              <input type="text" id="detalle-especifico" placeholder="Ej. Cartel impreso tabloide y versión digital para redes" maxlength="180" required>
+              <input type="text" id="detalle-especifico" placeholder="Ej. Cartel impreso tabloide y versión digital para redes" maxlength="180" required autocomplete="off">
             </div>
           </div>
 
           <div class="fila-campos">
             <div class="campo">
               <label id="label-descripcion">Texto e información clave que debe contener el diseño</label>
-              <input type="text" id="descripcion" placeholder="Ej. Título del evento, fecha, hora y logotipos oficiales" maxlength="400" required>
+              <input type="text" id="descripcion" placeholder="Ej. Título del evento, fecha, hora y logotipos oficiales" maxlength="400" required autocomplete="off">
             </div>
           </div>
 
@@ -1141,28 +1155,29 @@
           <div class="desplegable-evento abierto" id="bloque-evento">
             <div class="contenido-evento">
               <div class="caja-evento-interna">
-                <div class="fila-campos" style="margin-bottom: 0;">
+                <div class="fila-campos fila-tres-campos" style="margin-bottom: 0;">
                   <div class="campo">
                     <label>Fecha del evento</label>
                     <div class="contenedor-input-calendario">
-                      <input type="text" id="fecha-evento" class="input-fecha-con-icono" placeholder="dd/mm/aaaa">
+                      <input type="text" id="fecha-evento" class="input-fecha-con-icono" placeholder="dd/mm/aaaa" autocomplete="off">
                       <i data-lucide="calendar" class="icono-calendario-fijo"></i>
                     </div>
                   </div>
                   <div class="campo">
                     <label>Hora del evento</label>
                     <div class="contenedor-input-calendario" onclick="abrir_reloj_circular('hora-evento')">
-                      <input type="text" id="hora-evento" class="input-fecha-con-icono input-reloj-personalizado" placeholder="--:--" readonly>
+                      <input type="text" id="hora-evento" class="input-fecha-con-icono input-reloj-personalizado" placeholder="--:--" readonly autocomplete="off">
                       <i data-lucide="clock" class="icono-calendario-fijo"></i>
                     </div>
                   </div>
                   <div class="campo">
                     <label>Sitio a designar</label>
                     <select id="lugar-evento">
-                      <option value="Gimnasio Olímpico" selected>Gimnasio Olímpico</option>
+                      <option value="No aplica" selected>No aplica</option>
+                      <option value="Sala Rafael Rosado">Sala Rafael Rosado</option>
                     </select>
                     <div id="bloque-lugar-otro" class="oculto" style="margin-top: 0.55rem;">
-                      <input type="text" id="input-lugar-otro" placeholder="Especifica el aula o sitio del evento..." maxlength="120">
+                      <input type="text" id="input-lugar-otro" placeholder="Especifica el aula o sitio del evento..." maxlength="120" autocomplete="off">
                     </div>
                   </div>
                 </div>
@@ -1267,7 +1282,7 @@
         </div>
       </div>
 
-      <div class="panel">
+      <div class="seccion-panel-tickets">
         <div class="barra-filtros">
           <div class="grupo-filtros">
             <button class="btn-filtro activo" onclick="filtrar_estado('todos', this)">Todos</button>
@@ -1277,7 +1292,7 @@
           </div>
           <div class="campo-busqueda">
             <i data-lucide="search" class="icono-busqueda"></i>
-            <input type="text" id="buscador-tickets" placeholder="Buscar por área o folio..." maxlength="100" oninput="renderizar_tickets()">
+            <input type="text" id="buscador-tickets" placeholder="Buscar por área o folio..." maxlength="100" oninput="renderizar_tickets()" autocomplete="off" enterkeyhint="search">
           </div>
         </div>
 
@@ -1301,7 +1316,7 @@
     </footer>
   </div>
 
-  <button type="button" class="btn-flotante-arriba" id="btn-subir" onclick="volver_catalogo()" title="Volver arriba">
+  <button type="button" class="btn-flotante-arriba" id="btn-subir" onclick="ir_arriba_del_todo()" title="Subir a la parte superior">
     <i data-lucide="arrow-up"></i>
   </button>
 
@@ -1351,8 +1366,8 @@
       <div class="icono-modal-pin"><i data-lucide="shield"></i></div>
       <h3>Acceso Restringido</h3>
       <p class="texto-modal">Ingrese el PIN institucional del Departamento de Comunicación y Difusión:</p>
-      <form onsubmit="verificar_pin(event)">
-        <input type="password" id="input-pin" class="input-pin-acceso" placeholder="••••" minlength="6" maxlength="8" required>
+      <form onsubmit="verificar_pin(event)" autocomplete="off">
+        <input type="password" id="input-pin" class="input-pin-acceso" placeholder="••••" minlength="6" maxlength="8" required autocomplete="off" enterkeyhint="done">
         <label class="recordar-equipo-check">
           <input type="checkbox" id="check-recordar-pin" checked>
           <span>Mantener sesión abierta en este equipo</span>
@@ -1592,7 +1607,7 @@
               <ul class="lista-explicacion-manual">
                 <li><strong>Casillas "Comunicación (Reporte)":</strong> Tiene las casillas <strong>☑ Interna</strong> y <strong>☐ Externa</strong>. Por defecto viene marcada <em>Interna</em>. Lo que marques aquí pondrá la <strong>"X"</strong> en la columna correspondiente del reporte.</li>
                 <li><strong>"Fecha límite de entrega" (Casilla Habilitar):</strong> Marca <strong>"Habilitar"</strong> para abrir un calendario y fijar qué día vence la entrega. Esta fecha aparecerá en la columna <em>"Fecha de vencimiento"</em> del reporte (si no la habilitas, el reporte usará la fecha del evento).</li>
-                <li><strong>Bitácora de seguimiento interno:</strong> Escribe acuerdos o avances en la caja inferior y pulsa <strong>"+ Agregar"</strong>. Cada nota guarda la fecha automáticamente y puedes editarla (lápiz) o borrarla (bote de basura).</li>
+                <li><strong>Notas del seguimiento:</strong> Escribe acuerdos o avances en la caja inferior y pulsa <strong>"+ Agregar"</strong>. Cada nota guarda la fecha automáticamente y puedes editarla (lápiz) o borrarla (bote de basura).</li>
               </ul>
             </div>
 
