@@ -4444,7 +4444,6 @@ html[data-tema="oscuro"] .cal-ev-En-proceso { background: rgba(245, 158, 11, 0.1
 html[data-tema="oscuro"] .cal-ev-Terminado { background: rgba(34, 197, 94, 0.16); color: #86efac; }
 html[data-tema="oscuro"] .cal-ev-Denegada { background: rgba(127, 29, 29, 0.25); color: #fecaca; }
 
-
 /* =========================================================================
    línea de tiempo visual estilo rastreo de paquete (buscador público)
    ========================================================================= */
@@ -4791,3 +4790,891 @@ html[data-tema="oscuro"] .cal-ev-Pendiente { background: rgba(239, 68, 68, 0.16)
 html[data-tema="oscuro"] .cal-ev-En-proceso { background: rgba(245, 158, 11, 0.16); color: #fde68a; }
 html[data-tema="oscuro"] .cal-ev-Terminado { background: rgba(34, 197, 94, 0.16); color: #86efac; }
 html[data-tema="oscuro"] .cal-ev-Denegada { background: rgba(127, 29, 29, 0.25); color: #fecaca; }
+
+/* =========================================================================
+   corrección de vista previa del reporte oficial (#modal-reporte) y
+   rediseño único de tarjetas de solicitudes / notificaciones (sin franja lateral)
+   ========================================================================= */
+
+.modal-tarjeta-reporte {
+  max-width: 1120px !important;
+  width: 96% !important;
+  max-height: 92vh !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  border-radius: 18px !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+}
+
+.cabecera-modal-reporte {
+  flex-shrink: 0 !important;
+  z-index: 2;
+}
+
+.cuerpo-reporte-ejecutivo {
+  display: block !important;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  overflow-y: auto !important;
+  overflow-x: auto !important;
+  padding: 2rem 1.75rem 2.5rem !important;
+  background: radial-gradient(circle at 50% 0%, #334155 0%, #1e293b 100%) !important;
+}
+
+.hoja-oficio-itp.hoja-bitacora-horizontal {
+  margin: 0 auto !important;
+  width: 100% !important;
+  max-width: 1020px !important;
+  min-width: 780px;
+  height: auto !important;
+  min-height: 760px !important;
+  padding: 1.1cm 1.3cm !important;
+  background: #ffffff !important;
+  color: #000000 !important;
+  border-radius: 6px;
+  box-sizing: border-box !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.2) !important;
+}
+
+.contenedor-bitacora-iso {
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+  height: auto !important;
+  min-height: 680px !important;
+  flex: 1 0 auto !important;
+}
+
+@media print {
+  .cuerpo-reporte-ejecutivo {
+    padding: 0 !important;
+    background: #ffffff !important;
+    overflow: visible !important;
+  }
+  .hoja-oficio-itp.hoja-bitacora-horizontal {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+  }
+}
+
+/* --- rediseño único de las tarjetas de solicitud (.ticket-item) --- */
+.ticket-item {
+  --color-estado-card: #ef4444;
+  --aura-estado-card: rgba(239, 68, 68, 0.14);
+  --borde-estado-card: rgba(239, 68, 68, 0.28);
+  position: relative !important;
+  border-radius: 20px !important;
+  padding: 1.35rem 1.55rem 1.3rem !important;
+  background:
+    radial-gradient(360px circle at 100% 0%, var(--aura-estado-card), transparent 72%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(248, 250, 252, 0.92) 100%) !important;
+  border: 1px solid rgba(203, 213, 225, 0.85) !important;
+  border-left: 1px solid rgba(203, 213, 225, 0.85) !important;
+  box-shadow:
+    0 10px 28px -10px rgba(15, 23, 42, 0.08),
+    0 2px 6px rgba(15, 23, 42, 0.03),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+  overflow: hidden !important;
+  transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.25s ease, border-color 0.25s ease !important;
+}
+
+.ticket-item:hover {
+  transform: translateY(-2px);
+  border-color: var(--borde-estado-card) !important;
+  border-left-color: var(--borde-estado-card) !important;
+  box-shadow:
+    0 18px 36px -12px rgba(15, 23, 42, 0.13),
+    0 4px 12px rgba(15, 23, 42, 0.05),
+    inset 0 1px 0 #ffffff !important;
+}
+
+/* barra superior luminosa tipo cápsula en lugar de franja lateral genérica */
+.ticket-item::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 1.55rem;
+  width: 96px;
+  height: 4px;
+  border-radius: 0 0 999px 999px;
+  background: var(--color-estado-card);
+  box-shadow: 0 2px 12px var(--color-estado-card);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.ticket-item.borde-Pendiente {
+  --color-estado-card: #ef4444;
+  --aura-estado-card: rgba(239, 68, 68, 0.11);
+  --borde-estado-card: rgba(239, 68, 68, 0.38);
+  border-left: 1px solid rgba(203, 213, 225, 0.85) !important;
+}
+
+.ticket-item.borde-En-proceso {
+  --color-estado-card: #f59e0b;
+  --aura-estado-card: rgba(245, 158, 11, 0.12);
+  --borde-estado-card: rgba(245, 158, 11, 0.42);
+  border-left: 1px solid rgba(203, 213, 225, 0.85) !important;
+}
+
+.ticket-item.borde-Terminado {
+  --color-estado-card: #10b981;
+  --aura-estado-card: rgba(16, 185, 129, 0.12);
+  --borde-estado-card: rgba(16, 185, 129, 0.4);
+  border-left: 1px solid rgba(203, 213, 225, 0.85) !important;
+}
+
+.ticket-item.borde-Denegada {
+  --color-estado-card: #dc2626;
+  --aura-estado-card: rgba(220, 38, 38, 0.12);
+  --borde-estado-card: rgba(220, 38, 38, 0.4);
+  border-left: 1px solid rgba(203, 213, 225, 0.85) !important;
+}
+
+/* gafete de folio con indicador luminoso integrado */
+.ticket-folio {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.45rem !important;
+  background: rgba(27, 57, 106, 0.08) !important;
+  color: var(--itp-blue) !important;
+  border: 1px solid rgba(27, 57, 106, 0.16) !important;
+  padding: 0.26rem 0.78rem !important;
+  border-radius: 999px !important;
+  font-size: 0.75rem !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.02em !important;
+  margin-bottom: 0.35rem !important;
+}
+
+.ticket-folio::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--color-estado-card);
+  box-shadow: 0 0 8px var(--color-estado-card);
+  flex-shrink: 0;
+}
+
+.ticket-servicio {
+  font-size: 1.12rem !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.015em !important;
+  margin-bottom: 0.5rem !important;
+  color: var(--ink-main) !important;
+}
+
+/* chips/píldoras legibles y modernas para metadatos en lugar de líneas divisorias planas */
+.ticket-detalles {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  gap: 0.48rem !important;
+  margin-top: 0.35rem !important;
+}
+
+.tag-solicitante-color {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.38rem !important;
+  background: rgba(27, 57, 106, 0.06) !important;
+  color: #1e3a8a !important;
+  border: 1px solid rgba(27, 57, 106, 0.13) !important;
+  padding: 0.24rem 0.68rem !important;
+  border-radius: 9px !important;
+  font-size: 0.81rem !important;
+  font-weight: 700 !important;
+}
+
+.tag-especificacion-color {
+  display: inline-flex !important;
+  align-items: center !important;
+  background: rgba(2, 132, 199, 0.09) !important;
+  color: #0369a1 !important;
+  border: 1px solid rgba(2, 132, 199, 0.2) !important;
+  padding: 0.2rem 0.58rem !important;
+  border-radius: 8px !important;
+  font-size: 0.78rem !important;
+  font-weight: 800 !important;
+}
+
+.texto-descripcion-solicitud {
+  display: inline-flex !important;
+  align-items: center !important;
+  background: rgba(241, 245, 249, 0.85) !important;
+  color: #334155 !important;
+  border: 1px solid rgba(203, 213, 225, 0.7) !important;
+  padding: 0.22rem 0.68rem !important;
+  border-radius: 8px !important;
+  font-size: 0.82rem !important;
+  font-weight: 600 !important;
+}
+
+.badge-lugar-evento {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.35rem !important;
+  background: rgba(245, 158, 11, 0.09) !important;
+  color: #b45309 !important;
+  border: 1px solid rgba(245, 158, 11, 0.24) !important;
+  border-left: 1px solid rgba(245, 158, 11, 0.24) !important;
+  padding: 0.22rem 0.68rem !important;
+  border-radius: 8px !important;
+  font-size: 0.79rem !important;
+  font-weight: 700 !important;
+}
+
+.badge-fecha-evento {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.35rem !important;
+  background: rgba(14, 116, 144, 0.08) !important;
+  color: #0f766e !important;
+  border: 1px solid rgba(14, 116, 144, 0.2) !important;
+  border-left: 1px solid rgba(14, 116, 144, 0.2) !important;
+  padding: 0.22rem 0.68rem !important;
+  border-radius: 8px !important;
+  font-size: 0.79rem !important;
+  font-weight: 700 !important;
+}
+
+.badge-sin-evento {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.35rem !important;
+  background: rgba(148, 163, 184, 0.1) !important;
+  color: #64748b !important;
+  border: 1px solid rgba(148, 163, 184, 0.22) !important;
+  border-left: 1px solid rgba(148, 163, 184, 0.22) !important;
+  padding: 0.2rem 0.62rem !important;
+  border-radius: 8px !important;
+  font-size: 0.76rem !important;
+  font-weight: 600 !important;
+  font-style: normal !important;
+}
+
+/* panel de controles internos tipo consola modular */
+.panel-gestion-interno {
+  background: rgba(248, 250, 252, 0.85) !important;
+  border: 1px solid rgba(226, 232, 240, 0.95) !important;
+  border-radius: 14px !important;
+  padding: 0.9rem 1.15rem !important;
+  margin-top: 0.95rem !important;
+  box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.02) !important;
+}
+
+/* tarjetas de la campana de notificaciones (.tarjeta-notif-ios) más limpias y únicas */
+.tarjeta-notif-ios {
+  position: relative;
+  border-radius: 16px !important;
+  padding: 0.85rem 0.95rem !important;
+  background:
+    radial-gradient(180px circle at 100% 0%, rgba(0, 119, 182, 0.08), transparent 70%),
+    rgba(255, 255, 255, 0.92) !important;
+  border: 1px solid rgba(203, 213, 225, 0.75) !important;
+  box-shadow: 0 6px 16px -6px rgba(15, 23, 42, 0.07) !important;
+}
+
+/* --- modo oscuro para las nuevas tarjetas de solicitud y notificaciones --- */
+html[data-tema="oscuro"] .ticket-item {
+  background:
+    radial-gradient(380px circle at 100% 0%, var(--aura-estado-card), transparent 72%),
+    linear-gradient(180deg, rgba(17, 25, 40, 0.92) 0%, rgba(12, 18, 30, 0.95) 100%) !important;
+  border: 1px solid rgba(148, 163, 184, 0.16) !important;
+  border-left: 1px solid rgba(148, 163, 184, 0.16) !important;
+  box-shadow:
+    0 14px 34px -10px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
+}
+
+html[data-tema="oscuro"] .ticket-item.borde-Pendiente {
+  --color-estado-card: #f87171;
+  --aura-estado-card: rgba(239, 68, 68, 0.15);
+  --borde-estado-card: rgba(248, 113, 113, 0.42);
+  border-left: 1px solid rgba(148, 163, 184, 0.16) !important;
+}
+
+html[data-tema="oscuro"] .ticket-item.borde-En-proceso {
+  --color-estado-card: #fbbf24;
+  --aura-estado-card: rgba(245, 158, 11, 0.15);
+  --borde-estado-card: rgba(251, 191, 36, 0.42);
+  border-left: 1px solid rgba(148, 163, 184, 0.16) !important;
+}
+
+html[data-tema="oscuro"] .ticket-item.borde-Terminado {
+  --color-estado-card: #34d399;
+  --aura-estado-card: rgba(16, 185, 129, 0.15);
+  --borde-estado-card: rgba(52, 211, 153, 0.42);
+  border-left: 1px solid rgba(148, 163, 184, 0.16) !important;
+}
+
+html[data-tema="oscuro"] .ticket-item.borde-Denegada {
+  --color-estado-card: #f87171;
+  --aura-estado-card: rgba(220, 38, 38, 0.16);
+  --borde-estado-card: rgba(248, 113, 113, 0.42);
+  border-left: 1px solid rgba(148, 163, 184, 0.16) !important;
+}
+
+html[data-tema="oscuro"] .ticket-item:hover {
+  border-color: var(--borde-estado-card) !important;
+  border-left-color: var(--borde-estado-card) !important;
+}
+
+html[data-tema="oscuro"] .ticket-folio {
+  background: rgba(59, 130, 246, 0.14) !important;
+  color: #93c5fd !important;
+  border-color: rgba(96, 165, 250, 0.28) !important;
+}
+
+html[data-tema="oscuro"] .ticket-servicio {
+  color: #f8fafc !important;
+}
+
+html[data-tema="oscuro"] .tag-solicitante-color {
+  background: rgba(59, 130, 246, 0.12) !important;
+  color: #bfdbfe !important;
+  border-color: rgba(96, 165, 250, 0.24) !important;
+}
+
+html[data-tema="oscuro"] .tag-especificacion-color {
+  background: rgba(14, 165, 233, 0.15) !important;
+  color: #7dd3fc !important;
+  border-color: rgba(56, 189, 248, 0.28) !important;
+}
+
+html[data-tema="oscuro"] .texto-descripcion-solicitud {
+  background: rgba(30, 41, 59, 0.75) !important;
+  color: #e2e8f0 !important;
+  border-color: rgba(148, 163, 184, 0.2) !important;
+}
+
+html[data-tema="oscuro"] .badge-lugar-evento {
+  background: rgba(245, 158, 11, 0.13) !important;
+  color: #fde68a !important;
+  border-color: rgba(251, 191, 36, 0.26) !important;
+  border-left-color: rgba(251, 191, 36, 0.26) !important;
+}
+
+html[data-tema="oscuro"] .badge-fecha-evento {
+  background: rgba(56, 189, 248, 0.12) !important;
+  color: #bae6fd !important;
+  border-color: rgba(56, 189, 248, 0.25) !important;
+  border-left-color: rgba(56, 189, 248, 0.25) !important;
+}
+
+html[data-tema="oscuro"] .badge-sin-evento {
+  background: rgba(51, 65, 85, 0.5) !important;
+  color: #94a3b8 !important;
+  border-color: rgba(148, 163, 184, 0.18) !important;
+  border-left-color: rgba(148, 163, 184, 0.18) !important;
+}
+
+html[data-tema="oscuro"] .panel-gestion-interno {
+  background: rgba(15, 23, 42, 0.65) !important;
+  border-color: rgba(148, 163, 184, 0.14) !important;
+}
+
+html[data-tema="oscuro"] .tarjeta-notif-ios {
+  background:
+    radial-gradient(180px circle at 100% 0%, rgba(56, 189, 248, 0.12), transparent 70%),
+    rgba(15, 23, 42, 0.88) !important;
+  border-color: rgba(148, 163, 184, 0.18) !important;
+}
+
+/* =========================================================================
+   compatibilidad móvil universal (safari ios, chrome android, samsung, etc.)
+   100% aislado con @media y @supports — no altera la versión de escritorio
+   ========================================================================= */
+
+/* 1. prefijos de navegador (-webkit-backdrop-filter, background-clip, text-size-adjust) */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+.site-header {
+  position: -webkit-sticky;
+  position: sticky;
+}
+
+.hero h1 em,
+html[data-tema="oscuro"] .hero h1 em {
+  background-clip: text;
+}
+
+.meta-automatica,
+.panel-rastreo {
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.panel-metricas-unificado,
+.panel {
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.modal-fondo {
+  -webkit-backdrop-filter: blur(6px);
+}
+
+/* 2. unidades dinámicas de viewport (100dvh) para barra de safari/chrome móvil */
+@supports (min-height: 100dvh) {
+  body {
+    min-height: 100dvh;
+  }
+}
+
+@supports (max-height: 92dvh) {
+  .modal-tarjeta-manual {
+    max-height: 90dvh;
+  }
+  .modal-tarjeta-reporte {
+    max-height: 92dvh !important;
+  }
+}
+
+/* 3. dispositivos táctiles: eliminar tap highlight, áreas de 44x44px y evitar :hover pegado */
+@media (hover: none), (pointer: coarse) {
+  button,
+  a,
+  select,
+  input,
+  textarea,
+  label,
+  .tarjeta-servicio,
+  .barra-condicional,
+  .tarjeta-notif-ios,
+  .badge-conexion,
+  .ts-control {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* scroll suave nativo con inercia en contenedores internos */
+  .lista-notificaciones-ios,
+  .cuerpo-modal-manual,
+  .cuerpo-reporte-ejecutivo,
+  .modal-fondo {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+
+  /* áreas táctiles mínimas de 44x44px sin cambiar apariencia */
+  .btn-campana-ios,
+  .btn-tema-ios {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .btn-cerrar-modal-rep {
+    min-width: 40px;
+    min-height: 40px;
+  }
+
+  .btn-pagina-ticket {
+    min-width: 40px;
+    min-height: 40px;
+  }
+
+  .btn-icono-nota {
+    min-width: 36px;
+    min-height: 36px;
+  }
+
+  /* desactivar efectos :hover pegajosos tras tocar en pantallas táctiles */
+  .btn-vista:hover::before,
+  .btn-filtro:hover::before,
+  .btn-enviar:hover::before,
+  .btn-rastrear:hover::before,
+  .btn-accion-reporte:hover::before,
+  .tarjeta-servicio:hover .tarjeta-brillo,
+  .item-metrica-unificada:hover::before,
+  .ticket-item:hover::before {
+    opacity: 0 !important;
+  }
+
+  .btn-vista:hover,
+  .btn-filtro:hover,
+  .btn-enviar:hover,
+  .btn-rastrear:hover,
+  .btn-accion-reporte:hover,
+  .btn-campana-ios:hover,
+  .btn-tema-ios:hover,
+  .tarjeta-servicio:not(.seleccionada):hover,
+  .item-metrica-unificada:hover,
+  .ticket-item:hover,
+  .tarjeta-notif-ios:hover,
+  .cal-evento:hover {
+    transform: none !important;
+  }
+}
+
+/* 4. adaptación responsiva móvil y tablet vertical (<= 768px) */
+@media (max-width: 768px) {
+  /* safe areas para notch, dynamic island y barra inferior de gestos */
+  .site-header {
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
+    margin-bottom: 1.5rem;
+  }
+
+  .contenedor {
+    padding-left: max(1rem, env(safe-area-inset-left, 0px));
+    padding-right: max(1rem, env(safe-area-inset-right, 0px));
+  }
+
+  body {
+    padding-bottom: calc(4.5rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .btn-flotante-arriba {
+    bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px));
+    right: calc(1.15rem + env(safe-area-inset-right, 0px));
+  }
+
+  .contenedor-toasts {
+    bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px));
+    width: calc(100% - 2rem);
+    max-width: 420px;
+  }
+
+  .modal-fondo {
+    padding:
+      max(1rem, env(safe-area-inset-top, 0px))
+      max(0.85rem, env(safe-area-inset-right, 0px))
+      max(1rem, env(safe-area-inset-bottom, 0px))
+      max(0.85rem, env(safe-area-inset-left, 0px));
+    overflow-y: auto;
+  }
+
+  /* prevenir auto-zoom de safari ios al enfocar inputs (mínimo 16px = 1rem) */
+  .campo input,
+  .campo textarea,
+  .campo select,
+  .form-rastreo input,
+  .campo-busqueda input,
+  .input-nota-grupo input,
+  .campo-interno input,
+  .campo-interno select,
+  .caja-servicio-social-manual input,
+  .contenedor-input-calendario input.input-fecha-con-icono,
+  .contenedor-input-calendario input.form-control,
+  .swal2-input {
+    font-size: 16px !important;
+  }
+
+  /* reset de apariencia nativa en ios/android conservando el estilo actual */
+  input[type="text"],
+  input[type="password"],
+  input[type="search"],
+  textarea {
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  /* encabezado compacto y ordenado en móvil */
+  .header-interior {
+    padding: 0.75rem 1rem;
+    gap: 0.75rem;
+  }
+
+  .acciones-header {
+    width: 100%;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+
+  .selector-vista {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+
+  .btn-vista {
+    flex: 1 1 auto;
+    justify-content: center;
+    padding: 0.48rem 0.75rem;
+    font-size: 0.8rem;
+    white-space: nowrap;
+  }
+
+  .contenedor-notificaciones-ios {
+    margin-right: 0;
+  }
+
+  /* fijar popover de notificaciones centrado en pantalla móvil para que nunca se salga por la izquierda */
+  .popover-notificaciones-ios {
+    position: fixed !important;
+    top: calc(4.6rem + env(safe-area-inset-top, 0px)) !important;
+    left: 0.75rem !important;
+    right: 0.75rem !important;
+    width: auto !important;
+    max-width: 420px !important;
+    margin: 0 auto !important;
+    transform-origin: top center !important;
+  }
+
+  /* hero y tarjeta de folio/fecha */
+  .hero {
+    gap: 1rem;
+    margin-bottom: 1.35rem;
+  }
+
+  .hero-col-izq {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .meta-automatica {
+    width: 100%;
+    justify-content: space-around;
+  }
+
+  /* buscador de folio público sin desbordamiento */
+  .panel-rastreo {
+    padding: 1.1rem 1.15rem;
+  }
+
+  .form-rastreo {
+    width: 100%;
+  }
+
+  .form-rastreo input {
+    flex: 1 1 auto;
+    width: auto;
+    min-width: 0;
+  }
+
+  /* barra de filtros y buscador interno */
+  .barra-filtros {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .grupo-filtros {
+    width: 100%;
+  }
+
+  .campo-busqueda,
+  .campo-busqueda input {
+    width: 100%;
+  }
+
+  /* barra de reportes mensuales */
+  .barra-reportes-mensuales {
+    padding: 1rem 1.15rem;
+  }
+
+  .controles-reporte {
+    width: 100%;
+  }
+
+  .controles-reporte .ts-wrapper,
+  .controles-reporte select,
+  .controles-reporte .btn-accion-reporte {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* modales adaptables a cualquier ancho móvil */
+  .modal-tarjeta {
+    padding: 1.5rem 1.25rem;
+    max-height: calc(100vh - 2rem);
+    overflow-y: auto;
+  }
+
+  .cabecera-modal-manual,
+  .barra-tabs-manual,
+  .cuerpo-modal-manual {
+    padding-left: 1.1rem;
+    padding-right: 1.1rem;
+  }
+
+  .cabecera-modal-reporte {
+    padding: 0.85rem 1rem;
+  }
+
+  .cuerpo-reporte-ejecutivo {
+    padding: 1rem 0.75rem 1.5rem !important;
+  }
+}
+
+/* 5. teléfonos medianos y pequeños (<= 600px: iPhone SE, 12/13/14/15/16, Galaxy, Pixel, Xiaomi) */
+@media (max-width: 600px) {
+  .separador-logos {
+    display: none;
+  }
+
+  .logo-sep { height: 28px; }
+  .logo-itp { height: 34px; }
+  .logo-tecnm { height: 30px; }
+
+  .textos-marca {
+    width: 100%;
+    margin-top: 0.15rem;
+  }
+
+  /* catálogo y filas de formulario a 1 columna limpia sin scroll horizontal */
+  .grid-catalogo,
+  .fila-campos,
+  .panel-gestion-interno {
+    grid-template-columns: 1fr !important;
+  }
+
+  .panel {
+    padding: 1.2rem 1.05rem;
+    border-radius: 18px;
+  }
+
+  .resumen-seleccion {
+    display: flex;
+    flex-wrap: wrap;
+    width: 100%;
+  }
+
+  /* tarjeta de solicitud: permitir que el bloque de estado se acomode arriba sin aplastar el título */
+  .ticket-item {
+    padding: 1.15rem 1.1rem !important;
+  }
+
+  .ticket-header-line {
+    flex-wrap: wrap !important;
+    gap: 0.65rem;
+  }
+
+  .ticket-header-line > div:first-child {
+    width: 100%;
+    order: 2;
+  }
+
+  .selector-estado-contenedor {
+    width: 100%;
+    order: 1;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    margin-left: 0;
+    padding-bottom: 0.45rem;
+    border-bottom: 1px dashed var(--border-soft);
+  }
+
+  .fila-responsable-acciones,
+  .caja-servicio-social-manual,
+  .input-nota-grupo {
+    flex-wrap: wrap;
+  }
+
+  .btn-notificar-wa,
+  .btn-confirmar-ss,
+  .btn-agregar-nota {
+    min-height: 40px;
+  }
+
+  /* línea de tiempo de rastreo compacta para 320px-430px */
+  .linea-tiempo-rastreo {
+    gap: 0.15rem;
+  }
+
+  .lt-paso {
+    padding: 0 0.1rem;
+  }
+
+  /* reloj circular y calendario flatpickr en pantallas de 320px (iPhone SE) */
+  .tarjeta-reloj-material {
+    width: 100%;
+    max-width: 315px;
+    padding: 1.15rem 1rem 1rem;
+  }
+
+  .reloj-esfera-contenedor {
+    max-width: 100%;
+  }
+
+  .flatpickr-calendar {
+    max-width: calc(100vw - 24px) !important;
+  }
+
+  .swal2-popup {
+    width: calc(100vw - 1.5rem) !important;
+    padding: 1.4rem 1.15rem !important;
+  }
+}
+
+/* 6. pantallas ultra compactas (320px - 360px) */
+@media (max-width: 360px) {
+  .btn-vista {
+    font-size: 0.74rem;
+    padding: 0.45rem 0.55rem;
+  }
+
+  .btn-ayuda-sutil span {
+    display: none;
+  }
+
+  .reloj-caja-digito {
+    width: 72px;
+    height: 64px;
+    font-size: 2.2rem;
+  }
+
+  .reloj-selector-ampm {
+    height: 64px;
+  }
+}
+
+/* 7. orientación horizontal (landscape) en teléfonos móviles */
+@media (max-height: 520px) and (orientation: landscape) {
+  .site-header {
+    position: relative;
+    margin-bottom: 1rem;
+  }
+
+  .modal-fondo {
+    align-items: flex-start;
+    overflow-y: auto;
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+  }
+
+  .modal-tarjeta,
+  .tarjeta-reloj-material,
+  .modal-tarjeta-manual,
+  .modal-tarjeta-reporte {
+    max-height: none !important;
+    margin: auto;
+  }
+
+  .tarjeta-reloj-material {
+    display: grid;
+    grid-template-columns: auto auto;
+    align-items: center;
+    gap: 0.75rem 1.25rem;
+    width: auto;
+    max-width: 560px;
+    padding: 1rem 1.25rem;
+  }
+
+  .reloj-titulo-sup {
+    grid-column: 1 / -1;
+    margin-bottom: 0;
+  }
+
+  .reloj-cabecera-digital {
+    margin-bottom: 0;
+  }
+
+  .reloj-esfera-contenedor {
+    margin-bottom: 0;
+  }
+
+  .reloj-acciones-pie {
+    grid-column: 1 / -1;
+  }
+}
+
+

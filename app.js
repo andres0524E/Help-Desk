@@ -1146,6 +1146,7 @@ let liquid_morph_listener_activo = false;
 
 function inicializar_brillo_liquid_morph() {
   if (liquid_morph_listener_activo) return;
+  if (window.matchMedia && window.matchMedia('(hover: none), (pointer: coarse)').matches) return;
   liquid_morph_listener_activo = true;
 
   document.addEventListener('mousemove', (e) => {
@@ -1627,25 +1628,29 @@ function renderizar_calendario_panel() {
 }
 
 function calcular_estado_automatico(item) {
-  const ahora = new Date();
+  const resp_limpio = item.responsable ? item.responsable.trim().toLowerCase() : '';
+  const tiene_responsable = resp_limpio !== '' && resp_limpio !== 'sin asignar' && !resp_limpio.startsWith('denegada');
+  const tiene_limite = Boolean(item.fecha_limite && item.fecha_limite.trim() !== '');
 
-  if (item.aplica_evento && item.fecha_evento) {
-    const hora_ev = (item.hora_evento || '23:59').slice(0, 5);
-    const fecha_evento_completa = new Date(`${item.fecha_evento}T${hora_ev}:00`);
-    if (ahora >= fecha_evento_completa) {
-      return 'Terminado';
+  // solo pasa a terminado en automático cuando tiene un responsable asignado
+  if (tiene_responsable) {
+    const ahora = new Date();
+
+    if (item.aplica_evento && item.fecha_evento) {
+      const hora_ev = (item.hora_evento || '23:59').slice(0, 5);
+      const fecha_evento_completa = new Date(`${item.fecha_evento}T${hora_ev}:00`);
+      if (ahora >= fecha_evento_completa) {
+        return 'Terminado';
+      }
+    }
+
+    if (item.fecha_limite) {
+      const fecha_limite_completa = new Date(`${item.fecha_limite}T23:59:00`);
+      if (ahora >= fecha_limite_completa) {
+        return 'Terminado';
+      }
     }
   }
-
-  if (item.fecha_limite) {
-    const fecha_limite_completa = new Date(`${item.fecha_limite}T23:59:00`);
-    if (ahora >= fecha_limite_completa) {
-      return 'Terminado';
-    }
-  }
-
-  const tiene_responsable = item.responsable && item.responsable.trim() !== '' && item.responsable.trim().toLowerCase() !== 'sin asignar';
-  const tiene_limite = item.fecha_limite && item.fecha_limite.trim() !== '';
 
   if (tiene_responsable || tiene_limite) {
     return 'En proceso';
@@ -2623,6 +2628,7 @@ function abrir_modal_reporte() {
   `;
 
   document.getElementById('modal-reporte').classList.remove('oculto');
+  contenedor_rep.scrollTop = 0;
 }
 
 function cerrar_modal_reporte() {
