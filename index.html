@@ -11,6 +11,8 @@
   <meta name="apple-mobile-web-app-title" content="Mesa ITP">
   <!-- política de seguridad de contenido (csp) para restringir orígenes permitidos -->
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com https://api.fontshare.com; font-src 'self' https://fonts.gstatic.com https://api.fontshare.com https://cdn.fontshare.com data:; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://script.google.com https://script.googleusercontent.com https://cdn.jsdelivr.net https://unpkg.com; base-uri 'self'; form-action 'self';">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta name="description" content="Sistema oficial de gestión, planeación y difusión de solicitudes del Departamento de Comunicación y Difusión del Instituto Tecnológico de Pachuca (ITP).">
   <title>Mesa de Comunicación y Difusión | ITP</title>
   <link rel="icon" type="image/png" href="img/help-desk.png">
   <link rel="apple-touch-icon" href="img/help-desk.png">
@@ -31,7 +33,7 @@
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.14.5/dist/sweetalert2.all.min.js"></script>
 
 
-  <link rel="stylesheet" href="styles.css?v=20261105b">
+  <link rel="stylesheet" href="styles.css?v=20261108b">
   <script>
     (function() {
       try {
@@ -51,13 +53,13 @@
     .ts-wrapper.single .ts-control {
       background: #ffffff !important;
       border: 1.5px solid var(--border-soft, #e2e8f0) !important;
-      border-radius: 12px !important;
+      border-radius: 2px !important;
       padding: 0.62rem 2.3rem 0.62rem 1rem !important;
       font-family: inherit !important;
       font-size: 0.88rem !important;
       font-weight: 700 !important;
       color: var(--itp-blue, #1B396A) !important;
-      box-shadow: 0 2px 6px rgba(15, 23, 42, 0.03) !important;
+      box-shadow: none !important;
       position: relative;
       cursor: pointer !important;
       min-width: 215px;
@@ -79,7 +81,7 @@
       box-shadow: 0 0 0 4px rgba(27, 57, 106, 0.1) !important;
     }
     .ts-dropdown {
-      border-radius: 12px !important;
+      border-radius: 2px !important;
       border: 1.5px solid var(--border-soft, #e2e8f0) !important;
       box-shadow: 0 12px 30px rgba(15, 23, 42, 0.14) !important;
       overflow: hidden;
@@ -117,7 +119,7 @@
       width: 100% !important;
       padding: 0.56rem 2.1rem 0.56rem 0.85rem !important;
       font-size: 0.85rem !important;
-      border-radius: 10px !important;
+      border-radius: 2px !important;
     }
 
     /* bloque manual cuando se elige chico(a) de servicio */
@@ -132,7 +134,7 @@
       flex: 1;
       background: #ffffff !important;
       border: 1.5px solid var(--border-soft, #e2e8f0) !important;
-      border-radius: 9px !important;
+      border-radius: 2px !important;
       padding: 0.48rem 0.75rem !important;
       font-size: 0.83rem !important;
       font-weight: 600;
@@ -146,7 +148,7 @@
       background: var(--itp-blue, #1B396A);
       color: #ffffff;
       border: none;
-      border-radius: 9px;
+      border-radius: 2px;
       padding: 0.5rem 0.85rem;
       font-family: inherit;
       font-size: 0.78rem;
@@ -174,7 +176,7 @@
       border: 1.5px solid #bbf7d0;
       height: 38px;
       padding: 0 0.75rem;
-      border-radius: 10px;
+      border-radius: 2px;
       font-family: inherit;
       font-size: 0.78rem;
       font-weight: 700;
@@ -210,7 +212,7 @@
       width: 100% !important;
       background: #f8fafc !important;
       border: 1.5px solid var(--border-soft, #e2e8f0) !important;
-      border-radius: 11px !important;
+      border-radius: 2px !important;
       padding: 0.82rem 2.6rem 0.82rem 1rem !important;
       font-family: inherit !important;
       font-size: 0.92rem !important;
@@ -246,7 +248,7 @@
     .flatpickr-calendar {
       width: 284px !important;
       background: #ffffff !important;
-      border-radius: 16px !important;
+      border-radius: 2px !important;
       box-shadow: 0 14px 34px rgba(15, 23, 42, 0.16) !important;
       border: 1px solid var(--border-soft, #e2e8f0) !important;
       font-family: 'Nunito', sans-serif !important;
@@ -260,7 +262,7 @@
 
     .flatpickr-months {
       background: var(--itp-blue, #1B396A) !important;
-      border-radius: 11px !important;
+      border-radius: 2px !important;
       height: 42px !important;
       padding: 0 6px !important;
       display: flex !important;
@@ -279,7 +281,7 @@
       display: flex !important;
       align-items: center !important;
       justify-content: center !important;
-      border-radius: 8px !important;
+      border-radius: 2px !important;
       color: #ffffff !important;
       fill: #ffffff !important;
       transition: background 0.2s ease !important;
@@ -325,7 +327,7 @@
       font-family: 'Nunito', sans-serif !important;
       font-size: 0.88rem !important;
       font-weight: 700 !important;
-      border-radius: 7px !important;
+      border-radius: 2px !important;
       padding: 3px 8px !important;
       margin: 0 !important;
       border: 1px solid rgba(255, 255, 255, 0.25) !important;
@@ -348,7 +350,7 @@
       height: 28px !important;
       display: inline-flex !important;
       align-items: center !important;
-      border-radius: 7px !important;
+      border-radius: 2px !important;
       background: rgba(255, 255, 255, 0.14) !important;
       border: 1px solid rgba(255, 255, 255, 0.25) !important;
       padding: 0 4px !important;
@@ -417,7 +419,7 @@
       font-size: 0.82rem !important;
       font-weight: 600 !important;
       color: var(--ink-main, #0f172a) !important;
-      border-radius: 8px !important;
+      border-radius: 2px !important;
       display: flex !important;
       align-items: center !important;
       justify-content: center !important;
@@ -452,12 +454,11 @@
     .tarjeta-reloj-material {
       background: #ffffff;
       width: 315px;
-      border-radius: 20px;
+      border-radius: 2px !important;
       padding: 1.4rem 1.5rem 1.25rem;
       box-shadow: 0 24px 55px rgba(15, 23, 42, 0.28);
       border: 1px solid var(--border-soft, #e2e8f0);
       user-select: none;
-      animation: entrada_suave 0.22s ease;
     }
     .reloj-titulo-sup {
       display: block;
@@ -480,7 +481,7 @@
       background: #e9ecf2;
       color: #1e293b;
       border: none;
-      border-radius: 11px;
+      border-radius: 2px !important;
       font-family: 'Nunito', sans-serif;
       font-size: 2.65rem;
       font-weight: 600;
@@ -493,7 +494,7 @@
     .reloj-caja-digito.activo {
       background: var(--itp-blue, #1B396A);
       color: #ffffff;
-      box-shadow: 0 6px 16px rgba(27, 57, 106, 0.25);
+      box-shadow: none;
     }
     .reloj-dos-puntos {
       font-size: 2.3rem;
@@ -508,13 +509,14 @@
       height: 74px;
       width: 52px;
       border: 1.5px solid #cbd5e1;
-      border-radius: 10px;
+      border-radius: 2px !important;
       overflow: hidden;
       margin-left: 0.35rem;
     }
     .btn-ampm {
       flex: 1;
       border: none;
+      border-radius: 0 !important;
       background: #ffffff;
       color: #64748b;
       font-family: 'Nunito', sans-serif;
@@ -534,7 +536,7 @@
       width: 236px;
       height: 236px;
       background: #e9ecf2;
-      border-radius: 50%;
+      border-radius: 2px !important;
       margin: 0 auto 1.35rem;
       position: relative;
       cursor: pointer;
@@ -547,7 +549,7 @@
       width: 8px;
       height: 8px;
       background: var(--itp-blue, #1B396A);
-      border-radius: 50%;
+      border-radius: 2px !important;
       transform: translate(-50%, -50%);
       z-index: 3;
     }
@@ -573,7 +575,7 @@
       position: absolute;
       width: 38px;
       height: 38px;
-      border-radius: 50%;
+      border-radius: 2px !important;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -586,7 +588,7 @@
     .reloj-num-item.seleccionado {
       background: var(--itp-blue, #1B396A);
       color: #ffffff;
-      box-shadow: 0 3px 10px rgba(27, 57, 106, 0.3);
+      box-shadow: none;
     }
     .reloj-acciones-pie {
       display: flex;
@@ -602,7 +604,7 @@
       font-size: 0.9rem;
       font-weight: 700;
       padding: 0.45rem 0.9rem;
-      border-radius: 8px;
+      border-radius: 2px !important;
       cursor: pointer;
       transition: background 0.2s ease;
     }
@@ -1011,7 +1013,7 @@
         <div class="hero-col-izq">
           <span class="tag-institucional">
             <span class="pulso-tag"></span>
-            Gestión Oficial de Solicitudes
+            Gestión de Solicitudes
           </span>
           <h1>Mesa de <em>Comunicación y Difusión</em></h1>
           <p class="hero-desc">Sistema centralizado para la planeación, diseño y difusión de actividades institucionales del ITP.</p>
@@ -1115,62 +1117,62 @@
           </div>
         </div>
 
-        <div id="seccion-detalles" class="bloque-destino seccion-formulario-card">
-          <div class="encabezado-seccion">
-            <span class="seccion-label sin-margen">02 / Datos del área solicitante y requerimientos</span>
+        <div id="seccion-detalles" class="bloque-destino seccion-formulario-card form-solicitud-editorial">
+          <div class="encabezado-seccion form-solicitud-encabezado-02">
+            <span class="seccion-label sin-margen form-solicitud-titulo-seccion"><span class="form-solicitud-num">02</span> / Datos del área solicitante y requerimientos</span>
           </div>
 
-          <div class="resumen-seleccion">
+          <div class="resumen-seleccion form-solicitud-resumen">
             <i data-lucide="check-circle-2" class="icono-inline"></i>
             <span>Servicio seleccionado:</span>
             <strong id="texto-servicio-elegido">Diseño e impresión de material gráfico</strong>
           </div>
 
-          <div class="fila-campos">
-            <div class="campo">
+          <div class="fila-campos form-solicitud-fila">
+            <div class="campo form-solicitud-campo">
               <label>Departamento o Área académica del ITP</label>
               <select id="solicitante" required>
                 <option value="Comunicación y Difusión" selected>Comunicación y Difusión</option>
               </select>
             </div>
-            <div class="campo">
+            <div class="campo form-solicitud-campo">
               <label id="label-especifico">Formato y medidas requeridas</label>
               <input type="text" id="detalle-especifico" placeholder="Ej. Cartel impreso tabloide y versión digital para redes" maxlength="180" required autocomplete="off">
             </div>
           </div>
 
-          <div class="fila-campos">
-            <div class="campo">
+          <div class="fila-campos form-solicitud-fila">
+            <div class="campo form-solicitud-campo">
               <label id="label-descripcion">Texto e información clave que debe contener el diseño</label>
               <input type="text" id="descripcion" placeholder="Ej. Título del evento, fecha, hora y logotipos oficiales" maxlength="400" required autocomplete="off">
             </div>
           </div>
 
-          <span class="seccion-label">03 / Programación del evento asociado</span>
-          <div class="barra-condicional" onclick="alternar_evento()">
+          <span class="seccion-label form-solicitud-titulo-seccion form-solicitud-encabezado-03"><span class="form-solicitud-num">03</span> / Programación del evento asociado</span>
+          <div class="barra-condicional form-solicitud-pregunta-evento" onclick="alternar_evento()">
             <span>¿Esta solicitud está asociada a un evento con fecha y hora fija?</span>
             <div class="switch activo" id="switch-evento"></div>
           </div>
 
           <div class="desplegable-evento abierto" id="bloque-evento">
             <div class="contenido-evento">
-              <div class="caja-evento-interna">
-                <div class="fila-campos fila-tres-campos" style="margin-bottom: 0;">
-                  <div class="campo">
+              <div class="caja-evento-interna form-solicitud-evento-contenedor">
+                <div class="fila-campos fila-tres-campos form-solicitud-fila-tres" style="margin-bottom: 0;">
+                  <div class="campo form-solicitud-campo">
                     <label>Fecha del evento</label>
                     <div class="contenedor-input-calendario">
                       <input type="text" id="fecha-evento" class="input-fecha-con-icono" placeholder="dd/mm/aaaa" autocomplete="off">
                       <i data-lucide="calendar" class="icono-calendario-fijo"></i>
                     </div>
                   </div>
-                  <div class="campo">
+                  <div class="campo form-solicitud-campo">
                     <label>Hora del evento</label>
                     <div class="contenedor-input-calendario" onclick="abrir_reloj_circular('hora-evento')">
                       <input type="text" id="hora-evento" class="input-fecha-con-icono input-reloj-personalizado" placeholder="--:--" readonly autocomplete="off">
                       <i data-lucide="clock" class="icono-calendario-fijo"></i>
                     </div>
                   </div>
-                  <div class="campo">
+                  <div class="campo form-solicitud-campo">
                     <label>Sitio a designar</label>
                     <select id="lugar-evento">
                       <option value="No aplica" selected>No aplica</option>
@@ -1190,8 +1192,8 @@
             <input type="text" id="campo-sitio-web-hp" name="sitio_web_institucional" tabindex="-1" autocomplete="off">
           </div>
 
-          <button type="submit" class="btn-enviar" id="btn-submit-form">
-            <span id="texto-btn-enviar">Enviar solicitud oficial</span>
+          <button type="submit" class="btn-enviar form-solicitud-btn-enviar" id="btn-submit-form">
+            <span id="texto-btn-enviar">Enviar solicitud</span>
             <i data-lucide="send" class="icono-inline"></i>
           </button>
         </div>
@@ -1206,7 +1208,7 @@
             <span class="pulso-tag"></span>
             Panel de Administración
           </span>
-          <h1>Control de solicitudes <em>internas</em></h1>
+          <h2>Control de solicitudes <em>internas</em></h2>
         </div>
         <button type="button" class="btn-bloquear-panel" onclick="cerrar_sesion_admin()">
           <i data-lucide="log-out" class="icono-inline"></i> Cerrar sesión
@@ -1252,7 +1254,7 @@
       <div class="barra-reportes-mensuales">
         <div class="reporte-info">
           <strong><i data-lucide="file-text" class="icono-inline"></i> Reporte Mensual</strong>
-          <span>Filtra por periodo para consultar y descargar el documento oficial en PDF.</span>
+          <span>Filtra por periodo para consultar y descargar el reporte en formato PDF.</span>
         </div>
         <div class="controles-reporte">
           <select id="selector-mes-reporte" onchange="cambiar_mes_filtro()">
@@ -1410,7 +1412,7 @@
         <div id="seccion-manual-publico" class="contenido-tab-manual">
           <div class="banner-intro-manual">
             <div>
-              <p>Tú eliges qué necesitas, llenas los datos de tu actividad y el sistema te entrega un código único (Folio) para que sepas en todo momento el estado de tu solicitud.</p>
+              <p>Este sistema centraliza todas las solicitudes dirigidas al Departamento de Comunicación y Difusión del ITP. Aquí puedes registrar una nueva solicitud en pocos pasos, recibir tu número de folio oficial y consultar en cualquier momento el avance, responsable asignado y notas de seguimiento.</p>
             </div>
           </div>
 
@@ -1419,16 +1421,15 @@
               <div class="cabecera-paso-manual">
                 <span class="numero-paso-manual">1</span>
                 <div>
-                  <h4>Barra Superior (Encabezado y Botones Rápidos)</h4>
-                  <span class="etiqueta-ubicacion-manual">Parte de hasta arriba de la pantalla</span>
+                  <h4>Barra Superior (Encabezado y Controles Globales)</h4>
+                  <span class="etiqueta-ubicacion-manual">Parte superior fija de la pantalla</span>
                 </div>
               </div>
               <ul class="lista-explicacion-manual">
-                <li><strong>Indicador de Conexión ("Conectado" / "Modo Local"):</strong> El puntito verde te dice que la página está conectada en vivo con la nube del ITP.</li>
-                <li><strong>Botón "Solicitar servicio":</strong> Te lleva siempre a la pantalla principal para crear una solicitud nueva o consultar un folio.</li>
-                <li><strong>Botón "Panel Interno":</strong> Es de uso exclusivo para el equipo de Comunicación y Difusión.</li>
-                <li><strong>Botón "Ayuda":</strong> Abre este manual siempre que tengas alguna duda.</li>
-                <li><strong>Botón de Luna / Sol (Modo Oscuro / Claro):</strong> Si trabajas de noche o te lastima el brillo blanco, haz clic en la lunita para oscurecer la pantalla.</li>
+                <li><strong>Indicador de Conexión ("Conectado" / "Modo Local"):</strong> El punto verde confirma que el sistema está sincronizado en tiempo real con la base de datos institucional en la nube.</li>
+                <li><strong>Selector de Vista ("Solicitar servicio" / "Panel Interno"):</strong> Te permite permanecer en la vista pública para registrar o consultar solicitudes, o cambiar al Panel Interno (exclusivo para personal autorizado mediante PIN).</li>
+                <li><strong>Botón "Ayuda":</strong> Abre este manual de usuario en cualquier momento.</li>
+                <li><strong>Botón de Modo Oscuro / Claro (Luna / Sol):</strong> Alterna el tema visual de toda la plataforma entre claro y oscuro; tu preferencia queda guardada en tu navegador.</li>
               </ul>
             </div>
 
@@ -1436,13 +1437,19 @@
               <div class="cabecera-paso-manual">
                 <span class="numero-paso-manual">2</span>
                 <div>
-                  <h4>Recuadro de Folio Asignado y Fecha de Emisión</h4>
-                  <span class="etiqueta-ubicacion-manual">Arriba a la derecha del título principal</span>
+                  <h4>Sección: "Consulta el estatus de tu solicitud"</h4>
+                  <span class="etiqueta-ubicacion-manual">Franja horizontal de búsqueda debajo del encabezado principal</span>
                 </div>
               </div>
               <ul class="lista-explicacion-manual">
-                <li><strong>Folio asignado (ej. SRV-001):</strong> Es el número de ticket que tendrá tu solicitud. Se calcula solito en orden consecutivo, tú no tienes que escribirlo.</li>
-                <li><strong>Fecha de emisión:</strong> Muestra el día exacto de hoy en que quedará registrada tu solicitud.</li>
+                <li><strong>¿Cómo consultar un folio?:</strong> Ingresa tu código de seguimiento (por ejemplo, <code>SRV-001</code>) en el campo de texto y presiona el botón <strong>"Buscar"</strong>.</li>
+                <li><strong>Información detallada que muestra el resultado:</strong>
+                  <br>• <strong>Datos generales:</strong> Folio, fecha en que se solicitó, servicio requerido, departamento solicitante, descripción y datos del evento presencial (si aplica).
+                  <br>• <strong>Insignia de Estado actual:</strong> <span class="pildora-mini-manual rojo">Pendiente</span> (solicitud recibida en espera de asignación), <span class="pildora-mini-manual amarillo">En proceso</span> (ya cuenta con responsable o fecha límite asignada), <span class="pildora-mini-manual verde">Terminado</span> (servicio concluido) o <span class="pildora-mini-manual denegada">Denegada</span> (si no procedió, se muestra un recuadro rojo con el motivo detallado).
+                  <br>• <strong>Línea de tiempo de progreso:</strong> Muestra gráficamente el avance paso a paso: <em>Recibida → Asignada → En proceso → Terminada</em> (o <em>Recibida → Revisión → Denegada</em>).
+                  <br>• <strong>Responsable asignado y Fecha límite estimada:</strong> Indica quién del equipo atiende tu solicitud y la fecha estimada de entrega.
+                  <br>• <strong>Notas del seguimiento:</strong> Lista de comentarios, acuerdos o avances registrados por el departamento. Para ocultar la consulta, presiona <strong>"Cerrar consulta"</strong>.
+                </li>
               </ul>
             </div>
 
@@ -1450,17 +1457,19 @@
               <div class="cabecera-paso-manual">
                 <span class="numero-paso-manual">3</span>
                 <div>
-                  <h4>Buscador: "Consulta el estatus de tu solicitud"</h4>
-                  <span class="etiqueta-ubicacion-manual">Barra con lupa antes del formulario</span>
+                  <h4>Apartado 01 / Seleccione el servicio requerido</h4>
+                  <span class="etiqueta-ubicacion-manual">Catálogo de 7 tarjetas de servicios</span>
                 </div>
               </div>
               <ul class="lista-explicacion-manual">
-                <li><strong>¿Para qué sirve?:</strong> Cuando ya enviaste una solicitud antes y quieres saber cómo va, escribe ahí tu código (por ejemplo: <code>SRV-001</code>) y presiona <strong>"Buscar"</strong>.</li>
-                <li><strong>¿Qué verás?:</strong> Se abrirá una tarjeta mostrándote:
-                  <br>• <strong>Estatus en vivo:</strong> <span class="pildora-mini-manual rojo">Pendiente</span> (recibida, por asignar), <span class="pildora-mini-manual amarillo">En proceso</span> (ya hay alguien trabajando en ella), <span class="pildora-mini-manual verde">Terminado</span> (concluida) o <span class="pildora-mini-manual denegada">Denegada</span> (si no procedió, ahí mismo te aparecerá un recuadro rojo explicando el motivo exacto).
-                  <br>• <strong>Responsable asignado y Fecha límite:</strong> Quién te está atendiendo y para cuándo estará lista.
-                  <br>• <strong>Bitácora de seguimiento:</strong> Mensajes, acuerdos o avances que el departamento haya anotado sobre tu solicitud.
-                </li>
+                <li>Selecciona la tarjeta que corresponda a tu requerimiento. Al hacer clic, la tarjeta se resalta en azul institucional y la pantalla se desplaza hacia el formulario inferior:</li>
+                <li><strong>1. Diseño e impresión de material gráfico:</strong> Carteles, banners, lonas, reconocimientos, infografías o material digital/impreso.</li>
+                <li><strong>2. Difusión en redes sociales:</strong> Publicación y programación de avisos, convocatorias o invitaciones en las cuentas oficiales del ITP.</li>
+                <li><strong>3. Cobertura fotográfica / audiovisual:</strong> Toma de fotografías o video en ceremonias, congresos, firmas de convenio y eventos académicos.</li>
+                <li><strong>4. Producción de videos:</strong> Grabación, edición, cápsulas informativas o animaciones institucionales.</li>
+                <li><strong>5. Revisión y visto bueno:</strong> Validación del uso correcto de identidad gráfica y logotipos oficiales en materiales elaborados previamente por tu área.</li>
+                <li><strong>6. Campañas institucionales:</strong> Estrategias de difusión integral durante un periodo determinado.</li>
+                <li><strong>7. Otro servicio:</strong> Solicitudes especiales o apoyos adicionales (maestro de ceremonias, protocolo, audio, etc.).</li>
               </ul>
             </div>
 
@@ -1468,19 +1477,23 @@
               <div class="cabecera-paso-manual">
                 <span class="numero-paso-manual">4</span>
                 <div>
-                  <h4>Apartado 01 / Seleccione el servicio requerido</h4>
-                  <span class="etiqueta-ubicacion-manual">Las 7 tarjetas grandes de servicios</span>
+                  <h4>Apartado 02 / Datos del área solicitante y requerimientos</h4>
+                  <span class="etiqueta-ubicacion-manual">Campos de captura sobre líneas inferiores</span>
                 </div>
               </div>
               <ul class="lista-explicacion-manual">
-                <li>Haz clic sobre la tarjeta de lo que necesitas. Al tocarla se pintará de azul y bajará suavemente al formulario:</li>
-                <li><strong>1. Diseño e impresión de material gráfico:</strong> Cuando ocupes carteles, lonas, banners, reconocimientos o infografías.</li>
-                <li><strong>2. Difusión en redes sociales:</strong> Para publicar invitaciones, avisos o convocatorias en el Facebook e Instagram oficial del ITP.</li>
-                <li><strong>3. Cobertura fotográfica / audiovisual:</strong> Para que acudan a tomar fotos o video a tu ceremonia, congreso o evento.</li>
-                <li><strong>4. Producción de videos:</strong> Cuando requieras grabar o editar una cápsula informativa, mensaje o animación.</li>
-                <li><strong>5. Revisión y visto bueno:</strong> Si tú ya hiciste tu diseño en Canva o Drive y necesitas que validen que los logos oficiales estén bien usados.</li>
-                <li><strong>6. Campañas institucionales:</strong> Difusión integral durante varios días o semanas (este servicio apaga automáticamente la sección de evento presencial, aunque puedes encenderla si lo requieres).</li>
-                <li><strong>7. Otro servicio:</strong> Cualquier apoyo requerido</li>
+                <li><strong>Fila "Servicio seleccionado":</strong> Confirma en texto destacado cuál de los 7 servicios estás solicitando actualmente.</li>
+                <li><strong>Departamento o Área académica del ITP:</strong> Despliega la lista oficial de subdirecciones, departamentos, divisiones y coordinaciones para elegir tu área.</li>
+                <li><strong>Campo de especificación técnica (cambia según el servicio elegido):</strong>
+                  <br>• <em>Diseño gráfico:</em> Formato y medidas requeridas.
+                  <br>• <em>Redes sociales:</em> Redes sociales destino y fecha de publicación.
+                  <br>• <em>Cobertura:</em> Tipo de cobertura requerida.
+                  <br>• <em>Producción de videos:</em> Duración estimada y formato.
+                  <br>• <em>Revisión y visto bueno:</em> Tipo de material y medio de difusión.
+                  <br>• <em>Campañas:</em> Público objetivo y periodo de difusión.
+                  <br>• <em>Otro servicio:</em> Tipo de apoyo o servicio solicitado.
+                </li>
+                <li><strong>Campo de información clave o descripción detallada:</strong> Describe el título de la actividad, mensaje central, autoridades o pega el enlace de Google Drive / Canva con los archivos base.</li>
               </ul>
             </div>
 
@@ -1488,31 +1501,16 @@
               <div class="cabecera-paso-manual">
                 <span class="numero-paso-manual">5</span>
                 <div>
-                  <h4>Apartado 02 / Datos del área solicitante y requerimientos</h4>
-                  <span class="etiqueta-ubicacion-manual">Campos de información de tu solicitud</span>
-                </div>
-              </div>
-              <ul class="lista-explicacion-manual">
-                <li><strong>Departamento o Área académica del ITP:</strong> Haz clic en el menú desplegable y elige tu departamento o subdirección oficial de la lista.</li>
-                <li><strong>Segundo campo (Formatos / Redes / Tipo de apoyo):</strong> Este campo cambia de pregunta según la tarjeta que elegiste en el paso 01. Escribe ahí <em>qué medio o formato necesitas</em> (por ejemplo: <em>"Facebook e Instagram"</em>, <em>"Lona de 2x3 metros"</em> o <em>"Fotografía de presídium"</em>).</li>
-                <li><strong>Tercer campo (Texto e información clave / Descripción):</strong> Escribe con claridad el nombre de tu actividad, el mensaje principal o pega el enlace de Google Drive / Canva si vas a compartir archivos.</li>
-              </ul>
-            </div>
-
-            <div class="tarjeta-paso-manual">
-              <div class="cabecera-paso-manual">
-                <span class="numero-paso-manual">6</span>
-                <div>
                   <h4>Apartado 03 / Programación del evento asociado y Envío</h4>
-                  <span class="etiqueta-ubicacion-manual">Interruptor de evento, calendario, reloj y sitio</span>
+                  <span class="etiqueta-ubicacion-manual">Interruptor de evento, fecha, hora, sitio y botón de envío</span>
                 </div>
               </div>
               <ul class="lista-explicacion-manual">
-                <li><strong>Interruptor "¿Asociada a un evento con fecha y hora fija?":</strong> Si tu solicitud es para un evento presencial, déjalo seleccionado. Si NO requieres una fecha específica, haz clic en la barra para apagarlo y no te pedirá fecha ni lugar.</li>
-                <li><strong>Fecha del evento:</strong> Haz clic para abrir el calendario y elige el día. <em>Importante: el sistema bloquea fechas pasadas para evitar errores.</em></li>
-                <li><strong>Hora del evento:</strong> Al tocarlo se abre un <strong>reloj circular interactivo</strong>: primero toca o arrastra la manecilla a la hora, luego elige los minutos, selecciona <strong>A.M.</strong> o <strong>P.M.</strong> y presiona <strong>"DE ACUERDO"</strong>. Tampoco permite elegir una hora que ya pasó el día de hoy.</li>
-                <li><strong>Sitio a designar:</strong> Elige en la lista el lugar del ITP donde será el evento (Sala Rafael Rosado, Gimnasio Olímpico, Foro Cultural, etc.). Si eliges <strong>"Otro (especificar aula)"</strong>, aparecerá abajito una cajita para que escribas exactamente qué salón o laboratorio es.</li>
-                <li><strong>Botón "Enviar solicitud oficial":</strong> Al presionarlo se guarda tu solicitud y te sale una ventana con tu <strong>Folio en grande</strong>. ¡Anótalo o tómale foto para rastrearlo después!</li>
+                <li><strong>Interruptor "¿Esta solicitud está asociada a un evento con fecha y hora fija?":</strong> Por defecto está activo para capturar los datos del evento. Si tu solicitud no corresponde a un evento presencial, toca la fila para desactivarlo y ocultar esos campos.</li>
+                <li><strong>Fecha del evento:</strong> Abre el calendario desplegable para elegir el día del evento (el sistema únicamente permite seleccionar fechas a partir del día de hoy).</li>
+                <li><strong>Hora del evento:</strong> Abre el <strong>reloj circular interactivo</strong>. Selecciona primero la hora en la esfera, después los minutos, elige <strong>A.M.</strong> o <strong>P.M.</strong> y pulsa <strong>"DE ACUERDO"</strong> (si el evento es hoy, el sistema valida que la hora sea futura).</li>
+                <li><strong>Sitio a designar:</strong> Selecciona la sede dentro del ITP (Auditorio, Gimnasio Olímpico, Sala Rafael Rosado, etc.). Si eliges <strong>"Otro (especificar aula)"</strong>, se habilita un campo adicional debajo para escribir el salón, laboratorio o espacio exacto.</li>
+                <li><strong>Botón "Enviar solicitud" y Flecha para subir:</strong> Al presionar el botón, la solicitud se registra y aparece una ventana de confirmación con tu <strong>Folio oficial en grande</strong> (pulsa <em>"Entendido"</em> para finalizar). Además, al desplazarte hacia abajo en la página, dispones del botón flotante con flecha hacia arriba en la esquina inferior derecha para volver rápidamente al inicio.</li>
               </ul>
             </div>
           </div>
@@ -1523,8 +1521,8 @@
           <div class="banner-intro-manual admin">
             <div class="icono-banner-manual"><i data-lucide="shield-check"></i></div>
             <div>
-              <strong>Guía Exclusiva del Panel Interno (Comunicación y Difusión)</strong>
-              <p>Esta sección del manual solo es visible para los miembros del departamento. Aquí tienes explicado paso a paso cómo administrar cada solicitud y generar el Reporte/Bitácora por semestre o mes.</p>
+              <strong>Guía Completa del Panel Interno (Comunicación y Difusión)</strong>
+              <p>Documentación detallada para el equipo del departamento sobre el acceso seguro, uso de filas expandibles, vistas de Lista y Calendario, asignación de responsables, control de notas y generación del Reporte Oficial ISO.</p>
             </div>
           </div>
 
@@ -1533,14 +1531,15 @@
               <div class="cabecera-paso-manual">
                 <span class="numero-paso-manual">1</span>
                 <div>
-                  <h4>Campanita de Notificaciones y Cierre de Sesión</h4>
-                  <span class="etiqueta-ubicacion-manual">Esquina superior derecha</span>
+                  <h4>Acceso con PIN, Notificaciones y Cierre de Sesión</h4>
+                  <span class="etiqueta-ubicacion-manual">Barra superior y encabezado del Panel Interno</span>
                 </div>
               </div>
               <ul class="lista-explicacion-manual">
-                <li><strong>Campanita con número rojo:</strong> Te avisa cuántas solicitudes nuevas están <strong>"Sin asignar"</strong>. Si haces clic en una notificación de la lista, te lleva directo a esa tarjeta y la ilumina para que la encuentres al instante.</li>
-                <li><strong>¿Cuándo desaparece una notificación?:</strong> En cuanto le asignas un responsable de la lista o si decides <strong>Denegar</strong> la solicitud, desaparece automáticamente de la campanita.</li>
-                <li><strong>Botón "Cerrar sesión":</strong> Bloquea el Panel Interno con candado para que nadie ajeno pueda verlo si te retiras de la computadora (si cierra sesión deberá ingresar nuevamente el pin).</li>
+                <li><strong>Ingreso mediante PIN y sesión en el equipo:</strong> Al pulsar <strong>"Panel Interno"</strong> se solicita el PIN institucional. La casilla <strong>"Mantener sesión abierta en este equipo"</strong> permite conservar el acceso activo aunque recargues o cierres el navegador.</li>
+                <li><strong>Campanita de Notificaciones (esquina superior derecha):</strong> Aparece únicamente cuando la sesión está iniciada y muestra con un contador rojo cuántas solicitudes están pendientes de asignar. Al tocar una solicitud dentro de la campanita, el sistema abre el Panel Interno, se desplaza hasta esa solicitud, la despliega automáticamente y la resalta.</li>
+                <li><strong>¿Cuándo se limpia una notificación?:</strong> En cuanto le asignas un responsable o marcas la solicitud como <strong>Denegada</strong>.</li>
+                <li><strong>Botón "Cerrar sesión":</strong> Cierra la sesión activa y bloquea inmediatamente el Panel Interno y la campanita de notificaciones.</li>
               </ul>
             </div>
 
@@ -1548,14 +1547,17 @@
               <div class="cabecera-paso-manual">
                 <span class="numero-paso-manual">2</span>
                 <div>
-                  <h4>Tablero de Métricas y Filtros Rápidos</h4>
-                  <span class="etiqueta-ubicacion-manual">Cuadros de colores y barra de búsqueda</span>
+                  <h4>Métricas en Vivo, Filtros, Buscador y Conmutador Lista / Calendario</h4>
+                  <span class="etiqueta-ubicacion-manual">Parte superior del Panel Interno</span>
                 </div>
               </div>
               <ul class="lista-explicacion-manual">
-                <li><strong>Los 4 contadores superiores:</strong> Te muestran en tiempo real cuántas solicitudes hay en el periodo seleccionado: <strong>Total registradas</strong>, <strong>Pendientes</strong> (rojas), <strong>En proceso</strong> (amarillas) y <strong>Terminadas</strong> (verdes).</li>
-                <li><strong>Botones de filtro (Todos, Pendientes, En proceso, Terminados):</strong> Úsalos para ver solo las solicitudes de un estado específico.</li>
-                <li><strong>Buscador interno:</strong> Escribe cualquier palabra (folio, departamento o tipo de servicio) y la lista se filtrará al instante mientras escribes.</li>
+                <li><strong>Los 4 contadores superiores:</strong> Se actualizan automáticamente según el periodo elegido, mostrando el total de solicitudes <strong>Total registradas</strong>, <strong>Pendientes</strong>, <strong>En proceso</strong> y <strong>Terminadas</strong>.</li>
+                <li><strong>Filtros por estado y Buscador en tiempo real:</strong> Filtra con un clic entre <em>Todos</em>, <em>Pendientes</em>, <em>En proceso</em> o <em>Terminados</em>, o escribe en el buscador cualquier folio, área solicitante o nombre de servicio.</li>
+                <li><strong>Conmutador de vista ("Lista" / "Calendario"):</strong>
+                  <br>• <strong>Vista Lista:</strong> Muestra las solicitudes en filas expandibles paginadas (máximo 10 solicitudes por página, con barra de navegación numerada en la parte inferior).
+                  <br>• <strong>Vista Calendario:</strong> Muestra el cronograma mensual de actividades con código de colores por estado y botones para cambiar de mes. En computadora se visualizan las tarjetas dentro de cada día; en teléfonos móviles se muestra una cuadrícula compacta con puntos de color por estado y, al tocar cualquier día, se despliega debajo la agenda completa de ese día. Al tocar cualquier evento del calendario, el sistema te lleva directo a su solicitud en la lista y la abre.
+                </li>
               </ul>
             </div>
 
@@ -1563,21 +1565,16 @@
               <div class="cabecera-paso-manual">
                 <span class="numero-paso-manual">3</span>
                 <div>
-                  <h4>Estado y Botón "Denegar / Reactivar"</h4>
-                  <span class="etiqueta-ubicacion-manual">Esquina superior derecha de cada tarjeta de solicitud</span>
+                  <h4>Filas Expandibles de Solicitudes (Vista Cerrada y Vista Abierta)</h4>
+                  <span class="etiqueta-ubicacion-manual">Listado principal de solicitudes</span>
                 </div>
               </div>
               <ul class="lista-explicacion-manual">
-                <li><strong>¿Cómo cambia solo el estatus?:</strong>
-                  <br>• <span class="pildora-mini-manual rojo">Pendiente</span>: Recién llegada (sin responsable ni fecha límite).
-                  <br>• <span class="pildora-mini-manual amarillo">En proceso</span>: Pasa automáticamente a amarillo en cuanto le asignas un responsable o habilitas una fecha límite.
-                  <br>• <span class="pildora-mini-manual verde">Terminado</span>: Pasa solito a verde cuando ya se cumplió la fecha y hora del evento o la fecha límite de entrega.
+                <li><strong>Solicitud cerrada (vista compacta por defecto):</strong> Cada solicitud se presenta como una fila con una franja lateral del color de su estado:
+                  <br>• <strong>Columna izquierda:</strong> Muestra destacados la fecha y la hora del evento presencial (o la leyenda <em>"Sin evento presencial asociado"</em> cuando no aplica).
+                  <br>• <strong>Columna derecha:</strong> Muestra el título del servicio, el departamento solicitante y el lugar del evento. Debajo, en una sola línea de resumen, muestra en texto plano el <strong>Estado</strong>, el <strong>Responsable asignado</strong> y la <strong>Fecha límite de entrega</strong> (si la solicitud está denegada, oculta el responsable y la fecha límite para evitar ruido visual).
                 </li>
-                <li><strong>Botón "Denegar":</strong> Si una solicitud no procede, haz clic en <strong>"Denegar"</strong>. Se abrirá un cuadro para que escribas el <strong>motivo</strong>. Al confirmar:
-                  <br>1. La tarjeta cambia a estado <span class="pildora-mini-manual denegada">Denegada</span>.
-                  <br>2. Cuando el departamento consulte su folio en el buscador público, verá el aviso rojo con el motivo que escribiste.
-                  <br>3. Si necesitas revertirlo, el mismo botón cambia a <strong>"Reactivar"</strong>.
-                </li>
+                <li><strong>Solicitud abierta (desplegable):</strong> Al hacer clic o presionar <code>Enter</code> / <code>Espacio</code> sobre la parte superior de cualquier fila, esta se despliega mostrando el número de folio, la fecha en que fue solicitada, la especificación y descripción completa, todos los controles de administración y el área de notas. Tocar de nuevo la cabecera la cierra. Cada fila se abre o cierra de manera independiente.</li>
               </ul>
             </div>
 
@@ -1585,14 +1582,22 @@
               <div class="cabecera-paso-manual">
                 <span class="numero-paso-manual">4</span>
                 <div>
-                  <h4>Asignar Responsable, Servicio Social y Aviso por WhatsApp</h4>
-                  <span class="etiqueta-ubicacion-manual">Primer control dentro del cuadro gris de cada solicitud</span>
+                  <h4>Estados Automáticos y Botón "Denegar / Reactivar"</h4>
+                  <span class="etiqueta-ubicacion-manual">Columna derecha dentro de la solicitud desplegada</span>
                 </div>
               </div>
               <ul class="lista-explicacion-manual">
-                <li><strong>Menú "Responsable asignado":</strong> Elige a quién del equipo se le encarga la tarea.</li>
-                <li><strong>Aviso automático por WhatsApp:</strong> Al elegir a cualquiera de ellos, sale una ventana preguntándote si deseas abrir WhatsApp. Al aceptar, se abre su chat con el mensaje ya redactado (incluyendo folio, actividad, solicitante y evento). También queda disponible el botón verde <strong>"WhatsApp"</strong> al lado de su nombre para reenviar recordatorios cuando quieras.</li>
-                <li><strong>Opción "Chico(a) de servicio":</strong> Si la seleccionas, <em>no envía WhatsApp</em> y despliega una cajita abajo para que escribas manualmente el nombre del prestador(a) de servicio social y presiones <strong>"Asignar"</strong>.</li>
+                <li><strong>Cálculo automático del estado:</strong>
+                  <br>• <span class="pildora-mini-manual rojo">Pendiente</span>: Solicitud recién registrada sin responsable ni fecha límite asignada.
+                  <br>• <span class="pildora-mini-manual amarillo">En proceso</span>: Cambia automáticamente al asignar un responsable o habilitar una fecha límite de entrega.
+                  <br>• <span class="pildora-mini-manual verde">Terminado</span>: Cambia automáticamente cuando cuenta con responsable asignado y ya se cumplió la fecha y hora del evento (o la fecha límite de entrega).
+                </li>
+                <li><strong>Botón "Denegar":</strong> Al presionarlo, solicita escribir el motivo del rechazo. Al confirmar:
+                  <br>1. La solicitud pasa a estado <span class="pildora-mini-manual denegada">Denegada</span>.
+                  <br>2. Se ocultan automáticamente los controles de <em>Responsable asignado</em>, <em>Comunicación (Reporte)</em> y <em>Fecha límite de entrega</em> para mantener limpia la vista.
+                  <br>3. El motivo queda visible para el departamento solicitante cuando consulte su folio en el buscador público.
+                  <br>4. El botón cambia a <strong>"Reactivar"</strong>; si se reactiva la solicitud, vuelven a mostrarse todos los controles de gestión.
+                </li>
               </ul>
             </div>
 
@@ -1600,14 +1605,16 @@
               <div class="cabecera-paso-manual">
                 <span class="numero-paso-manual">5</span>
                 <div>
-                  <h4>Comunicación (Reporte), Fecha Límite y Bitácora Interna</h4>
-                  <span class="etiqueta-ubicacion-manual">Centro y parte inferior de cada tarjeta de solicitud</span>
+                  <h4>Responsable, WhatsApp, Comunicación, Fecha Límite y Notas</h4>
+                  <span class="etiqueta-ubicacion-manual">Controles internos y parte inferior de la solicitud abierta</span>
                 </div>
               </div>
               <ul class="lista-explicacion-manual">
-                <li><strong>Casillas "Comunicación (Reporte)":</strong> Tiene las casillas <strong>☑ Interna</strong> y <strong>☐ Externa</strong>. Por defecto viene marcada <em>Interna</em>. Lo que marques aquí pondrá la <strong>"X"</strong> en la columna correspondiente del reporte.</li>
-                <li><strong>"Fecha límite de entrega" (Casilla Habilitar):</strong> Marca <strong>"Habilitar"</strong> para abrir un calendario y fijar qué día vence la entrega. Esta fecha aparecerá en la columna <em>"Fecha de vencimiento"</em> del reporte (si no la habilitas, el reporte usará la fecha del evento).</li>
-                <li><strong>Notas del seguimiento:</strong> Escribe acuerdos o avances en la caja inferior y pulsa <strong>"+ Agregar"</strong>. Cada nota guarda la fecha automáticamente y puedes editarla (lápiz) o borrarla (bote de basura).</li>
+                <li><strong>Menú "Responsable asignado" y WhatsApp:</strong> Al seleccionar a un integrante del equipo, el sistema ofrece abrir WhatsApp con el mensaje completo de asignación ya redactado. Además, permanece visible el botón verde <strong>"WhatsApp"</strong> junto al selector para enviar recordatorios posteriores.</li>
+                <li><strong>Opción "Chico(a) de servicio":</strong> Habilita un campo de texto manual debajo del selector para escribir el nombre del prestador(a) de servicio social y confirmarlo con el botón <strong>"Asignar"</strong> (sin abrir WhatsApp).</li>
+                <li><strong>Casillas "Comunicación (Reporte)":</strong> Permite marcar <strong>Interna</strong> y/o <strong>Externa</strong> (por defecto se marca <em>Interna</em>) para indicar dónde se colocará la <strong>"X"</strong> en la bitácora oficial.</li>
+                <li><strong>"Fecha límite de entrega" (Casilla Habilitar):</strong> Al marcar <strong>"Habilitar"</strong> se despliega el selector de fecha para definir el día límite de entrega. Si se desmarca, la solicitud queda sin fecha límite asignada.</li>
+                <li><strong>Área de "Notas del seguimiento":</strong> Las notas se listan separadas por líneas finas en dos columnas: a la izquierda la fecha de registro entre corchetes y a la derecha el contenido junto con los botones para <strong>editar</strong> (lápiz) o <strong>eliminar</strong> (papelera). Debajo se encuentra el campo de texto de ancho completo y el botón <strong>"+ Agregar"</strong>.</li>
               </ul>
             </div>
 
@@ -1616,20 +1623,16 @@
                 <span class="numero-paso-manual">6</span>
                 <div>
                   <h4>Reporte Mensual / Semestral (Bitácora ISO ITPAC-PL-PO-001-03)</h4>
-                  <span class="etiqueta-ubicacion-manual">Barra azul superior del Panel Interno</span>
+                  <span class="etiqueta-ubicacion-manual">Franja de Reporte Mensual en el Panel Interno</span>
                 </div>
               </div>
               <ul class="lista-explicacion-manual">
-                <li><strong>Selector de Periodo:</strong> Elige el mes (Enero a Diciembre), un Semestre (<strong>Ene – Jun</strong> o <strong>Jul – Dic</strong>) o <strong>Todo el Histórico</strong>.</li>
-                <li><strong>Botón "Generar Reporte PDF":</strong> Abre la vista previa con el formato oficial exacto <strong>ITPAC-PL-PO-001-03 (Bitácora de Comunicación Institucional)</strong>, llenando automáticamente:
-                  <br>• <strong>Actividad:</strong> Servicio y descripción solicitada.
-                  <br>• <strong>Emisor:</strong> Departamento solicitante.
-                  <br>• <strong>Fecha de recepción y Fecha de vencimiento.</strong>
-                  <br>• <strong>Comunicación (Interna / Externa):</strong> Marcadas con <strong>"X"</strong>.
-                  <br>• <strong>Medios a utilizar:</strong> Especificación técnica solicitada.
-                  <br>• <strong>Observaciones:</strong> Muestra automáticamente el <strong>No. Folio</strong> y a <strong>quién se asignó</strong> (ej. <code>SRV-001 — Asignado a: Karla</code>).
+                <li><strong>Selector de Periodo:</strong> Filtra tanto las solicitudes en pantalla como los datos del reporte por mes específico (Enero a Diciembre), por semestre (<strong>Semestre Ene – Jun</strong> o <strong>Semestre Jul – Dic</strong>) o <strong>Todo el Histórico</strong>.</li>
+                <li><strong>Botón "Generar Reporte PDF":</strong> Abre la vista previa imprimible con el formato oficial <strong>ITPAC-PL-PO-001-03 (Bitácora de Comunicación Institucional)</strong>:
+                  <br>• <strong>Solicitudes normales:</strong> Llena automáticamente <em>Actividad</em>, <em>Emisor</em>, <em>Fecha de recepción</em>, <em>Fecha de vencimiento</em> (usa la fecha límite o, en su defecto, la fecha del evento), marca con <strong>"X"</strong> <em>Comunicación Interna / Externa</em>, <em>Medios a utilizar</em> y en <em>Observaciones</em> coloca el folio y responsable (ej. <code>SRV-001 — Asignado a: Karla</code>).
+                  <br>• <strong>Solicitudes denegadas:</strong> Registra <em>Actividad</em>, <em>Emisor</em> y <em>Fecha de recepción</em>, deja en blanco las columnas de vencimiento, comunicación y medios, y en <em>Observaciones</em> indica únicamente el folio y que fue denegada (ej. <code>SRV-001 — Denegada</code>).
                 </li>
-                <li><strong>Corte Semestral:</strong> Si eliges un reporte semestral y lo imprimes, el sistema te preguntará con doble confirmación de seguridad si deseas vaciar la base de datos para iniciar el nuevo semestre desde el folio 1.</li>
+                <li><strong>Impresión y Corte Semestral de Base de Datos:</strong> Dentro de la vista previa, pulsa <strong>"Imprimir / Guardar PDF"</strong>. Si tienes seleccionado un periodo semestral (<em>Semestre Ene – Jun</em> o <em>Semestre Jul – Dic</em>), tras imprimir el reporte el sistema mostrará un asistente con doble confirmación de seguridad (escribiendo la palabra <code>ELIMINAR</code>) por si deseas vaciar los registros concluido el semestre y reiniciar el contador de folios desde 1.</li>
               </ul>
             </div>
           </div>
@@ -1669,6 +1672,6 @@
     </defs>
   </svg>
 
-  <script src="app.js?v=20261105b"></script>
+  <script src="app.js?v=20261108b"></script>
 </body>
 </html>

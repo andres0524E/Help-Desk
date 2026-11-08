@@ -70,6 +70,7 @@ let filtro_activo = 'todos';
 let pagina_actual_tickets = 1;
 const limite_tickets_pagina = 10;
 let ultima_busqueda_tickets = '';
+const tickets_abiertos_panel = new Set();
 
 // detecta automáticamente el mes actual (01 al 12) para seleccionarlo por defecto
 const mes_actual_sistema = String(new Date().getMonth() + 1).padStart(2, '0');
@@ -440,10 +441,12 @@ function ir_a_solicitud_notificacion(folio_destino) {
   );
   pagina_actual_tickets = idx_notif !== -1 ? Math.floor(idx_notif / limite_tickets_pagina) + 1 : 1;
 
+  const id_limpio_notif = String(folio_destino).toUpperCase().replace(/[^A-Z0-9-]/g, '');
+  tickets_abiertos_panel.add(id_limpio_notif);
   renderizar_tickets();
 
   setTimeout(() => {
-    const id_limpio = 'ticket-' + String(folio_destino).toUpperCase().replace(/[^A-Z0-9-]/g, '');
+    const id_limpio = 'ticket-' + id_limpio_notif;
     const tarjeta = document.getElementById(id_limpio);
     if (tarjeta) {
       tarjeta.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -663,6 +666,12 @@ function inicializar_delegacion_eventos_segura() {
       cambiar_vista_panel(nodo_accion.getAttribute('data-vista') || 'lista');
     } else if (accion === 'cal-mes') {
       mover_mes_calendario(parseInt(nodo_accion.getAttribute('data-delta'), 10) || 0);
+    } else if (accion === 'cal-sel-dia') {
+      const dia_sel = parseInt(nodo_accion.getAttribute('data-dia'), 10);
+      if (!isNaN(dia_sel)) {
+        calendario_dia_seleccionado_movil = dia_sel;
+        renderizar_calendario_panel();
+      }
     } else if (accion === 'cal-evento') {
       const folio_cal = nodo_accion.getAttribute('data-folio') || '';
       cambiar_vista_panel('lista');
@@ -671,6 +680,18 @@ function inicializar_delegacion_eventos_segura() {
       const num_pag = parseInt(nodo_accion.getAttribute('data-pagina'), 10);
       if (!isNaN(num_pag)) {
         cambiar_pagina_tickets(num_pag);
+      }
+    } else if (accion === 'alternar-ticket-panel') {
+      const folio_t = nodo_accion.getAttribute('data-folio') || '';
+      const fila_t = nodo_accion.closest('.pi-fila-solicitud');
+      if (fila_t && folio_t) {
+        const abierto = fila_t.classList.toggle('pi-abierta');
+        nodo_accion.setAttribute('aria-expanded', abierto ? 'true' : 'false');
+        if (abierto) {
+          tickets_abiertos_panel.add(folio_t);
+        } else {
+          tickets_abiertos_panel.delete(folio_t);
+        }
       }
     }
   });
@@ -692,6 +713,12 @@ function inicializar_delegacion_eventos_segura() {
   });
 
   document.addEventListener('keydown', (e) => {
+    const cab_ticket = e.target.closest('[data-accion="alternar-ticket-panel"]');
+    if (cab_ticket && (e.key === 'Enter' || e.key === ' ')) {
+      e.preventDefault();
+      cab_ticket.click();
+      return;
+    }
     if (e.key !== 'Enter') return;
     const input_ss = e.target.closest('[data-enter="guardar-ss"]');
     if (input_ss) {
@@ -1451,7 +1478,14 @@ async function consultar_folio_publico(e) {
           <div class="ticket-servicio">${esc(capitalizar_inicial(encontrado.servicio))}</div>
           <div class="ticket-detalles">
             <div class="ticket-dato-linea">
-              <i data-lucide="building-2"></i>
+              <svg class="icono-persona-compu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="5.5" r="3.2"></circle>
+                <path d="M8.9 5c1.5.5 3.1.2 4.3-.9.7.6 1.3.9 2 .9"></path>
+                <path d="M5.5 13c.8-2.2 2.8-3.5 6.5-3.5s5.7 1.3 6.5 3.5"></path>
+                <path d="M9.6 9.8L12 13l2.4-3.2"></path>
+                <path d="M4.5 13h15l-1.5 8H6L4.5 13z"></path>
+                <circle cx="12" cy="17" r="1.25"></circle>
+              </svg>
               <span class="tag-solicitante-color">${esc(encontrado.solicitante)}</span>
             </div>
             <div class="ticket-dato-linea">
@@ -1546,6 +1580,7 @@ function construir_linea_tiempo_rastreo(item, estado_calc, es_denegada) {
 let vista_panel_actual = 'lista';
 let calendario_mes_vista = new Date().getMonth();
 let calendario_anio_vista = new Date().getFullYear();
+let calendario_dia_seleccionado_movil = null;
 
 function cambiar_vista_panel(vista) {
   vista_panel_actual = vista === 'calendario' ? 'calendario' : 'lista';
@@ -1567,6 +1602,7 @@ function mover_mes_calendario(delta) {
   calendario_mes_vista += delta;
   if (calendario_mes_vista < 0) { calendario_mes_vista = 11; calendario_anio_vista--; }
   if (calendario_mes_vista > 11) { calendario_mes_vista = 0; calendario_anio_vista++; }
+  calendario_dia_seleccionado_movil = null;
   renderizar_calendario_panel();
 }
 
@@ -1598,6 +1634,19 @@ function renderizar_calendario_panel() {
   const es_mes_hoy = hoy.getFullYear() === anio && hoy.getMonth() === mes;
   const total_mes = Object.values(eventos_por_dia).reduce((acc, l) => acc + l.length, 0);
 
+  const dias_con_ev_nums = Object.keys(eventos_por_dia).map(Number).sort((a, b) => a - b);
+  if (!calendario_dia_seleccionado_movil || calendario_dia_seleccionado_movil < 1 || calendario_dia_seleccionado_movil > dias_mes) {
+    if (es_mes_hoy && eventos_por_dia[hoy.getDate()]) {
+      calendario_dia_seleccionado_movil = hoy.getDate();
+    } else if (dias_con_ev_nums.length > 0) {
+      calendario_dia_seleccionado_movil = dias_con_ev_nums[0];
+    } else if (es_mes_hoy) {
+      calendario_dia_seleccionado_movil = hoy.getDate();
+    } else {
+      calendario_dia_seleccionado_movil = 1;
+    }
+  }
+
   let celdas = '';
   for (let i = 0; i < primer_dia; i++) {
     celdas += `<div class="cal-celda cal-vacia"></div>`;
@@ -1605,12 +1654,20 @@ function renderizar_calendario_panel() {
   for (let d = 1; d <= dias_mes; d++) {
     const lista = eventos_por_dia[d] || [];
     const es_hoy = es_mes_hoy && hoy.getDate() === d;
+    const es_sel_movil = calendario_dia_seleccionado_movil === d;
     const visibles = lista.slice(0, 3);
     const extra = lista.length - visibles.length;
 
+    const puntos_movil = lista.slice(0, 4).map(ev => {
+      const info_den = obtener_info_denegacion(ev);
+      const est = info_den.denegada ? 'Denegada' : calcular_estado_automatico(ev);
+      return `<span class="cal-punto-dia cal-ev-${est.replace(' ', '-')}"></span>`;
+    }).join('');
+
     celdas += `
-      <div class="cal-celda ${es_hoy ? 'cal-hoy' : ''} ${lista.length ? 'cal-con-eventos' : ''}">
+      <div class="cal-celda ${es_hoy ? 'cal-hoy' : ''} ${lista.length ? 'cal-con-eventos' : ''} ${es_sel_movil ? 'cal-dia-activo-movil' : ''}" data-accion="cal-sel-dia" data-dia="${d}">
         <span class="cal-num-dia">${d}</span>
+        <div class="cal-puntos-movil">${puntos_movil}</div>
         ${visibles.map(ev => {
           const info_den = obtener_info_denegacion(ev);
           const est = info_den.denegada ? 'Denegada' : calcular_estado_automatico(ev);
@@ -1635,6 +1692,38 @@ function renderizar_calendario_panel() {
     `;
   }
 
+  const nombres_dia_largo = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+  const fecha_sel_obj = new Date(anio, mes, calendario_dia_seleccionado_movil);
+  const nombre_dia_sel = nombres_dia_largo[fecha_sel_obj.getDay()];
+  const lista_dia_sel = eventos_por_dia[calendario_dia_seleccionado_movil] || [];
+
+  const html_agenda_movil = lista_dia_sel.length > 0
+    ? lista_dia_sel.map(ev => {
+        const info_den = obtener_info_denegacion(ev);
+        const est = info_den.denegada ? 'Denegada' : calcular_estado_automatico(ev);
+        const clase_est = 'cal-ev-' + est.replace(' ', '-');
+        const resp = String(ev.responsable || '').trim();
+        const resp_corto = (!resp || resp.toLowerCase() === 'sin asignar' || resp.toLowerCase() === 'denegada')
+          ? 'Sin asignar'
+          : capitalizar_inicial(resp.replace(/^chico\(a\) de servicio:\s*/i, ''));
+        const hora = ev.aplica_evento && ev.hora_evento ? `${String(ev.hora_evento).slice(0, 5)} hrs` : 'Fecha límite';
+        const folio_ev = esc(String(ev.folio || '').toUpperCase());
+        return `
+          <button type="button" class="cal-agenda-item ${clase_est}" data-accion="cal-evento" data-folio="${folio_ev}">
+            <div class="cal-agenda-hora">
+              <strong>${esc(hora)}</strong>
+              <span>#${folio_ev}</span>
+            </div>
+            <div class="cal-agenda-info">
+              <div class="cal-agenda-servicio">${esc(capitalizar_inicial(ev.servicio))}</div>
+              <div class="cal-agenda-meta">${esc(ev.solicitante)}${ev.lugar_evento ? ' · ' + esc(ev.lugar_evento) : ''}</div>
+              ${info_den.denegada ? '' : `<div class="cal-agenda-resp">Responsable: <strong>${esc(resp_corto)}</strong></div>`}
+            </div>
+          </button>
+        `;
+      }).join('')
+    : `<div class="cal-agenda-vacia">Sin eventos programados para este día.</div>`;
+
   cont.innerHTML = `
     <div class="cal-cabecera">
       <button type="button" class="btn-pagina-ticket nav" data-accion="cal-mes" data-delta="-1" title="Mes anterior"><i data-lucide="chevron-left"></i></button>
@@ -1653,6 +1742,15 @@ function renderizar_calendario_panel() {
     <div class="cal-grid">
       ${['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'].map(n => `<div class="cal-dia-semana">${n}</div>`).join('')}
       ${celdas}
+    </div>
+    <div class="cal-agenda-movil">
+      <div class="cal-agenda-cabecera">
+        <strong>${nombre_dia_sel} ${calendario_dia_seleccionado_movil} de ${nombres_mes[mes]}</strong>
+        <span>${lista_dia_sel.length} ${lista_dia_sel.length === 1 ? 'solicitud' : 'solicitudes'}</span>
+      </div>
+      <div class="cal-agenda-lista">
+        ${html_agenda_movil}
+      </div>
     </div>
   `;
   refrescar_iconos();
@@ -2068,7 +2166,7 @@ async function guardar_solicitud(e) {
     });
   } finally {
     btn_submit.disabled = false;
-    texto_btn.textContent = 'Enviar solicitud oficial';
+    texto_btn.textContent = 'Enviar solicitud';
   }
 }
 
@@ -2352,138 +2450,195 @@ function renderizar_tickets() {
     const folio_mayus_id = String(item.folio || '').toUpperCase().replace(/[^A-Z0-9-]/g, '');
     const folio_mayus = esc(String(item.folio || '').toUpperCase());
     const servicio_titulo = esc(capitalizar_inicial(String(item.servicio || '').replace(/&#x2F;/gi, '/')));
+    const esta_abierta = tickets_abiertos_panel.has(folio_mayus_id);
 
-    const info_evento_inline = item.aplica_evento
-      ? `<div class="ticket-dato-linea"><i data-lucide="map-pin"></i> <span>Lugar: ${esc(item.lugar_evento)}</span></div>
-         <div class="ticket-dato-linea"><i data-lucide="calendar"></i> <span>${esc(item.fecha_evento)} <em>(${esc(item.hora_evento)} hrs)</em></span></div>`
-      : `<div class="ticket-dato-linea sin-evento"><i data-lucide="info"></i> <span>Sin evento presencial asociado</span></div>`;
+    const texto_responsable_cerrado = es_chico_servicio
+      ? (nombre_manual_ss ? `${valor_select}: ${nombre_manual_ss}` : valor_select)
+      : valor_select;
+    const texto_fecha_limite_cerrado = tiene_fecha_limite
+      ? esc(item.fecha_limite)
+      : 'Sin fecha límite asignada';
+
+    const col_izq_cerrada = item.aplica_evento
+      ? `<span class="pi-fecha-destacada">${esc(item.fecha_evento)}</span>
+         <span class="pi-hora-destacada">(${esc(item.hora_evento)} hrs)</span>`
+      : `<span class="pi-sin-evento-cerrado">Sin evento presencial asociado</span>`;
+
+    const lugar_cerrado_html = item.aplica_evento
+      ? `<div class="pi-lugar-cerrado"><i data-lucide="map-pin"></i> <span>Lugar: ${esc(item.lugar_evento)}</span></div>`
+      : '';
 
     const html_notas = lista_notas.length > 0
-      ? lista_notas.map((nota_texto, idx_nota) => `
-          <div class="nota-individual">
-            <span>${esc(nota_texto)}</span>
-            <div class="acciones-nota">
-              <button type="button" class="btn-icono-nota" data-accion="editar-nota" data-index="${index_real}" data-nota-index="${idx_nota}" title="Editar nota">
-                <i data-lucide="pencil"></i>
-              </button>
-              <button type="button" class="btn-icono-nota borrar" data-accion="eliminar-nota" data-index="${index_real}" data-nota-index="${idx_nota}" title="Eliminar nota">
-                <i data-lucide="trash-2"></i>
-              </button>
-            </div>
-          </div>
-        `).join('')
-      : `<div class="sin-fecha-aviso">Sin notas registradas.</div>`;
-
-    return `
-      <div class="ticket-item ${clase_borde_visual}" id="ticket-${folio_mayus_id}" style="--t-delay: ${delay_anim}s">
-        <div class="ticket-grid-principal">
-          <div class="ticket-col-info">
-            <div class="ticket-meta-sup">
-              <span class="ticket-folio"><i data-lucide="hash"></i>${folio_mayus}</span>
-              <span class="ticket-meta-fecha"><i data-lucide="calendar"></i>Solicitado: ${esc(item.fecha_solicitud)}</span>
-            </div>
-            <div class="ticket-servicio">${servicio_titulo}</div>
-            <div class="ticket-detalles">
-              <div class="ticket-dato-linea">
-                <i data-lucide="building-2"></i>
-                <span class="tag-solicitante-color">${esc(item.solicitante)}</span>
-              </div>
-              <div class="ticket-dato-linea">
-                <i data-lucide="file-text"></i>
-                <span class="texto-descripcion-color">${formatear_descripcion_color(item.descripcion)}</span>
-              </div>
-              ${info_evento_inline}
-            </div>
-          </div>
-
-          <div class="ticket-col-gestion">
-            <div class="selector-estado-contenedor">
-              <span class="selector-estado-label">Estado</span>
-              <div class="fila-estado-acciones">
-                <span class="badge-estado-actual ${clase_estado_visual}">
-                  <span class="punto-estado"></span>
-                  <span>${esc(etiqueta_estado_visual)}</span>
-                </span>
-                <button type="button" class="btn-denegar-solicitud ${es_denegada ? 'activa' : ''}" data-accion="denegar-solicitud" data-index="${index_real}" title="${es_denegada ? 'Reactivar solicitud' : 'Denegar solicitud y registrar motivo'}">
-                  <i data-lucide="${es_denegada ? 'rotate-ccw' : 'ban'}"></i>
-                  <span>${es_denegada ? 'Reactivar' : 'Denegar'}</span>
+      ? lista_notas.map((nota_texto, idx_nota) => {
+          const match_nota = String(nota_texto).match(/^(\[[^\]]+\])\s*(.*)$/);
+          const col_meta_nota = match_nota ? match_nota[1] : '';
+          const col_cuerpo_nota = match_nota ? match_nota[2] : nota_texto;
+          return `
+          <div class="pi-nota-fila">
+            <div class="pi-nota-col-meta">${esc(col_meta_nota)}</div>
+            <div class="pi-nota-col-texto">
+              <span>${esc(col_cuerpo_nota)}</span>
+              <div class="pi-nota-acciones">
+                <button type="button" class="btn-icono-nota" data-accion="editar-nota" data-index="${index_real}" data-nota-index="${idx_nota}" title="Editar nota">
+                  <i data-lucide="pencil"></i>
+                </button>
+                <button type="button" class="btn-icono-nota borrar" data-accion="eliminar-nota" data-index="${index_real}" data-nota-index="${idx_nota}" title="Eliminar nota">
+                  <i data-lucide="trash-2"></i>
                 </button>
               </div>
             </div>
+          </div>
+        `;
+        }).join('')
+      : `<div class="sin-fecha-aviso">Sin notas registradas.</div>`;
 
-            <div class="panel-gestion-interno">
-              <div class="campo-interno">
-                <label>Responsable asignado</label>
-                <div class="fila-responsable-acciones">
-                  <select class="select-responsable-tom" data-index="${index_real}">
-                    <option value="Sin asignar" ${valor_select === 'Sin asignar' ? 'selected' : ''}>Sin asignar</option>
-                    ${Object.keys(catalogo_responsables)
-                      .filter(nombre_resp => nombre_resp !== 'Sin asignar')
-                      .map(nombre_resp => `<option value="${esc(nombre_resp)}" ${valor_select === nombre_resp ? 'selected' : ''}>${esc(nombre_resp)}</option>`)
-                      .join('')}
-                  </select>
-                  ${tiene_responsable_activo && !es_chico_servicio
-                    ? `<button type="button" class="btn-notificar-wa" data-accion="enviar-wa" data-index="${index_real}" title="Enviar recordatorio por WhatsApp a ${esc(resp_guardado)}">
-                        <svg viewBox="0 0 24 24" fill="currentColor" style="width: 15px; height: 15px;"><path d="M12.031 2c-5.506 0-9.989 4.478-9.99 9.984a9.964 9.964 0 0 0 1.333 4.993L2 22l5.233-1.237a9.994 9.994 0 0 0 4.779 1.217h.004c5.505 0 9.988-4.478 9.989-9.984 0-2.669-1.037-5.176-2.922-7.062A9.935 9.935 0 0 0 12.031 2zm5.829 14.144c-.245.693-1.43 1.326-1.981 1.408-.507.075-1.148.107-1.855-.117-.428-.135-.978-.316-1.682-.62-2.961-1.278-4.896-4.261-5.044-4.459-.148-.197-1.204-1.601-1.204-3.054 0-1.453.763-2.167 1.034-2.463.271-.296.591-.37.788-.37.197 0 .394.002.566.01.182.009.426-.069.666.508.246.591.838 2.045.912 2.193.074.148.123.32.025.517-.098.197-.148.32-.296.493-.148.172-.311.385-.444.517-.148.148-.302.308-.13.604.172.296.766 1.264 1.645 2.047 1.13 1.007 2.083 1.319 2.379 1.467.296.148.468.123.641-.074.172-.197.739-.862.936-1.158.197-.296.394-.246.665-.148.271.098 1.725.813 2.02.961.296.148.493.222.567.345.074.123.074.714-.171 1.407z"></path></svg> WhatsApp
-                      </button>`
-                    : ''
-                  }
-                </div>
-                <div id="bloque-ss-${index_real}" class="caja-servicio-social-manual ${es_chico_servicio ? '' : 'oculto'}">
-                  <input type="text" id="input-ss-${index_real}" value="${esc(nombre_manual_ss)}" maxlength="80" placeholder="Escribe el nombre del prestador(a) de servicio..." data-enter="guardar-ss" data-index="${index_real}" autocomplete="off">
-                  <button type="button" class="btn-confirmar-ss" data-accion="guardar-ss" data-index="${index_real}">
-                    <i data-lucide="check"></i> Asignar
-                  </button>
-                </div>
+    return `
+      <div class="ticket-item pi-fila-solicitud ${clase_borde_visual} ${esta_abierta ? 'pi-abierta' : ''}" id="ticket-${folio_mayus_id}" style="--t-delay: ${delay_anim}s">
+        <div class="pi-cabecera-expandible" role="button" tabindex="0" aria-expanded="${esta_abierta ? 'true' : 'false'}" data-accion="alternar-ticket-panel" data-folio="${folio_mayus_id}">
+          <div class="pi-col-evento">
+            ${col_izq_cerrada}
+          </div>
+          <div class="pi-col-resumen">
+            <div class="pi-resumen-principal">
+              <div class="ticket-servicio">${servicio_titulo}</div>
+              <div class="pi-depto-cerrado">
+                <svg class="icono-persona-compu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <circle cx="12" cy="5.5" r="3.2"></circle>
+                  <path d="M8.9 5c1.5.5 3.1.2 4.3-.9.7.6 1.3.9 2 .9"></path>
+                  <path d="M5.5 13c.8-2.2 2.8-3.5 6.5-3.5s5.7 1.3 6.5 3.5"></path>
+                  <path d="M9.6 9.8L12 13l2.4-3.2"></path>
+                  <path d="M4.5 13h15l-1.5 8H6L4.5 13z"></path>
+                  <circle cx="12" cy="17" r="1.25"></circle>
+                </svg>
+                <span class="tag-solicitante-color">${esc(item.solicitante)}</span>
               </div>
-
-              <div class="campo-interno">
-                <label>Comunicación (Reporte)</label>
-                <div class="grupo-checks-comunicacion">
-                  <label class="check-comunicacion-item">
-                    <input type="checkbox" ${estado_com_actual.interna ? 'checked' : ''} data-cambio="tipo-comunicacion" data-tipo="interna" data-index="${index_real}">
-                    <span>Interna</span>
-                  </label>
-                  <label class="check-comunicacion-item">
-                    <input type="checkbox" ${estado_com_actual.externa ? 'checked' : ''} data-cambio="tipo-comunicacion" data-tipo="externa" data-index="${index_real}">
-                    <span>Externa</span>
-                  </label>
-                </div>
-              </div>
-
-              <div class="campo-interno">
-                <div class="cabecera-fecha-opcional">
-                  <label style="margin-bottom: 0;">Fecha límite de entrega</label>
-                  <label class="toggle-fecha-manual">
-                    <input type="checkbox" ${tiene_fecha_limite ? 'checked' : ''} data-cambio="fecha-limite-manual" data-index="${index_real}">
-                    <span>Habilitar</span>
-                  </label>
-                </div>
-                ${tiene_fecha_limite 
-                  ? `<div class="contenedor-input-calendario">
-                      <input type="text" class="input-fecha-limite-panel input-fecha-con-icono" data-index="${index_real}" value="${esc(item.fecha_limite)}" placeholder="dd/mm/aaaa" autocomplete="off">
-                      <i data-lucide="calendar" class="icono-calendario-fijo"></i>
-                    </div>`
-                  : `<div class="sin-fecha-aviso">Sin fecha límite asignada</div>`
-                }
-              </div>
+              ${lugar_cerrado_html}
+            </div>
+            <div class="pi-resumen-inferior">
+              <span class="badge-estado-actual ${clase_estado_visual}">
+                <span class="punto-estado"></span>
+                <span>${esc(etiqueta_estado_visual)}</span>
+              </span>
+              ${es_denegada ? '' : `
+              <span class="pi-dato-plano">
+                <span class="pi-etiqueta-plana">Responsable asignado:</span>
+                <strong>${esc(texto_responsable_cerrado)}</strong>
+              </span>
+              <span class="pi-dato-plano">
+                <span class="pi-etiqueta-plana">Fecha límite de entrega:</span>
+                <strong>${texto_fecha_limite_cerrado}</strong>
+              </span>
+              `}
             </div>
           </div>
         </div>
 
-        <div class="caja-notas">
-          <div class="encabezado-notas">
-            <span class="titulo-notas"><i data-lucide="message-square"></i> Notas del seguimiento</span>
-            <span class="ayuda-notas">Comentarios y acuerdos de la solicitud</span>
+        <div class="pi-cuerpo-expandible">
+          <div class="ticket-grid-principal">
+            <div class="ticket-col-info">
+              <div class="ticket-meta-sup">
+                <span class="ticket-folio"><i data-lucide="hash"></i>${folio_mayus}</span>
+                <span class="ticket-meta-fecha"><i data-lucide="calendar"></i>Solicitado: ${esc(item.fecha_solicitud)}</span>
+              </div>
+              <div class="ticket-detalles">
+                <div class="ticket-dato-linea">
+                  <i data-lucide="file-text"></i>
+                  <span class="texto-descripcion-color">${formatear_descripcion_color(item.descripcion)}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="ticket-col-gestion">
+              <div class="selector-estado-contenedor">
+                <span class="selector-estado-label">Estado</span>
+                <div class="fila-estado-acciones">
+                  <span class="badge-estado-actual ${clase_estado_visual}">
+                    <span class="punto-estado"></span>
+                    <span>${esc(etiqueta_estado_visual)}</span>
+                  </span>
+                  <button type="button" class="btn-denegar-solicitud ${es_denegada ? 'activa' : ''}" data-accion="denegar-solicitud" data-index="${index_real}" title="${es_denegada ? 'Reactivar solicitud' : 'Denegar solicitud y registrar motivo'}">
+                    <i data-lucide="${es_denegada ? 'rotate-ccw' : 'ban'}"></i>
+                    <span>${es_denegada ? 'Reactivar' : 'Denegar'}</span>
+                  </button>
+                </div>
+              </div>
+
+              ${es_denegada ? '' : `
+              <div class="panel-gestion-interno">
+                <div class="campo-interno">
+                  <label>Responsable asignado</label>
+                  <div class="fila-responsable-acciones">
+                    <select class="select-responsable-tom" data-index="${index_real}">
+                      <option value="Sin asignar" ${valor_select === 'Sin asignar' ? 'selected' : ''}>Sin asignar</option>
+                      ${Object.keys(catalogo_responsables)
+                        .filter(nombre_resp => nombre_resp !== 'Sin asignar')
+                        .map(nombre_resp => `<option value="${esc(nombre_resp)}" ${valor_select === nombre_resp ? 'selected' : ''}>${esc(nombre_resp)}</option>`)
+                        .join('')}
+                    </select>
+                    ${tiene_responsable_activo && !es_chico_servicio
+                      ? `<button type="button" class="btn-notificar-wa" data-accion="enviar-wa" data-index="${index_real}" title="Enviar recordatorio por WhatsApp a ${esc(resp_guardado)}">
+                          <svg viewBox="0 0 24 24" fill="currentColor" style="width: 15px; height: 15px;"><path d="M12.031 2c-5.506 0-9.989 4.478-9.99 9.984a9.964 9.964 0 0 0 1.333 4.993L2 22l5.233-1.237a9.994 9.994 0 0 0 4.779 1.217h.004c5.505 0 9.988-4.478 9.989-9.984 0-2.669-1.037-5.176-2.922-7.062A9.935 9.935 0 0 0 12.031 2zm5.829 14.144c-.245.693-1.43 1.326-1.981 1.408-.507.075-1.148.107-1.855-.117-.428-.135-.978-.316-1.682-.62-2.961-1.278-4.896-4.261-5.044-4.459-.148-.197-1.204-1.601-1.204-3.054 0-1.453.763-2.167 1.034-2.463.271-.296.591-.37.788-.37.197 0 .394.002.566.01.182.009.426-.069.666.508.246.591.838 2.045.912 2.193.074.148.123.32.025.517-.098.197-.148.32-.296.493-.148.172-.311.385-.444.517-.148.148-.302.308-.13.604.172.296.766 1.264 1.645 2.047 1.13 1.007 2.083 1.319 2.379 1.467.296.148.468.123.641-.074.172-.197.739-.862.936-1.158.197-.296.394-.246.665-.148.271.098 1.725.813 2.02.961.296.148.493.222.567.345.074.123.074.714-.171 1.407z"></path></svg> WhatsApp
+                        </button>`
+                      : ''
+                    }
+                  </div>
+                  <div id="bloque-ss-${index_real}" class="caja-servicio-social-manual ${es_chico_servicio ? '' : 'oculto'}">
+                    <input type="text" id="input-ss-${index_real}" value="${esc(nombre_manual_ss)}" maxlength="80" placeholder="Escribe el nombre del prestador(a) de servicio..." data-enter="guardar-ss" data-index="${index_real}" autocomplete="off">
+                    <button type="button" class="btn-confirmar-ss" data-accion="guardar-ss" data-index="${index_real}">
+                      <i data-lucide="check"></i> Asignar
+                    </button>
+                  </div>
+                </div>
+
+                <div class="campo-interno">
+                  <label>Comunicación (Reporte)</label>
+                  <div class="grupo-checks-comunicacion">
+                    <label class="check-comunicacion-item">
+                      <input type="checkbox" ${estado_com_actual.interna ? 'checked' : ''} data-cambio="tipo-comunicacion" data-tipo="interna" data-index="${index_real}">
+                      <span>Interna</span>
+                    </label>
+                    <label class="check-comunicacion-item">
+                      <input type="checkbox" ${estado_com_actual.externa ? 'checked' : ''} data-cambio="tipo-comunicacion" data-tipo="externa" data-index="${index_real}">
+                      <span>Externa</span>
+                    </label>
+                  </div>
+                </div>
+
+                <div class="campo-interno">
+                  <div class="cabecera-fecha-opcional">
+                    <label style="margin-bottom: 0;">Fecha límite de entrega</label>
+                    <label class="toggle-fecha-manual">
+                      <input type="checkbox" ${tiene_fecha_limite ? 'checked' : ''} data-cambio="fecha-limite-manual" data-index="${index_real}">
+                      <span>Habilitar</span>
+                    </label>
+                  </div>
+                  ${tiene_fecha_limite 
+                    ? `<div class="contenedor-input-calendario">
+                        <input type="text" class="input-fecha-limite-panel input-fecha-con-icono" data-index="${index_real}" value="${esc(item.fecha_limite)}" placeholder="dd/mm/aaaa" autocomplete="off">
+                        <i data-lucide="calendar" class="icono-calendario-fijo"></i>
+                      </div>`
+                    : `<div class="sin-fecha-aviso">Sin fecha límite asignada</div>`
+                  }
+                </div>
+              </div>
+              `}
+            </div>
           </div>
-          <div class="lista-notas-items">
-            ${html_notas}
-          </div>
-          <div class="input-nota-grupo">
-            <input type="text" id="nota-input-${index_real}" maxlength="350" placeholder="Escribe un avance o acuerdo..." autocomplete="off">
-            <button type="button" class="btn-agregar-nota" data-accion="agregar-nota" data-index="${index_real}">
-              <i data-lucide="plus"></i> Agregar
-            </button>
+
+          <div class="pi-area-notas">
+            <div class="encabezado-notas">
+              <span class="titulo-notas"><i data-lucide="message-square"></i> Notas del seguimiento</span>
+              <span class="ayuda-notas">Comentarios y acuerdos de la solicitud</span>
+            </div>
+            <div class="pi-lista-notas">
+              ${html_notas}
+            </div>
+            <div class="pi-input-nota-grupo">
+              <input type="text" id="nota-input-${index_real}" maxlength="350" placeholder="Escribe un avance o acuerdo..." autocomplete="off">
+              <button type="button" class="pi-btn-agregar-nota" data-accion="agregar-nota" data-index="${index_real}">
+                <i data-lucide="plus"></i> Agregar
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -2568,32 +2723,46 @@ function abrir_modal_reporte() {
       const { actividad, medios } = extraer_actividad_y_medios(item);
       const emisor = item.solicitante || '';
       const fecha_recepcion = item.fecha_solicitud || '';
-      const fecha_vencimiento = (item.fecha_limite && item.fecha_limite.trim() !== '')
-        ? item.fecha_limite
-        : (item.aplica_evento && item.fecha_evento ? item.fecha_evento : '');
-      const estado_com = obtener_estado_comunicacion_solicitud(item);
-      const marca_interna = estado_com.interna ? 'X' : '';
-      const marca_externa = estado_com.externa ? 'X' : '';
       const folio_rep = String(item.folio || '').toUpperCase();
       const info_den_rep = obtener_info_denegacion(item);
-      const resp_rep = capitalizar_inicial((item.responsable || 'Sin asignar').trim());
-      const observaciones_txt = info_den_rep.denegada
-        ? `${folio_rep} — Denegada`
-        : `${folio_rep} — Asignado a: ${resp_rep}`;
 
-      // interpolación con escape html estricto en todas las celdas del reporte oficial
-      filas_formato_exacto += `
-        <tr>
-          <td>${esc(actividad)}</td>
-          <td>${esc(emisor)}</td>
-          <td class="num-centro">${esc(fecha_recepcion)}</td>
-          <td class="num-centro">${esc(fecha_vencimiento)}</td>
-          <td class="num-centro">${marca_interna}</td>
-          <td class="num-centro">${marca_externa}</td>
-          <td>${esc(medios)}</td>
-          <td>${esc(observaciones_txt)}</td>
-        </tr>
-      `;
+      if (info_den_rep.denegada) {
+        filas_formato_exacto += `
+          <tr>
+            <td>${esc(actividad)}</td>
+            <td>${esc(emisor)}</td>
+            <td class="num-centro">${esc(fecha_recepcion)}</td>
+            <td class="num-centro">&nbsp;</td>
+            <td class="num-centro">&nbsp;</td>
+            <td class="num-centro">&nbsp;</td>
+            <td>&nbsp;</td>
+            <td>${esc(`${folio_rep} — Denegada`)}</td>
+          </tr>
+        `;
+      } else {
+        const fecha_vencimiento = (item.fecha_limite && item.fecha_limite.trim() !== '')
+          ? item.fecha_limite
+          : (item.aplica_evento && item.fecha_evento ? item.fecha_evento : '');
+        const estado_com = obtener_estado_comunicacion_solicitud(item);
+        const marca_interna = estado_com.interna ? 'X' : '';
+        const marca_externa = estado_com.externa ? 'X' : '';
+        const resp_rep = capitalizar_inicial((item.responsable || 'Sin asignar').trim());
+        const observaciones_txt = `${folio_rep} — Asignado a: ${resp_rep}`;
+
+        // interpolación con escape html estricto en todas las celdas del reporte oficial
+        filas_formato_exacto += `
+          <tr>
+            <td>${esc(actividad)}</td>
+            <td>${esc(emisor)}</td>
+            <td class="num-centro">${esc(fecha_recepcion)}</td>
+            <td class="num-centro">${esc(fecha_vencimiento)}</td>
+            <td class="num-centro">${marca_interna}</td>
+            <td class="num-centro">${marca_externa}</td>
+            <td>${esc(medios)}</td>
+            <td>${esc(observaciones_txt)}</td>
+          </tr>
+        `;
+      }
     } else {
       filas_formato_exacto += `
         <tr>

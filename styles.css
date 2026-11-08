@@ -294,7 +294,8 @@ body {
   100% { box-shadow: 0 0 0 0 rgba(0, 119, 182, 0); }
 }
 
-.hero h1 {
+.hero h1,
+.hero h2 {
   font-family: 'Ranade', sans-serif;
   font-size: clamp(1.8rem, 3.2vw, 2.45rem);
   font-weight: 700;
@@ -303,7 +304,8 @@ body {
   letter-spacing: -0.025em;
 }
 
-.hero h1 em {
+.hero h1 em,
+.hero h2 em {
   font-style: normal;
   background: linear-gradient(135deg, var(--itp-accent), #023e8a);
   -webkit-background-clip: text;
@@ -2552,11 +2554,13 @@ html[data-tema="oscuro"] .tag-institucional {
   color: #7dd3fc;
 }
 
-html[data-tema="oscuro"] .hero h1 {
+html[data-tema="oscuro"] .hero h1,
+html[data-tema="oscuro"] .hero h2 {
   color: #f8fafc;
 }
 
-html[data-tema="oscuro"] .hero h1 em {
+html[data-tema="oscuro"] .hero h1 em,
+html[data-tema="oscuro"] .hero h2 em {
   background: linear-gradient(135deg, #38bdf8, #60a5fa);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -3196,9 +3200,10 @@ html[data-tema="oscuro"] .btn-cerrar-modal-rep:hover {
 }
 
 /* menú desplegable TomSelect flotante en body por encima de botones */
-body > .ts-dropdown {
+body > .ts-dropdown,
+.ts-dropdown {
   z-index: 9999 !important;
-  border-radius: 12px !important;
+  border-radius: 2px !important;
   box-shadow: 0 18px 40px rgba(15, 23, 42, 0.18) !important;
   border: 1px solid var(--border-soft, #e2e8f0) !important;
   overflow: hidden;
@@ -5332,7 +5337,9 @@ html {
 }
 
 .hero h1 em,
-html[data-tema="oscuro"] .hero h1 em {
+.hero h2 em,
+html[data-tema="oscuro"] .hero h1 em,
+html[data-tema="oscuro"] .hero h2 em {
   background-clip: text;
 }
 
@@ -5937,5 +5944,1146 @@ html[data-tema="oscuro"] .hero h1 em {
     grid-column: 1 / -1;
   }
 }
+
+/* ==========================================================================
+   filas expandibles del panel interno (.pi-fila-solicitud) y área de notas
+   ========================================================================== */
+#vista-panel .ticket-item.pi-fila-solicitud,
+#vista-panel .ticket-item.pi-fila-solicitud:nth-child(odd),
+#vista-panel .ticket-item.pi-fila-solicitud:nth-child(even) {
+  border-top: none !important;
+  border-right: none !important;
+  border-bottom: 1px solid var(--border-soft) !important;
+  border-left: 4px solid transparent !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 1rem 1.25rem !important;
+  margin: 0 -1.25rem !important;
+}
+
+#vista-panel .ticket-item.pi-fila-solicitud::before,
+#vista-panel .ticket-item.pi-fila-solicitud::after {
+  display: none !important;
+}
+
+#vista-panel .ticket-item.pi-fila-solicitud.borde-Pendiente {
+  border-left-color: #dc2626 !important;
+}
+
+#vista-panel .ticket-item.pi-fila-solicitud.borde-En-proceso {
+  border-left-color: #d97706 !important;
+}
+
+#vista-panel .ticket-item.pi-fila-solicitud.borde-Terminado {
+  border-left-color: #16a34a !important;
+}
+
+#vista-panel .ticket-item.pi-fila-solicitud.borde-Denegada {
+  border-left-color: #991b1b !important;
+}
+
+.pi-cabecera-expandible {
+  display: grid;
+  grid-template-columns: 185px 1fr;
+  gap: 1.35rem;
+  align-items: start;
+  cursor: pointer;
+  user-select: none;
+  outline: none;
+}
+
+.pi-cabecera-expandible:focus-visible {
+  outline: 2px solid var(--itp-accent);
+  outline-offset: 4px;
+}
+
+.pi-col-evento {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding-right: 0.75rem;
+  border-right: 1px solid var(--border-soft);
+  min-width: 0;
+}
+
+.pi-fecha-destacada {
+  font-family: 'Ranade', sans-serif;
+  font-size: 1.12rem;
+  font-weight: 700;
+  color: var(--itp-blue);
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+.pi-hora-destacada {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--itp-accent);
+  line-height: 1.3;
+}
+
+.pi-sin-evento-cerrado {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--ink-muted);
+  font-style: italic;
+  line-height: 1.35;
+}
+
+.pi-col-resumen {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  min-width: 0;
+}
+
+.pi-resumen-principal {
+  display: flex;
+  flex-direction: column;
+  gap: 0.22rem;
+  min-width: 0;
+}
+
+.pi-resumen-principal .ticket-servicio {
+  margin: 0 !important;
+  font-size: 1.06rem;
+  line-height: 1.28;
+}
+
+.pi-depto-cerrado,
+.pi-lugar-cerrado {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.85rem;
+  color: var(--ink-main);
+  line-height: 1.35;
+}
+
+.pi-depto-cerrado svg,
+.pi-lugar-cerrado svg {
+  width: 15px;
+  height: 15px;
+  color: var(--ink-muted);
+  flex-shrink: 0;
+}
+
+.pi-resumen-inferior {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
+  padding-top: 0.35rem;
+  font-size: 0.82rem;
+  color: var(--ink-main);
+}
+
+.pi-dato-plano {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.35rem;
+}
+
+.pi-etiqueta-plana {
+  color: var(--ink-muted);
+  font-size: 0.78rem;
+}
+
+.pi-dato-plano strong {
+  font-weight: 700;
+  color: var(--ink-main);
+}
+
+.pi-cuerpo-expandible {
+  display: none;
+  margin-top: 1.1rem;
+  padding-top: 1.1rem;
+  border-top: 1px solid var(--border-soft);
+}
+
+.pi-fila-solicitud.pi-abierta .pi-cuerpo-expandible {
+  display: block;
+}
+
+/* área de notas en dos columnas separadas por líneas finas */
+.pi-area-notas {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  margin-top: 1.1rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--border-soft);
+  background: transparent !important;
+}
+
+.pi-lista-notas {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.pi-nota-fila {
+  display: grid;
+  grid-template-columns: 98px 1fr;
+  gap: 0.85rem;
+  align-items: baseline;
+  padding: 0.55rem 0;
+  border-bottom: 1px solid var(--border-soft);
+  background: transparent !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+.pi-nota-col-meta {
+  font-size: 0.75rem;
+  color: var(--ink-muted);
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.pi-nota-col-texto {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+  font-size: 0.85rem;
+  color: var(--ink-main);
+  line-height: 1.45;
+  min-width: 0;
+}
+
+.pi-nota-acciones {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex-shrink: 0;
+}
+
+.pi-input-nota-grupo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.35rem;
+  width: 100%;
+}
+
+.pi-input-nota-grupo input {
+  width: 100% !important;
+  background: #ffffff;
+  border: 1px solid var(--border-soft);
+  padding: 0.55rem 0.85rem;
+  border-radius: 2px !important;
+  font-family: inherit;
+  font-size: 0.85rem;
+  color: var(--ink-main);
+  outline: none;
+}
+
+.pi-input-nota-grupo input:focus {
+  border-color: var(--itp-accent);
+}
+
+.pi-btn-agregar-nota {
+  align-self: flex-end;
+  background: var(--itp-accent);
+  color: #ffffff;
+  border: none;
+  padding: 0.55rem 1.1rem;
+  border-radius: 2px !important;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+}
+
+.pi-btn-agregar-nota svg {
+  width: 14px;
+  height: 14px;
+}
+
+@media (min-width: 640px) {
+  .pi-input-nota-grupo {
+    flex-direction: row;
+    align-items: stretch;
+  }
+
+  .pi-input-nota-grupo input {
+    flex: 1 1 auto;
+  }
+
+  .pi-btn-agregar-nota {
+    align-self: auto;
+    flex-shrink: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  #vista-panel .ticket-item.pi-fila-solicitud,
+  #vista-panel .ticket-item.pi-fila-solicitud:nth-child(odd),
+  #vista-panel .ticket-item.pi-fila-solicitud:nth-child(even) {
+    margin: 0 calc(-1 * max(1rem, env(safe-area-inset-left, 0px))) !important;
+    padding: 1rem max(1rem, env(safe-area-inset-left, 0px)) !important;
+  }
+
+  .pi-cabecera-expandible {
+    grid-template-columns: 112px 1fr;
+    gap: 0.85rem;
+  }
+
+  .pi-fecha-destacada {
+    font-size: 0.96rem;
+  }
+
+  .pi-hora-destacada {
+    font-size: 0.82rem;
+  }
+
+  .pi-nota-fila {
+    grid-template-columns: 82px 1fr;
+    gap: 0.55rem;
+  }
+
+  .pi-input-nota-grupo input {
+    font-size: 16px !important;
+  }
+}
+
+@media (max-width: 420px) {
+  .pi-cabecera-expandible {
+    grid-template-columns: 98px 1fr;
+    gap: 0.65rem;
+  }
+}
+
+/* modo oscuro para filas expandibles y notas */
+html[data-tema="oscuro"] #vista-panel .ticket-item.pi-fila-solicitud {
+  border-bottom-color: rgba(148, 163, 184, 0.16) !important;
+}
+
+html[data-tema="oscuro"] .pi-col-evento,
+html[data-tema="oscuro"] .pi-cuerpo-expandible,
+html[data-tema="oscuro"] .pi-area-notas,
+html[data-tema="oscuro"] .pi-nota-fila {
+  border-color: rgba(148, 163, 184, 0.16) !important;
+}
+
+html[data-tema="oscuro"] .pi-fecha-destacada {
+  color: #f8fafc;
+}
+
+html[data-tema="oscuro"] .pi-hora-destacada {
+  color: #38bdf8;
+}
+
+html[data-tema="oscuro"] .pi-depto-cerrado,
+html[data-tema="oscuro"] .pi-lugar-cerrado,
+html[data-tema="oscuro"] .pi-resumen-inferior,
+html[data-tema="oscuro"] .pi-dato-plano strong,
+html[data-tema="oscuro"] .pi-nota-col-texto {
+  color: #e2e8f0;
+}
+
+html[data-tema="oscuro"] .pi-etiqueta-plana,
+html[data-tema="oscuro"] .pi-sin-evento-cerrado,
+html[data-tema="oscuro"] .pi-nota-col-meta {
+  color: #94a3b8;
+}
+
+html[data-tema="oscuro"] .pi-input-nota-grupo input {
+  background: rgba(15, 23, 42, 0.72);
+  border-color: rgba(148, 163, 184, 0.22);
+  color: #f1f5f9;
+}
+
+html[data-tema="oscuro"] .pi-input-nota-grupo input:focus {
+  border-color: #38bdf8;
+}
+
+/* ==========================================================================
+   calendario responsivo en dispositivos móviles (cuadrícula con puntos + agenda del día)
+   ========================================================================== */
+.cal-puntos-movil,
+.cal-agenda-movil {
+  display: none;
+}
+
+@media (max-width: 720px) {
+  .cal-leyenda {
+    gap: 0.65rem 0.9rem;
+    font-size: 0.72rem;
+    margin-bottom: 0.65rem;
+  }
+
+  .cal-grid {
+    gap: 0.25rem;
+  }
+
+  .cal-dia-semana {
+    font-size: 0.65rem;
+    padding-bottom: 0.15rem;
+  }
+
+  .cal-celda {
+    min-height: 52px !important;
+    padding: 0.35rem 0.2rem !important;
+    border-radius: 8px;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0.28rem;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .cal-celda.cal-vacia {
+    cursor: default;
+  }
+
+  .cal-evento,
+  .cal-mas {
+    display: none !important;
+  }
+
+  .cal-num-dia {
+    font-size: 0.82rem;
+    width: 26px;
+    height: 26px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+  }
+
+  .cal-celda.cal-dia-activo-movil {
+    border-color: var(--itp-blue) !important;
+    background: rgba(0, 119, 182, 0.08) !important;
+    box-shadow: 0 0 0 1.5px var(--itp-blue);
+  }
+
+  .cal-celda.cal-dia-activo-movil:not(.cal-hoy) .cal-num-dia {
+    color: var(--itp-blue);
+    font-weight: 800;
+  }
+
+  .cal-puntos-movil {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    min-height: 6px;
+    flex-wrap: wrap;
+  }
+
+  .cal-punto-dia {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    display: inline-block;
+  }
+
+  .cal-punto-dia.cal-ev-Pendiente { background: #dc2626; }
+  .cal-punto-dia.cal-ev-En-proceso { background: #d97706; }
+  .cal-punto-dia.cal-ev-Terminado { background: #16a34a; }
+  .cal-punto-dia.cal-ev-Denegada { background: #991b1b; }
+
+  .cal-agenda-movil {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    margin-top: 1rem;
+    padding-top: 0.9rem;
+    border-top: 1px solid var(--border-soft);
+  }
+
+  .cal-agenda-cabecera {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 0.5rem;
+  }
+
+  .cal-agenda-cabecera strong {
+    font-family: 'Ranade', sans-serif;
+    font-size: 0.95rem;
+    color: var(--itp-blue);
+  }
+
+  .cal-agenda-cabecera span {
+    font-size: 0.76rem;
+    color: var(--ink-muted);
+    font-weight: 600;
+  }
+
+  .cal-agenda-lista {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .cal-agenda-item {
+    display: grid;
+    grid-template-columns: 88px 1fr;
+    gap: 0.75rem;
+    align-items: start;
+    text-align: left;
+    width: 100%;
+    background: transparent !important;
+    border: none;
+    border-left: 3px solid transparent;
+    border-bottom: 1px solid var(--border-soft);
+    border-radius: 0 !important;
+    padding: 0.7rem 0.5rem 0.7rem 0.75rem;
+    font-family: inherit;
+    cursor: pointer;
+  }
+
+  .cal-agenda-item.cal-ev-Pendiente { border-left-color: #dc2626; }
+  .cal-agenda-item.cal-ev-En-proceso { border-left-color: #d97706; }
+  .cal-agenda-item.cal-ev-Terminado { border-left-color: #16a34a; }
+  .cal-agenda-item.cal-ev-Denegada { border-left-color: #991b1b; opacity: 0.75; }
+
+  .cal-agenda-hora {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+
+  .cal-agenda-hora strong {
+    font-family: 'Ranade', sans-serif;
+    font-size: 0.84rem;
+    color: var(--itp-blue);
+  }
+
+  .cal-agenda-hora span {
+    font-size: 0.72rem;
+    color: var(--ink-muted);
+    font-weight: 700;
+  }
+
+  .cal-agenda-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    min-width: 0;
+  }
+
+  .cal-agenda-servicio {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: var(--ink-main);
+    line-height: 1.3;
+  }
+
+  .cal-agenda-item.cal-ev-Denegada .cal-agenda-servicio {
+    text-decoration: line-through;
+  }
+
+  .cal-agenda-meta {
+    font-size: 0.78rem;
+    color: var(--ink-muted);
+    line-height: 1.35;
+  }
+
+  .cal-agenda-resp {
+    font-size: 0.76rem;
+    color: var(--ink-muted);
+    margin-top: 0.1rem;
+  }
+
+  .cal-agenda-resp strong {
+    color: var(--ink-main);
+  }
+
+  .cal-agenda-vacia {
+    font-size: 0.84rem;
+    color: var(--ink-muted);
+    font-style: italic;
+    padding: 0.65rem 0;
+  }
+
+  html[data-tema="oscuro"] .cal-celda.cal-dia-activo-movil {
+    border-color: #38bdf8 !important;
+    background: rgba(56, 189, 248, 0.14) !important;
+    box-shadow: 0 0 0 1.5px #38bdf8;
+  }
+
+  html[data-tema="oscuro"] .cal-celda.cal-dia-activo-movil:not(.cal-hoy) .cal-num-dia,
+  html[data-tema="oscuro"] .cal-agenda-cabecera strong,
+  html[data-tema="oscuro"] .cal-agenda-hora strong {
+    color: #38bdf8;
+  }
+
+  html[data-tema="oscuro"] .cal-agenda-movil,
+  html[data-tema="oscuro"] .cal-agenda-item {
+    border-bottom-color: rgba(148, 163, 184, 0.16);
+    border-top-color: rgba(148, 163, 184, 0.16);
+  }
+
+  html[data-tema="oscuro"] .cal-agenda-servicio,
+  html[data-tema="oscuro"] .cal-agenda-resp strong {
+    color: #f1f5f9;
+  }
+}
+
+/* ==========================================================================
+   diseño editorial de formulario en papel exclusivo para secciones 02 y 03
+   ========================================================================== */
+#seccion-detalles.form-solicitud-editorial {
+  background: transparent !important;
+  border: none !important;
+  border-top: 2px solid var(--itp-blue) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 2rem 0 0 0 !important;
+  margin-top: 2.5rem !important;
+}
+
+#seccion-detalles.form-solicitud-editorial::before {
+  display: none !important;
+}
+
+#seccion-detalles.form-solicitud-editorial .form-solicitud-encabezado-02 {
+  margin-bottom: 1.15rem !important;
+}
+
+#seccion-detalles.form-solicitud-editorial .form-solicitud-titulo-seccion {
+  display: block;
+  font-family: 'Ranade', sans-serif;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--itp-blue);
+}
+
+#seccion-detalles.form-solicitud-editorial .form-solicitud-num {
+  font-size: 1.12rem;
+  font-weight: 700;
+  color: var(--itp-accent);
+  vertical-align: -1px;
+}
+
+#seccion-detalles.form-solicitud-editorial .form-solicitud-encabezado-03 {
+  border-top: 2px solid var(--itp-blue) !important;
+  padding-top: 2rem !important;
+  margin-top: 2.5rem !important;
+  margin-bottom: 1.15rem !important;
+}
+
+/* 2. fila "servicio seleccionado" con línea fina arriba y abajo */
+/* 2. fila "servicio seleccionado": línea fina arriba y abajo */
+#seccion-detalles.form-solicitud-editorial .form-solicitud-resumen {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  background: transparent !important;
+  border: none !important;
+  border-top: 1.5px solid rgba(27, 57, 106, 0.32) !important;
+  border-bottom: 1.5px solid rgba(27, 57, 106, 0.32) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 0.85rem 0 !important;
+  margin-bottom: 1.85rem !important;
+  color: var(--ink-muted);
+  font-size: 0.88rem;
+}
+
+#seccion-detalles.form-solicitud-editorial .form-solicitud-resumen .icono-inline {
+  color: var(--itp-accent);
+}
+
+#seccion-detalles.form-solicitud-editorial .form-solicitud-resumen strong {
+  font-family: 'Ranade', sans-serif;
+  font-size: 1.04rem;
+  font-weight: 700;
+  color: var(--itp-blue);
+}
+
+/* 3. campos de formulario (inputs, selects, textareas, fecha y hora): solo línea inferior */
+#seccion-detalles.form-solicitud-editorial .form-solicitud-campo {
+  gap: 0.3rem;
+}
+
+#seccion-detalles.form-solicitud-editorial .form-solicitud-campo label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--ink-main);
+  letter-spacing: 0.01em;
+}
+
+#seccion-detalles.form-solicitud-editorial .form-solicitud-campo input,
+#seccion-detalles.form-solicitud-editorial .form-solicitud-campo textarea,
+#seccion-detalles.form-solicitud-editorial .form-solicitud-campo select,
+#seccion-detalles.form-solicitud-editorial .form-solicitud-campo .ts-wrapper.single .ts-control,
+#seccion-detalles.form-solicitud-editorial .form-solicitud-campo .contenedor-input-calendario input.input-fecha-con-icono,
+#seccion-detalles.form-solicitud-editorial .form-solicitud-campo .contenedor-input-calendario input.form-control {
+  background: transparent !important;
+  border-top: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-bottom: 1.5px solid rgba(27, 57, 106, 0.42) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 0.58rem 0 !important;
+  font-size: 0.94rem !important;
+  color: var(--ink-main) !important;
+}
+
+#seccion-detalles.form-solicitud-editorial .form-solicitud-campo .ts-wrapper.single .ts-control {
+  padding-right: 1.8rem !important;
+  font-weight: 600 !important;
+}
+
+#seccion-detalles.form-solicitud-editorial .form-solicitud-campo .ts-wrapper.single .ts-control::after {
+  right: 0.25rem !important;
+}
+
+#seccion-detalles.form-solicitud-editorial .form-solicitud-campo .contenedor-input-calendario input.input-fecha-con-icono,
+#seccion-detalles.form-solicitud-editorial .form-solicitud-campo .contenedor-input-calendario input.form-control {
+  padding-right: 1.8rem !important;
+}
+
+#seccion-detalles.form-solicitud-editorial .form-solicitud-campo .icono-calendario-fijo {
+  right: 0.2rem !important;
+}
+
+#seccion-detalles.form-solicitud-editorial .form-solicitud-campo input:focus,
+#seccion-detalles.form-solicitud-editorial .form-solicitud-campo textarea:focus,
+#seccion-detalles.form-solicitud-editorial .form-solicitud-campo .ts-wrapper.single.focus .ts-control,
+#seccion-detalles.form-solicitud-editorial .form-solicitud-campo .contenedor-input-calendario input.input-fecha-con-icono:focus,
+#seccion-detalles.form-solicitud-editorial .form-solicitud-campo .contenedor-input-calendario input.form-control:focus {
+  background: transparent !important;
+  border-bottom-color: var(--itp-accent) !important;
+  box-shadow: 0 2px 0 0 var(--itp-accent) !important;
+}
+
+/* 4. pregunta con interruptor: fila con línea fina arriba y abajo */
+#seccion-detalles.form-solicitud-editorial .form-solicitud-pregunta-evento {
+  background: transparent !important;
+  border: none !important;
+  border-top: 1.5px solid rgba(27, 57, 106, 0.32) !important;
+  border-bottom: 1.5px solid rgba(27, 57, 106, 0.32) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 0.9rem 0 !important;
+  margin-bottom: 1.5rem !important;
+}
+
+#seccion-detalles.form-solicitud-editorial .form-solicitud-pregunta-evento:hover {
+  background: transparent !important;
+}
+
+/* 5. contenedor de fecha, hora y sitio sin recuadro ni fondo */
+#seccion-detalles.form-solicitud-editorial .form-solicitud-evento-contenedor {
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 0.25rem 0 0.75rem 0 !important;
+  margin-top: 0 !important;
+}
+
+/* 6. botón "enviar solicitud oficial": ancho completo y esquinas casi rectas */
+#seccion-detalles.form-solicitud-editorial .form-solicitud-btn-enviar {
+  width: 100% !important;
+  border-radius: 2px !important;
+  margin-top: 0.75rem;
+}
+
+/* soporte para modo oscuro */
+html[data-tema="oscuro"] #seccion-detalles.form-solicitud-editorial,
+html[data-tema="oscuro"] #seccion-detalles.form-solicitud-editorial .form-solicitud-encabezado-03 {
+  border-top-color: rgba(56, 189, 248, 0.45) !important;
+}
+
+html[data-tema="oscuro"] #seccion-detalles.form-solicitud-editorial .form-solicitud-titulo-seccion,
+html[data-tema="oscuro"] #seccion-detalles.form-solicitud-editorial .form-solicitud-resumen strong {
+  color: #f8fafc;
+}
+
+html[data-tema="oscuro"] #seccion-detalles.form-solicitud-editorial .form-solicitud-num {
+  color: #38bdf8;
+}
+
+html[data-tema="oscuro"] #seccion-detalles.form-solicitud-editorial .form-solicitud-resumen,
+html[data-tema="oscuro"] #seccion-detalles.form-solicitud-editorial .form-solicitud-pregunta-evento {
+  border-top-color: rgba(148, 163, 184, 0.2) !important;
+  border-bottom-color: rgba(148, 163, 184, 0.2) !important;
+}
+
+html[data-tema="oscuro"] #seccion-detalles.form-solicitud-editorial .form-solicitud-campo label {
+  color: #e2e8f0;
+}
+
+html[data-tema="oscuro"] #seccion-detalles.form-solicitud-editorial .form-solicitud-campo input,
+html[data-tema="oscuro"] #seccion-detalles.form-solicitud-editorial .form-solicitud-campo textarea,
+html[data-tema="oscuro"] #seccion-detalles.form-solicitud-editorial .form-solicitud-campo select,
+html[data-tema="oscuro"] #seccion-detalles.form-solicitud-editorial .form-solicitud-campo .ts-wrapper.single .ts-control,
+html[data-tema="oscuro"] #seccion-detalles.form-solicitud-editorial .form-solicitud-campo .contenedor-input-calendario input.input-fecha-con-icono,
+html[data-tema="oscuro"] #seccion-detalles.form-solicitud-editorial .form-solicitud-campo .contenedor-input-calendario input.form-control {
+  background: transparent !important;
+  border-top: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-bottom-color: rgba(148, 163, 184, 0.3) !important;
+  color: #f8fafc !important;
+}
+
+html[data-tema="oscuro"] #seccion-detalles.form-solicitud-editorial .form-solicitud-campo input:focus,
+html[data-tema="oscuro"] #seccion-detalles.form-solicitud-editorial .form-solicitud-campo textarea:focus,
+html[data-tema="oscuro"] #seccion-detalles.form-solicitud-editorial .form-solicitud-campo .ts-wrapper.single.focus .ts-control,
+html[data-tema="oscuro"] #seccion-detalles.form-solicitud-editorial .form-solicitud-campo .contenedor-input-calendario input.input-fecha-con-icono:focus,
+html[data-tema="oscuro"] #seccion-detalles.form-solicitud-editorial .form-solicitud-campo .contenedor-input-calendario input.form-control:focus {
+  background: transparent !important;
+  border-bottom-color: #38bdf8 !important;
+  box-shadow: 0 2px 0 0 #38bdf8 !important;
+}
+
+@media (max-width: 768px) {
+  #seccion-detalles.form-solicitud-editorial .form-solicitud-campo input,
+  #seccion-detalles.form-solicitud-editorial .form-solicitud-campo textarea,
+  #seccion-detalles.form-solicitud-editorial .form-solicitud-campo select,
+  #seccion-detalles.form-solicitud-editorial .form-solicitud-campo .ts-wrapper.single .ts-control,
+  #seccion-detalles.form-solicitud-editorial .form-solicitud-campo .contenedor-input-calendario input.input-fecha-con-icono,
+  #seccion-detalles.form-solicitud-editorial .form-solicitud-campo .contenedor-input-calendario input.form-control {
+    font-size: 16px !important;
+  }
+}
+
+/* ==========================================================================
+   geometría cuadrada / rectangular uniforme para bloques superiores y controles
+   ========================================================================== */
+
+/* 1. etiquetas superiores: "gestión oficial de solicitudes" y "panel de administración" */
+.tag-institucional {
+  border-radius: 2px !important;
+  box-shadow: none !important;
+}
+
+/* 2. ocultar cuadro de "folio asignado | fecha de emisión" */
+.meta-automatica {
+  display: none !important;
+}
+
+/* 3. sección "consulta el estatus de tu solicitud" y "reporte mensual":
+   rectángulo extendido de orilla a orilla de cualquier pantalla (full-bleed) */
+.panel-rastreo,
+.barra-reportes-mensuales {
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  width: 100vw !important;
+  position: relative;
+  left: 50%;
+  transform: translateX(-50%);
+  box-sizing: border-box !important;
+  padding-left: max(1.25rem, calc((100vw - 1200px) / 2 + 1.25rem)) !important;
+  padding-right: max(1.25rem, calc((100vw - 1200px) / 2 + 1.25rem)) !important;
+}
+
+.panel-rastreo {
+  padding-top: 0.65rem !important;
+  padding-bottom: 0.65rem !important;
+  margin-bottom: 1.4rem !important;
+}
+
+.panel-rastreo .rastreo-cabecera {
+  gap: 0.65rem !important;
+}
+
+.panel-rastreo .rastreo-textos strong {
+  font-size: 0.9rem !important;
+}
+
+.panel-rastreo .rastreo-textos span {
+  font-size: 0.78rem !important;
+  margin-top: 0.05rem !important;
+}
+
+.panel-rastreo .form-rastreo input,
+.panel-rastreo .btn-rastrear {
+  padding-top: 0.44rem !important;
+  padding-bottom: 0.44rem !important;
+  font-size: 0.84rem !important;
+}
+
+@media (max-width: 768px) {
+  .panel-rastreo,
+  .barra-reportes-mensuales {
+    padding-left: max(1rem, env(safe-area-inset-left, 0px)) !important;
+    padding-right: max(1rem, env(safe-area-inset-right, 0px)) !important;
+  }
+}
+
+.tarjeta-rastreo-publico,
+.form-rastreo input,
+.btn-rastrear,
+.btn-cerrar-rastreo,
+.controles-reporte select,
+.controles-reporte .ts-wrapper.single .ts-control,
+.controles-reporte .ts-dropdown,
+.btn-accion-reporte {
+  border-radius: 2px !important;
+  box-shadow: none !important;
+}
+
+/* 4. en todas las solicitudes: menú de "responsable asignado", botón de "denegar"
+   y menú/campo de "fecha límite de entrega" cuadrados */
+.fila-responsable-acciones .ts-wrapper.single .ts-control,
+.fila-responsable-acciones .ts-dropdown,
+.btn-notificar-wa,
+.caja-servicio-social-manual input,
+.btn-confirmar-ss,
+.btn-denegar-solicitud,
+.btn-denegar-ticket,
+.campo-interno .contenedor-input-calendario input.input-fecha-con-icono,
+.campo-interno .contenedor-input-calendario input.form-control,
+.input-fecha-limite-panel,
+.toggle-fecha-manual input[type="checkbox"] {
+  border-radius: 2px !important;
+  box-shadow: none !important;
+}
+
+/* 5. ícono de persona detrás de una laptop para el departamento en las solicitudes */
+.icono-persona-compu {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+/* 6. calendarios (flatpickr y cronograma del panel) y reloj cuadrados/rectangulares */
+.flatpickr-calendar,
+.flatpickr-months,
+.flatpickr-months .flatpickr-prev-month,
+.flatpickr-months .flatpickr-next-month,
+.flatpickr-current-month .flatpickr-monthDropdown-months,
+.flatpickr-current-month .numInputWrapper,
+.flatpickr-day,
+.tarjeta-reloj-material,
+.reloj-caja-digito,
+.reloj-selector-ampm,
+.btn-ampm,
+.reloj-esfera-contenedor,
+.reloj-centro-punto,
+.reloj-num-item,
+.btn-reloj-accion,
+.conmutador-vista-panel,
+.btn-conmutar-vista,
+.cal-celda,
+.cal-num-dia,
+.cal-hoy .cal-num-dia,
+.cal-evento,
+.cal-punto {
+  border-radius: 2px !important;
+}
+
+.tarjeta-reloj-material {
+  animation: entrada_suave 0.22s ease !important;
+}
+
+/* 7. manuales de usuario con estética de hojas de manual impreso y botones de selección cuadrados */
+.modal-tarjeta-manual {
+  border-radius: 2px !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.42) !important;
+  animation: entrada_suave 0.22s ease !important;
+}
+
+.cabecera-modal-manual {
+  background: #ffffff !important;
+  border-bottom: 2px solid var(--itp-blue) !important;
+  padding: 1.15rem 1.65rem 0.95rem !important;
+}
+
+.cabecera-modal-manual .btn-cerrar-modal-rep {
+  border-radius: 2px !important;
+}
+
+.barra-tabs-manual {
+  background: #f1f5f9 !important;
+  border-bottom: 1px solid #cbd5e1 !important;
+  padding: 0.65rem 1.65rem !important;
+  gap: 0.5rem !important;
+}
+
+.btn-tab-manual {
+  border-radius: 2px !important;
+  box-shadow: none !important;
+  padding: 0.55rem 1.1rem !important;
+  border: 1.5px solid #cbd5e1 !important;
+  background: #ffffff !important;
+  color: var(--ink-main) !important;
+}
+
+.btn-tab-manual:hover:not(.activo) {
+  border-color: var(--itp-blue) !important;
+  background: #f8fafc !important;
+  color: var(--itp-blue) !important;
+}
+
+.btn-tab-manual.activo {
+  background: var(--itp-blue) !important;
+  color: #ffffff !important;
+  border-color: var(--itp-blue) !important;
+  box-shadow: none !important;
+}
+
+.cuerpo-modal-manual {
+  background: #cbd5e1 !important;
+  padding: 1.65rem 1.5rem 2rem !important;
+}
+
+/* hoja física de manual (documento técnico encuadernado) */
+.contenido-tab-manual {
+  background: #ffffff !important;
+  max-width: 820px;
+  margin: 0 auto;
+  padding: 2.25rem 2.5rem !important;
+  border: 1px solid #94a3b8 !important;
+  border-top: 5px solid var(--itp-blue) !important;
+  border-radius: 0 !important;
+  box-shadow:
+    0 10px 28px rgba(15, 23, 42, 0.16),
+    6px 6px 0 rgba(255, 255, 255, 0.85),
+    7px 7px 0 #94a3b8 !important;
+  position: relative;
+}
+
+.banner-intro-manual,
+.banner-intro-manual.admin {
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 2px solid var(--itp-blue) !important;
+  border-radius: 0 !important;
+  padding: 0 0 1.15rem 0 !important;
+  margin-bottom: 1.5rem !important;
+  box-shadow: none !important;
+}
+
+.icono-banner-manual {
+  border-radius: 2px !important;
+}
+
+.grid-pasos-manual {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 0 !important;
+}
+
+.tarjeta-paso-manual {
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 1px solid #cbd5e1 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 1.35rem 0 !important;
+}
+
+.tarjeta-paso-manual:first-child {
+  padding-top: 0.25rem !important;
+}
+
+.tarjeta-paso-manual:last-child {
+  border-bottom: none !important;
+  padding-bottom: 0.25rem !important;
+}
+
+.cabecera-paso-manual {
+  border-bottom: 1px solid #e2e8f0 !important;
+  padding-bottom: 0.55rem !important;
+  margin-bottom: 0.75rem !important;
+}
+
+.numero-paso-manual {
+  border-radius: 2px !important;
+  background: var(--itp-blue) !important;
+  width: 28px !important;
+  height: 28px !important;
+  font-size: 0.86rem !important;
+}
+
+.lista-explicacion-manual code,
+.pildora-mini-manual {
+  border-radius: 2px !important;
+}
+
+@media (max-width: 768px) {
+  .cuerpo-modal-manual {
+    padding: 0.85rem 0.65rem 1.25rem !important;
+  }
+
+  .contenido-tab-manual {
+    padding: 1.35rem 1.1rem !important;
+    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.15) !important;
+  }
+}
+
+html[data-tema="oscuro"] .modal-tarjeta-manual {
+  background: #0f172a !important;
+  border-color: rgba(148, 163, 184, 0.28) !important;
+}
+
+html[data-tema="oscuro"] .cabecera-modal-manual {
+  background: #0f172a !important;
+  border-bottom-color: #38bdf8 !important;
+}
+
+html[data-tema="oscuro"] .barra-tabs-manual {
+  background: #0b1324 !important;
+  border-bottom-color: rgba(148, 163, 184, 0.22) !important;
+}
+
+html[data-tema="oscuro"] .btn-tab-manual {
+  background: rgba(30, 41, 59, 0.85) !important;
+  border-color: rgba(148, 163, 184, 0.28) !important;
+  color: #cbd5e1 !important;
+}
+
+html[data-tema="oscuro"] .btn-tab-manual:hover:not(.activo) {
+  border-color: #38bdf8 !important;
+  color: #f8fafc !important;
+  background: rgba(30, 41, 59, 1) !important;
+}
+
+html[data-tema="oscuro"] .btn-tab-manual.activo {
+  background: #0077b6 !important;
+  border-color: #38bdf8 !important;
+  color: #ffffff !important;
+}
+
+html[data-tema="oscuro"] .cuerpo-modal-manual {
+  background: #060b14 !important;
+}
+
+html[data-tema="oscuro"] .contenido-tab-manual {
+  background: #0f172a !important;
+  border-color: rgba(148, 163, 184, 0.28) !important;
+  border-top-color: #38bdf8 !important;
+  box-shadow:
+    0 12px 32px rgba(0, 0, 0, 0.55),
+    6px 6px 0 #1e293b,
+    7px 7px 0 rgba(148, 163, 184, 0.28) !important;
+}
+
+html[data-tema="oscuro"] .banner-intro-manual,
+html[data-tema="oscuro"] .banner-intro-manual.admin {
+  border-bottom-color: rgba(56, 189, 248, 0.45) !important;
+}
+
+html[data-tema="oscuro"] .tarjeta-paso-manual {
+  border-bottom-color: rgba(148, 163, 184, 0.22) !important;
+}
+
+html[data-tema="oscuro"] .cabecera-paso-manual {
+  border-bottom-color: rgba(148, 163, 184, 0.15) !important;
+}
+
+
+
+
 
 

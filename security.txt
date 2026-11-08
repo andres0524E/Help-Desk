@@ -1,0 +1,6 @@
+# Política de divulgación de seguridad — Mesa de Comunicación y Difusión (ITP)
+Contact: mailto:cyd_pachuca@tecnm.mx
+Expires: 2027-12-31T23:59:59.000Z
+Preferred-Languages: es
+Canonical: https://andres0524e.github.io/Help-Desk/.well-known/security.txt
+
