@@ -33,7 +33,7 @@
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.14.5/dist/sweetalert2.all.min.js"></script>
 
 
-  <link rel="stylesheet" href="styles.css?v=20261108b">
+  <link rel="stylesheet" href="styles.css?v=20261108c">
   <script>
     (function() {
       try {
@@ -50,9 +50,19 @@
 
   <!-- estilos personalizados para tom select, calendario, reloj, selectores de responsable y modales -->
   <style>
+    .ts-wrapper {
+      outline: none !important;
+      border: none !important;
+      box-shadow: none !important;
+    }
+    .ts-wrapper:focus,
+    .ts-wrapper:focus-visible {
+      outline: none !important;
+      box-shadow: none !important;
+    }
     .ts-wrapper.single .ts-control {
       background: #ffffff !important;
-      border: 1.5px solid var(--border-soft, #e2e8f0) !important;
+      border: 1.5px solid #cbd5e1 !important;
       border-radius: 2px !important;
       padding: 0.62rem 2.3rem 0.62rem 1rem !important;
       font-family: inherit !important;
@@ -60,9 +70,11 @@
       font-weight: 700 !important;
       color: var(--itp-blue, #1B396A) !important;
       box-shadow: none !important;
+      outline: none !important;
       position: relative;
       cursor: pointer !important;
-      min-width: 215px;
+      min-width: 225px;
+      box-sizing: border-box !important;
       user-select: none;
     }
     .ts-wrapper.single .ts-control::after {
@@ -76,18 +88,27 @@
       pointer-events: none;
       opacity: 0.8;
     }
-    .ts-wrapper.focus .ts-control {
+    .ts-wrapper.focus .ts-control,
+    .ts-wrapper.dropdown-active .ts-control,
+    .controles-reporte .ts-wrapper.single.focus .ts-control,
+    .controles-reporte .ts-wrapper.single.dropdown-active .ts-control {
       border-color: var(--itp-blue, #1B396A) !important;
-      box-shadow: 0 0 0 4px rgba(27, 57, 106, 0.1) !important;
+      box-shadow: none !important;
+      outline: none !important;
     }
     .ts-dropdown {
       border-radius: 2px !important;
-      border: 1.5px solid var(--border-soft, #e2e8f0) !important;
-      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.14) !important;
+      border: 1.5px solid #cbd5e1 !important;
+      box-shadow: 0 14px 34px rgba(15, 23, 42, 0.18) !important;
       overflow: hidden;
       font-family: inherit !important;
-      margin-top: 4px;
-      z-index: 45 !important;
+      margin-top: 2px !important;
+      z-index: 9999 !important;
+      background: #ffffff !important;
+    }
+    .ts-dropdown .ts-dropdown-content {
+      max-height: 290px !important;
+      padding: 4px 0 !important;
     }
     .ts-dropdown .optgroup-header {
       font-size: 0.73rem;
@@ -536,7 +557,7 @@
       width: 236px;
       height: 236px;
       background: #e9ecf2;
-      border-radius: 2px !important;
+      border-radius: 50% !important;
       margin: 0 auto 1.35rem;
       position: relative;
       cursor: pointer;
@@ -549,7 +570,7 @@
       width: 8px;
       height: 8px;
       background: var(--itp-blue, #1B396A);
-      border-radius: 2px !important;
+      border-radius: 50% !important;
       transform: translate(-50%, -50%);
       z-index: 3;
     }
@@ -575,7 +596,7 @@
       position: absolute;
       width: 38px;
       height: 38px;
-      border-radius: 2px !important;
+      border-radius: 50% !important;
       display: flex;
       align-items: center;
       justify-content: center;

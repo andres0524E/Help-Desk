@@ -6777,12 +6777,24 @@ html[data-tema="oscuro"] #seccion-detalles.form-solicitud-editorial .form-solici
   border-left: none !important;
   border-right: none !important;
   width: 100vw !important;
+  margin-left: calc(50% - 50vw) !important;
+  margin-right: calc(50% - 50vw) !important;
+  left: auto !important;
+  transform: none !important;
   position: relative;
-  left: 50%;
-  transform: translateX(-50%);
   box-sizing: border-box !important;
   padding-left: max(1.25rem, calc((100vw - 1200px) / 2 + 1.25rem)) !important;
   padding-right: max(1.25rem, calc((100vw - 1200px) / 2 + 1.25rem)) !important;
+}
+
+.barra-reportes-mensuales {
+  z-index: 60 !important;
+  overflow: visible !important;
+}
+
+.controles-reporte {
+  position: relative;
+  z-index: 65 !important;
 }
 
 .panel-rastreo {
@@ -6817,6 +6829,12 @@ html[data-tema="oscuro"] #seccion-detalles.form-solicitud-editorial .form-solici
     padding-left: max(1rem, env(safe-area-inset-left, 0px)) !important;
     padding-right: max(1rem, env(safe-area-inset-right, 0px)) !important;
   }
+
+  .controles-reporte .ts-wrapper,
+  .controles-reporte .ts-wrapper.single .ts-control {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
 }
 
 .tarjeta-rastreo-publico,
@@ -6825,16 +6843,22 @@ html[data-tema="oscuro"] #seccion-detalles.form-solicitud-editorial .form-solici
 .btn-cerrar-rastreo,
 .controles-reporte select,
 .controles-reporte .ts-wrapper.single .ts-control,
-.controles-reporte .ts-dropdown,
 .btn-accion-reporte {
   border-radius: 2px !important;
   box-shadow: none !important;
 }
 
+.controles-reporte .ts-dropdown,
+.fila-responsable-acciones .ts-dropdown {
+  border-radius: 2px !important;
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.18) !important;
+  border: 1.5px solid #cbd5e1 !important;
+  z-index: 9999 !important;
+}
+
 /* 4. en todas las solicitudes: menú de "responsable asignado", botón de "denegar"
    y menú/campo de "fecha límite de entrega" cuadrados */
 .fila-responsable-acciones .ts-wrapper.single .ts-control,
-.fila-responsable-acciones .ts-dropdown,
 .btn-notificar-wa,
 .caja-servicio-social-manual input,
 .btn-confirmar-ss,
@@ -6855,7 +6879,8 @@ html[data-tema="oscuro"] #seccion-detalles.form-solicitud-editorial .form-solici
   flex-shrink: 0;
 }
 
-/* 6. calendarios (flatpickr y cronograma del panel) y reloj cuadrados/rectangulares */
+/* 6. calendarios (flatpickr y cronograma del panel) y caja/botones del reloj cuadrados,
+   conservando redonda la esfera del reloj */
 .flatpickr-calendar,
 .flatpickr-months,
 .flatpickr-months .flatpickr-prev-month,
@@ -6867,9 +6892,6 @@ html[data-tema="oscuro"] #seccion-detalles.form-solicitud-editorial .form-solici
 .reloj-caja-digito,
 .reloj-selector-ampm,
 .btn-ampm,
-.reloj-esfera-contenedor,
-.reloj-centro-punto,
-.reloj-num-item,
 .btn-reloj-accion,
 .conmutador-vista-panel,
 .btn-conmutar-vista,
@@ -6879,6 +6901,12 @@ html[data-tema="oscuro"] #seccion-detalles.form-solicitud-editorial .form-solici
 .cal-evento,
 .cal-punto {
   border-radius: 2px !important;
+}
+
+.reloj-esfera-contenedor,
+.reloj-centro-punto,
+.reloj-num-item {
+  border-radius: 50% !important;
 }
 
 .tarjeta-reloj-material {
